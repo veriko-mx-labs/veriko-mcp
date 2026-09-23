@@ -58,6 +58,34 @@ describe('catálogo MCP', () => {
     assert.equal(keys[0], keys[1]);
   });
 
+  it('reenvía description nula al crear un webhook', async () => {
+    const received: unknown[] = [];
+    const client = {
+      webhooks: {
+        create: async (args: unknown) => {
+          received.push(args);
+          return { ok: true };
+        },
+      },
+    } as unknown as Veriko;
+    const tool = TOOL_CATALOG.find((candidate) => candidate.operationId === 'createWebhook');
+    assert.ok(tool);
+
+    await tool.invoke(client, {
+      url: 'https://example.com/hook',
+      events: ['validation.completed'],
+      description: null,
+    });
+
+    assert.deepEqual(received, [
+      {
+        url: 'https://example.com/hook',
+        events: ['validation.completed'],
+        description: null,
+      },
+    ]);
+  });
+
   it('fuerza preview en los cuatro reportes estructurados', () => {
     for (const operationId of [
       'getFinanceMonthly',

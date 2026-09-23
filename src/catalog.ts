@@ -265,7 +265,8 @@ export const TOOL_CATALOG: readonly ToolDefinition[] = [
     family: 'webhooks',
     risk: 'write',
     inputSchema: createWebhookSchema,
-    invoke: (client, args) => client.webhooks.create(args),
+    invoke: (client, args) =>
+      client.webhooks.create(args as Parameters<Veriko['webhooks']['create']>[0]),
   }),
   define({
     operationId: 'listWebhooks',

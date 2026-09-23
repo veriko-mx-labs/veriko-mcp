@@ -157,7 +157,7 @@ export const createWebhookSchema = z
   .object({
     url: httpsUrl.max(2048),
     events: z.array(webhookEvents).min(1).max(10),
-    description: z.string().optional(),
+    description: z.string().nullable().optional(),
   })
   .strict();
 export const webhookIdSchema = z.object({ webhookId: uuid }).strict();

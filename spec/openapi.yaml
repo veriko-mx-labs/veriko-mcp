@@ -6152,7 +6152,7 @@ paths:
         {% callout type="warning" %}
         **Firma secreta:**\
         El `secret` de firma se devuelve **únicamente en esta respuesta** y no puede recuperarse después. Un secreto perdido se sustituye con `POST /v1/webhooks/{id}/regenerate-secret`, que devuelve el nuevo e invalida el anterior de inmediato — el endpoint no hay que volver a registrarlo.\
-        Ese secreto verifica cada entrega: el HMAC-SHA256 del cuerpo recibido debe coincidir con la cabecera `X-{Brand}-Signature: sha256=<hex>`.\
+        Ese secreto verifica cada entrega: el HMAC-SHA256 del cuerpo recibido debe coincidir con la cabecera `X-Webhook-Signature: sha256=<hex>`.\
         \
         La firma, y más detalles se describen en {% concept slug="webhooks-architecture" %}la arquitectura de webhooks{% /concept %}.
 
@@ -6204,10 +6204,10 @@ paths:
               }'
       responses:
         '201':
-          description: 'Endpoint webhook creado. El campo `secret` aparece **solo en esta respuesta** y no puede volver a consultarse: es el que verifica la firma `X-{Brand}-Signature: sha256=<hex>` que acompaña a cada entrega.'
+          description: 'Endpoint webhook creado. El campo `secret` aparece **solo en esta respuesta** y no puede volver a consultarse: es el que verifica la firma `X-Webhook-Signature: sha256=<hex>` que acompaña a cada entrega.'
           x-translations:
             en:
-              description: 'Endpoint created. The `secret` field appears **in this response only** and cannot be read again: it is what verifies the `X-{Brand}-Signature: sha256=<hex>` signature carried by every delivery.'
+              description: 'Endpoint created. The `secret` field appears **in this response only** and cannot be read again: it is what verifies the `X-Webhook-Signature: sha256=<hex>` signature carried by every delivery.'
           content:
             application/json:
               schema:
@@ -6520,7 +6520,7 @@ paths:
             invalidates the previous one immediately — the endpoint does not have to
             be registered again.\
             That secret verifies every delivery: the HMAC-SHA256 of the received body
-            must match the `X-{Brand}-Signature: sha256=<hex>` header.\
+            must match the `X-Webhook-Signature: sha256=<hex>` header.\
             \
             Signing, and further detail, are described in {% concept slug="webhooks-architecture" %}the webhooks architecture{% /concept %}.
 
@@ -6610,10 +6610,10 @@ paths:
                       data:
                         $ref: '#/components/schemas/WebhookEndpoint'
         '400':
-          description: El cuerpo de la petición está vacío o no es JSON válido.
+          description: El cuerpo de la petición está vacío o no es JSON válido, o la URL nueva no resuelve a una dirección pública.
           x-translations:
             en:
-              description: The request body is empty or is not valid JSON.
+              description: The request body is empty or is not valid JSON, or the new URL does not resolve to a public address.
               examples:
                 body_empty:
                   value:
@@ -6623,6 +6623,14 @@ paths:
                   value:
                     errors:
                       - detail: The body is not valid JSON.
+                url_dns_failed:
+                  value:
+                    errors:
+                      - detail: The host name could not be resolved.
+                url_ssrf_blocked:
+                  value:
+                    errors:
+                      - detail: The given URL resolves to a non-public address.
           content:
             application/json:
               schema:
@@ -6656,6 +6664,34 @@ paths:
                       version: 1.58.0
                       api_version: v1
                       request_id: d5e6f7a8b9c0
+                url_dns_failed:
+                  summary: El dominio no resuelve
+                  x-translations:
+                    en:
+                      summary: Host does not resolve
+                  value:
+                    errors:
+                      - status: '400'
+                        code: url_dns_failed
+                        detail: No se pudo resolver el nombre de la dirección.
+                    meta:
+                      version: 1.58.0
+                      api_version: v1
+                      request_id: d4e5f6a1b2c4
+                url_ssrf_blocked:
+                  summary: La URL apunta a una red no pública
+                  x-translations:
+                    en:
+                      summary: URL points to a non-public network
+                  value:
+                    errors:
+                      - status: '400'
+                        code: url_ssrf_blocked
+                        detail: La URL indicada resuelve a una dirección no pública.
+                    meta:
+                      version: 1.58.0
+                      api_version: v1
+                      request_id: d4e5f6a1b2c5
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -7070,6 +7106,10 @@ paths:
               schema:
                 type: string
                 format: binary
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -7237,10 +7277,10 @@ paths:
               - retrying
               - pending
           example: failed
-          description: Filtro — Desenlace del intento de entrega. `success` llegó. `failed` no llegó y ya no se reintenta. `retrying` falló pero queda algún intento. `pending` todavía no se ha intentado.
+          description: Filtro — Estado de la entrega. `success` llegó. `failed` es el resultado del último intento; Messenger puede programar otro si el fallo es recuperable. `retrying` se pospuso por el límite de salida y Messenger la reintentará. `pending` todavía no se ha intentado.
           x-translations:
             en:
-              description: Outcome of the delivery attempt. `success` arrived. `failed` did not arrive and will not be retried. `retrying` failed but has attempts left. `pending` has not been attempted yet.
+              description: Delivery state. `success` arrived. `failed` is the latest attempt's outcome; Messenger can schedule another one for a recoverable failure. `retrying` was deferred by the outbound limit and Messenger will retry it. `pending` has not been attempted yet.
         - name: event_type
           in: query
           schema:
@@ -7377,10 +7417,10 @@ paths:
           example: failed
           description: |-
             \
-            Filtro — Desenlace del intento de entrega. `success` llegó. `failed` no llegó y ya no se reintenta. `retrying` falló pero queda algún intento. `pending` todavía no se ha intentado.
+            Filtro — Estado de la entrega. `success` llegó. `failed` es el resultado del último intento; Messenger puede programar otro si el fallo es recuperable. `retrying` se pospuso por el límite de salida y Messenger la reintentará. `pending` todavía no se ha intentado.
           x-translations:
             en:
-              description: Outcome of the delivery attempt. `success` arrived. `failed` did not arrive and will not be retried. `retrying` failed but has attempts left. `pending` has not been attempted yet.
+              description: Delivery state. `success` arrived. `failed` is the latest attempt's outcome; Messenger can schedule another one for a recoverable failure. `retrying` was deferred by the outbound limit and Messenger will retry it. `pending` has not been attempted yet.
         - name: event_type
           in: query
           schema:
@@ -7452,6 +7492,10 @@ paths:
               description: CSV or XLSX file with the consolidated delivery history across all endpoints (up to 100,000 rows).
           content:
             text/csv:
+              schema:
+                type: string
+                format: binary
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
               schema:
                 type: string
                 format: binary
@@ -13771,6 +13815,7 @@ components:
                 url:
                   type: string
                   format: uri
+                  maxLength: 2048
                   description: URL receptora del webhook. En producción se rechaza si no usa HTTPS, si resuelve a una dirección privada o si pasa de 2048 caracteres.
                   x-translations:
                     en:
@@ -13779,6 +13824,9 @@ components:
                   example: https://example.com/webhooks/entregas
                 events:
                   type: array
+                  minItems: 1
+                  maxItems: 10
+                  uniqueItems: true
                   description: Eventos a los que se suscribe el endpoint webhook. Entre 1 y 10.
                   x-translations:
                     en:
@@ -13832,22 +13880,24 @@ components:
                     - $ref: '#/components/schemas/TimestampUTC'
                     - type: 'null'
                   description: |
-                    Fecha y hora del último intento de entrega, en ISO 8601 UTC. `null` cuando el endpoint aún no recibió ninguna entrega.
+                    Fecha y hora de la última entrega exitosa, en ISO 8601 UTC. `null` cuando el endpoint aún no completó ninguna entrega.
                   x-translations:
                     en:
                       description: |
-                        Date and time of the last delivery attempt, in ISO 8601 UTC. `null` when the endpoint has not received any delivery yet.
+                        Date and time of the last successful delivery, in ISO 8601 UTC. `null` when the endpoint has not completed a delivery yet.
                 secret:
                   type: string
+                  pattern: ^[a-f0-9]{64}$
                   description: |
-                    Clave compartida para verificar firmas. **Solo presente** en la respuesta de creación y de rotación del endpoint; se omite en cualquier otra respuesta.
+                    Clave compartida para verificar firmas. **Solo presente** en la respuesta de creación y de rotación del endpoint; se omite en cualquier otra respuesta. Se usa para validar la cabecera `X-Webhook-Signature` de cada entrega.
                   x-translations:
                     en:
                       description: |
-                        Shared secret for signature verification. **Only present** in the create and rotate-secret responses; omitted from every other response.
-                  example: whsec_a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6
+                        Shared secret for signature verification. **Only present** in the create and rotate-secret responses; omitted from every other response. It is used to validate the `X-Webhook-Signature` header on each delivery.
+                  example: a0b1c2d3e4f5061728394a5b6c7d8e9f00112233445566778899aabbccddeeff
                 secret_hint:
                   type: string
+                  pattern: ^\.\.\.[a-f0-9]{4}$
                   description: |
                     Últimos 4 caracteres del secret, con el prefijo `...`. Presente en cualquier respuesta donde el `secret` completo está oculto.
                   example: ...4f2a
@@ -13859,6 +13909,20 @@ components:
                   $ref: '#/components/schemas/TimestampUTC'
                 updated_at:
                   $ref: '#/components/schemas/TimestampUTC'
+              required:
+                - url
+                - events
+                - description
+                - status
+                - consecutive_failures
+                - last_delivery_at
+                - created_at
+                - updated_at
+              oneOf:
+                - required:
+                    - secret
+                - required:
+                    - secret_hint
           required:
             - type
             - id
@@ -13905,12 +13969,13 @@ components:
             en:
               description: Events the endpoint subscribes to, from 1 to 10.
         description:
-          type: string
-          maxLength: 255
-          description: Etiqueta libre para distinguir el endpoint webhook de los demás.
+          type:
+            - string
+            - 'null'
+          description: Etiqueta libre para distinguir el endpoint webhook de los demás. `null` la omite; el servicio recorta el texto a 255 caracteres.
           x-translations:
             en:
-              description: Free-form label to tell this endpoint apart from the others.
+              description: Free-form label to tell this endpoint apart from the others. `null` omits it; the service truncates the text to 255 characters.
           example: Alta de pagos en el ERP
     UpdateWebhookRequest:
       type: object
@@ -13920,10 +13985,10 @@ components:
           type: string
           format: uri
           maxLength: 2048
-          description: Nueva URL receptora del webhook (endpoint). Es rechazada si no lleva protocolo seguro — HTTPS.
+          description: Nueva URL receptora del webhook. En producción se rechaza si no usa HTTPS, si no resuelve a una dirección pública o si supera 2048 caracteres.
           x-translations:
             en:
-              description: HTTPS URL that receives the webhook. Replaces the previous one when provided.
+              description: New receiver URL. In production it is rejected if it does not use HTTPS, if it does not resolve to a public address, or if it is longer than 2048 characters.
           example: https://example.com/webhooks/entregas
         events:
           type: array
@@ -13951,11 +14016,10 @@ components:
           type:
             - string
             - 'null'
-          maxLength: 255
-          description: Nueva etiqueta libre para distinguir el endpoint webhook de los demás. `null` la elimina.
+          description: Nueva etiqueta libre para distinguir el endpoint webhook de los demás. `null` la elimina; el servicio recorta el texto a 255 caracteres.
           x-translations:
             en:
-              description: Free-form label to tell this endpoint apart from the others. `null` clears it.
+              description: New free-form label to tell this endpoint apart from the others. `null` clears it; the service truncates the text to 255 characters.
           example: Alta de pagos en el ERP
         status:
           type: string
@@ -14000,15 +14064,16 @@ components:
           type:
             - string
             - 'null'
-          description: Detalle de la falla cuando `delivered=false`. `null` cuando la entrega fue exitosa.
+          description: Detalle del fallo de transporte o de validación de URL. Puede ser `null` aunque `delivered=false` si el receptor respondió con un estado fuera de `2xx` pero la petición se completó.
           x-translations:
             en:
-              description: Failure detail when `delivered=false`. `null` when the delivery succeeded.
+              description: Transport or URL-validation failure detail. It can be `null` even when `delivered=false` if the receiver returned a non-`2xx` status but the request completed.
           example: Connection timed out after 10s
       required:
         - delivered
         - http_status
         - response_time_ms
+        - error
       x-translations:
         en:
           description: 'Test-delivery result: receiver response, latency, or error.'
@@ -14143,32 +14208,44 @@ components:
                     - retrying
                     - success
                     - failed
-                  description: 'Estado actual de la entrega — `pending`: Aún sin entregar; `retrying`: Reintentando; `success`: Entregada; `failed`: Intentos agotados.'
+                  description: 'Estado actual de la entrega — `pending`: Aún sin entregar; `retrying`: Se pospuso por el límite de salida y Messenger la reintentará; `success`: Entregada; `failed`: El último intento falló; Messenger puede programar otro si el fallo es recuperable.'
                   x-translations:
                     en:
-                      description: 'Current delivery status. `pending`: Not delivered yet; `retrying`: Retrying; `success`: Delivered; `failed`: Attempts exhausted.'
+                      description: 'Current delivery status. `pending`: Not delivered yet; `retrying`: Deferred by the outbound limit and Messenger will retry it; `success`: Delivered; `failed`: The latest attempt failed; Messenger can schedule another one for a recoverable failure.'
                   example: pending
                 next_retry_at:
                   oneOf:
                     - $ref: '#/components/schemas/TimestampUTC'
                     - type: 'null'
                   description: |
-                    Fecha y hora del próximo reintento programado, en ISO 8601 UTC. `null` cuando la entrega es terminal (entregada o agotada).
+                    Fecha y hora del próximo reintento persistido, en ISO 8601 UTC. `null` cuando no hay una fecha almacenada; los reintentos que programa Messenger no persisten esta fecha en la entrega.
                   x-translations:
                     en:
                       description: |
-                        Date and time of the next scheduled retry, in ISO 8601 UTC. `null` when the delivery is terminal (delivered or exhausted).
+                        Date and time of the next persisted retry, in ISO 8601 UTC. `null` when no date is stored; retries scheduled by Messenger do not persist this date on the delivery.
                 error_message:
                   type:
                     - string
                     - 'null'
-                  description: Mensaje de error del intento de entrega. `null` cuando la entrega llegó al receptor.
+                  description: Detalle de error del transporte o del bloqueo de la entrega. `null` cuando no hay un detalle de error, incluso si el receptor respondió con un estado fuera de `2xx`.
                   x-translations:
                     en:
-                      description: Error message of the delivery attempt. `null` when the delivery reached the receiver.
+                      description: Transport or delivery-block error detail. `null` when no error detail is available, including when the receiver answered with a non-`2xx` status.
                   example: Connection timed out after 10s
                 created_at:
                   $ref: '#/components/schemas/TimestampUTC'
+              required:
+                - endpoint_id
+                - event_type
+                - validation_id
+                - response_status
+                - response_body
+                - response_time_ms
+                - attempt
+                - status
+                - next_retry_at
+                - error_message
+                - created_at
           required:
             - type
             - id
