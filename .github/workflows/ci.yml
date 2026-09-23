@@ -1,0 +1,91 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  autoria:
+    if: github.event_name == 'pull_request'
+    uses: veriko-mx-labs/.github/.github/workflows/autoria.yml@4cb712e8f7f8c56eee5aa07e89661ef306b55641
+    secrets:
+      config: ${{ secrets.VERIKO_LABS_AUTORIA_CONFIG }}
+
+  test:
+    name: Pruebas (Node ${{ matrix.node-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ['20', '22', '24']
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+
+  package:
+    name: Construir y consumir el paquete
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Empaquetar
+        shell: bash
+        run: |
+          mkdir package
+          npm pack --pack-destination package
+          test -f package/veriko-mx-mcp-*.tgz
+      - name: Instalar en un consumidor limpio
+        shell: bash
+        run: |
+          mkdir /tmp/veriko-mcp-consumer
+          cd /tmp/veriko-mcp-consumer
+          npm init -y >/dev/null
+          npm pkg set type=module
+          npm install "$GITHUB_WORKSPACE"/package/veriko-mx-mcp-*.tgz
+          npm install --save-dev @modelcontextprotocol/client@2.0.0 @types/node@24.13.6 typescript@7.0.2
+          test -f node_modules/@veriko-mx/mcp/node_modules/@veriko-mx/sdk-runtime/package.json
+          cp "$GITHUB_WORKSPACE"/test/fixtures/package-consumer.mjs consumer.mjs
+          cp "$GITHUB_WORKSPACE"/test/fixtures/package-consumer.ts.fixture consumer.ts
+          cp "$GITHUB_WORKSPACE"/test/fixtures/package-consumer-tsconfig.json tsconfig.json
+          node consumer.mjs
+          "$GITHUB_WORKSPACE"/node_modules/.bin/tsc -p tsconfig.json
+
+  voz:
+    name: Auditar la voz externa
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      # La misma action que corre en los demás repositorios de la organización, con
+      # el léxico que publica el portal. Corre en cada PR y no sólo en el workflow de
+      # sincronización, que se ejecuta una vez al día.
+      - name: Aplicar el léxico y la mecánica compartidos
+        uses: veriko-mx-labs/.github/actions/audit-external-voice@4cb712e8f7f8c56eee5aa07e89661ef306b55641
+
+  surface:
+    name: Superficie pública completa
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm run check:surface

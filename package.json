@@ -1,0 +1,73 @@
+{
+  "name": "@veriko-mx/mcp",
+  "version": "0.1.1",
+  "description": "Servidor MCP oficial de Veriko para validar y consultar transferencias SPEI",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "mcp-server",
+    "banxico",
+    "cep",
+    "spei",
+    "mexico",
+    "fintech",
+    "typescript"
+  ],
+  "mcpName": "io.github.veriko-mx-labs/veriko",
+  "license": "MIT",
+  "homepage": "https://docs.veriko.mx",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/veriko-mx-labs/veriko-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/veriko-mx-labs/veriko-mcp/issues"
+  },
+  "type": "module",
+  "private": false,
+  "types": "./dist/server.d.ts",
+  "bin": {
+    "veriko-mcp": "dist/index.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/server.d.ts",
+      "import": "./dist/server.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "server.json"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "node scripts/run-tests.mjs",
+    "check:surface": "tsx scripts/check-public-surface.ts",
+    "check:sdk": "tsx scripts/check-sdk-version.ts",
+    "measure:catalog": "tsx scripts/measure-catalog.ts",
+    "evals": "tsx evals/runner.ts",
+    "check": "npm run typecheck && npm test && npm run build",
+    "prepack": "npm run check"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/server": "^2.0.0",
+    "@veriko-mx/sdk-runtime": "npm:@veriko-mx/sdk@0.4.5",
+    "zod": "^4.6.5"
+  },
+  "bundleDependencies": [
+    "@veriko-mx/sdk-runtime"
+  ],
+  "devDependencies": {
+    "@modelcontextprotocol/client": "^2.0.0",
+    "@types/node": "^24.10.0",
+    "tsx": "^4.20.6",
+    "typescript": "^7.0.2",
+    "yaml": "^2.9.1"
+  }
+}

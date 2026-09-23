@@ -1,0 +1,46 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.veriko-mx-labs/veriko",
+  "title": "Veriko",
+  "description": "Valida y consulta transferencias SPEI mediante la API oficial de Veriko.",
+  "version": "0.1.1",
+  "websiteUrl": "https://docs.veriko.mx",
+  "repository": {
+    "url": "https://github.com/veriko-mx-labs/veriko-mcp",
+    "source": "github",
+    "id": "1377451510"
+  },
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "@veriko-mx/mcp",
+      "version": "0.1.1",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "VERIKO_API_KEY",
+          "description": "Clave de API del integrador de Veriko. Puede omitirse para las herramientas públicas de planes.",
+          "format": "string",
+          "isRequired": false,
+          "isSecret": true
+        },
+        {
+          "name": "VERIKO_MCP_PROFILE",
+          "description": "Perfil de herramientas: core, all o familias separadas por coma.",
+          "format": "string",
+          "isRequired": false,
+          "default": "core"
+        },
+        {
+          "name": "VERIKO_MCP_MAX_RISK",
+          "description": "Máximo riesgo anunciado: read, write o destructive.",
+          "format": "string",
+          "isRequired": false,
+          "default": "write"
+        }
+      ]
+    }
+  ]
+}

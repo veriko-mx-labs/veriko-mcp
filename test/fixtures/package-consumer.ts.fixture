@@ -1,0 +1,11 @@
+import { createVerikoServer } from '@veriko-mx/mcp';
+
+const server = createVerikoServer({
+  config: {
+    apiKey: '',
+    profiles: new Set(['plans']),
+    maxRisk: 'read',
+  },
+});
+
+void server;

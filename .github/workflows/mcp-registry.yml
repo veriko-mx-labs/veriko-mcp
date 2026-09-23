@@ -1,0 +1,78 @@
+name: Registrar en el MCP Registry
+
+# Da de alta en registry.modelcontextprotocol.io la versión que ya está en npm.
+#
+# Se lanza a mano (workflow_dispatch): registrar es publicar, y no debe ocurrir
+# sin que alguien lo pida. Autentica por OIDC, sin token: el registro reconoce el
+# namespace io.github.veriko-mx-labs por el dueño del repositorio que ejecuta el
+# workflow.
+#
+# Reusa el environment `npm`, el mismo que guarda la publicación del paquete.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  registrar:
+    name: Registrar
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: npm
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24'
+          package-manager-cache: false
+
+      - name: Comprobar que server.json describe la versión publicada
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(node -p "require('./package.json').version")"
+          test "$(node -p "require('./server.json').version")" = "$version"
+          test "$(node -p "require('./server.json').packages[0].version")" = "$version"
+          test "$(npm view "@veriko-mx/mcp@$version" version)" = "$version"
+          test "$(npm view "@veriko-mx/mcp@$version" mcpName)" = "$(node -p "require('./server.json').name")"
+
+      - name: Instalar mcp-publisher
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Versión y huella fijadas: actualizar el binario es un cambio revisado.
+          tag=v1.8.1
+          archivo=mcp-publisher_linux_amd64.tar.gz
+          sha256=a06c9096dcb9727c13555b6be26c7effa707b01f06a4c561ba7a3635443cf2cc
+          curl -fsSL -o "$archivo" "https://github.com/modelcontextprotocol/registry/releases/download/$tag/$archivo"
+          echo "$sha256  $archivo" | sha256sum -c -
+          tar xzf "$archivo" mcp-publisher
+
+      - name: Autenticar por OIDC
+        run: ./mcp-publisher login github-oidc
+
+      - name: Validar y publicar
+        run: |
+          ./mcp-publisher validate
+          ./mcp-publisher publish
+
+      - name: Comprobar que quedó visible
+        shell: bash
+        run: |
+          nombre="$(node -p "require('./server.json').name")"
+          for intento in $(seq 1 12); do
+            if curl -fsS "https://registry.modelcontextprotocol.io/v0.1/servers?search=$nombre" | grep -q "\"$nombre\""; then
+              echo "$nombre está en el registro."
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "$nombre no apareció en el registro tras dos minutos." >&2
+          exit 1

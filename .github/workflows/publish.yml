@@ -1,0 +1,118 @@
+name: Publicar en npm
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Verificar y empaquetar
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24'
+      - name: Verificar etiqueta y publicación habilitada
+        shell: bash
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          private="$(node -p "require('./package.json').private === true")"
+          test "$GITHUB_REF_NAME" = "v$version"
+          test "$private" = "false"
+          git fetch origin main
+          git merge-base --is-ancestor "$(git rev-list -n 1 "$GITHUB_REF_NAME")" origin/main
+      - run: npm ci
+      - run: npm run check
+      - run: npm run check:surface
+      - name: Empaquetar
+        run: mkdir package && npm pack --pack-destination package
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: npm-package
+          path: package/*.tgz
+          if-no-files-found: error
+
+  publish:
+    name: Publicar
+    needs: verify
+    runs-on: ubuntu-latest
+    environment:
+      name: npm
+      url: https://www.npmjs.com/package/@veriko-mx/mcp
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: '24'
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: npm-package
+          path: package/
+      - name: Publicar con reintentos transitorios
+        shell: bash
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          public_npmrc="$(mktemp)"
+          publish_log="$(mktemp)"
+          trap 'rm -f "$public_npmrc" "$publish_log"' EXIT
+
+          if npm view "@veriko-mx/mcp@$version" version --userconfig "$public_npmrc" >/dev/null 2>&1; then
+            echo "@veriko-mx/mcp@$version ya es público."
+            exit 0
+          fi
+
+          for attempt in 1 2 3 4; do
+            if npm publish ./package/*.tgz --access public >"$publish_log" 2>&1; then
+              cat "$publish_log"
+              break
+            else
+              status=$?
+              cat "$publish_log" >&2
+            fi
+
+            if ! grep -Eiq 'E(429|500|502|503|504)|ECONNRESET|ETIMEDOUT|EAI_AGAIN' "$publish_log"; then
+              exit "$status"
+            fi
+            if [ "$attempt" -eq 4 ]; then exit "$status"; fi
+            sleep $((15 * 2 ** (attempt - 1)))
+          done
+
+          # La comprobación evita dar por buena una publicación que npm aceptó pero no dejó
+          # visible. Una versión firmada con procedencia puede tardar unos minutos en
+          # aparecer, y el propio npm avisa de que «may take a few minutes».
+          intentos=24
+          for attempt in $(seq 1 "$intentos"); do
+            if npm view "@veriko-mx/mcp@$version" version --userconfig "$public_npmrc" >/dev/null 2>&1; then
+              echo "@veriko-mx/mcp@$version está disponible en el registro público."
+              exit 0
+            fi
+            echo "Esperando propagación pública de npm ($attempt/$intentos)..."
+            sleep 15
+          done
+          echo "@veriko-mx/mcp@$version no apareció en el registro público tras $((intentos * 15))s." >&2
+          echo "Si el log dice '+ @veriko-mx/mcp@$version', la publicación funcionó y esto es propagación: relanza el job." >&2
+          exit 1
+
+  release:
+    name: Crear release de GitHub
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Crear release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" --verify-tag --notes 'Sin cambios en la API. Actualiza documentación y metadatos.'

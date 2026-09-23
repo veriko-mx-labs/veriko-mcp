@@ -1,0 +1,46 @@
+name: Sincronizar el spec público
+
+# El MCP depende de dos fuentes que cambian por su cuenta:
+#
+#   · el contrato público, que trae el reusable de la organización: descarga el
+#     export del portal, lo escribe en `spec/openapi.yaml` y abre un PR si cambió;
+#   · el SDK que este servidor consume, fijado por versión e integridad, que el
+#     reusable no revisa.
+#
+# El PR del bot nace rojo cuando el contrato cambia: `check:surface` compara
+# contra un SHA fijado a mano y no hay auto-merge, para que una operación nueva,
+# retirada o con otra firma se revise antes de aceptarla.
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 11 * * *'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    uses: veriko-mx-labs/.github/.github/workflows/sync-public-spec.yml@4cb712e8f7f8c56eee5aa07e89661ef306b55641
+    with:
+      regenerate_command: npm ci && npm run check:surface
+      auto_merge: false
+    secrets:
+      app_id: ${{ secrets.VERIKO_LABS_APP_ID }}
+      app_private_key: ${{ secrets.VERIKO_LABS_PRIVATE_KEY }}
+
+  sdk:
+    name: El SDK consumido es el último publicado
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm run check:sdk
+        env:
+          # Sólo para no chocar con el límite por IP de la API de GitHub.
+          GITHUB_TOKEN: ${{ github.token }}
