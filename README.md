@@ -1,8 +1,8 @@
 # Veriko MCP
 
-Este servidor MCP conecta Veriko a Claude, ChatGPT o Cursor: le pides al
-asistente, por ejemplo, que compruebe un pago en el CEP de Banxico, que te
-diga en qué quedó una validación anterior o que descargue el comprobante.
+Este servidor MCP conecta Veriko a Claude, ChatGPT o Cursor: le pides al asistente,
+por ejemplo, que compruebe un pago en el CEP de Banxico, que te diga en qué quedó una
+validación anterior o que descargue el comprobante.
 
 Cubre las 66 operaciones públicas de máquina a máquina. Lo que el asistente puede
 hacer aquí es exactamente lo que puede hacer una clave de API.
