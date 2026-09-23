@@ -1,6 +1,6 @@
 {
   "name": "@veriko-mx/mcp",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Servidor MCP oficial de Veriko para validar y consultar transferencias SPEI",
   "keywords": [
     "mcp",
