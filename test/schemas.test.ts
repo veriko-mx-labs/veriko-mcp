@@ -57,4 +57,15 @@ describe('límites de entradas binarias y URLs', () => {
       true,
     );
   });
+
+  it('acepta una descripción nula al crear un webhook', () => {
+    assert.equal(
+      createWebhookSchema.safeParse({
+        url: 'https://example.com/hook',
+        events: ['validation.completed'],
+        description: null,
+      }).success,
+      true,
+    );
+  });
 });
