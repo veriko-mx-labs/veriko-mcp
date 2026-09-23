@@ -3,18 +3,18 @@
   "name": "io.github.veriko-mx-labs/veriko",
   "title": "Veriko",
   "description": "Valida y consulta transferencias SPEI mediante la API oficial de Veriko.",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "websiteUrl": "https://docs.veriko.mx",
   "repository": {
     "url": "https://github.com/veriko-mx-labs/veriko-mcp",
     "source": "github",
-    "id": "1377451510"
+    "id": "1382552066"
   },
   "packages": [
     {
       "registryType": "npm",
       "identifier": "@veriko-mx/mcp",
-      "version": "0.1.1",
+      "version": "0.1.2",
       "transport": {
         "type": "stdio"
       },
