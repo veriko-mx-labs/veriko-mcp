@@ -68,4 +68,30 @@ describe('límites de entradas binarias y URLs', () => {
       true,
     );
   });
+
+  it('acepta una descripción de 255 caracteres y rechaza uno más', () => {
+    assert.equal(
+      createWebhookSchema.safeParse({
+        url: 'https://example.com/hook',
+        events: ['validation.completed'],
+        description: 'a'.repeat(255),
+      }).success,
+      true,
+    );
+    assert.equal(
+      createWebhookSchema.safeParse({
+        url: 'https://example.com/hook',
+        events: ['validation.completed'],
+        description: 'a'.repeat(256),
+      }).success,
+      false,
+    );
+    assert.equal(
+      updateWebhookSchema.safeParse({
+        webhookId: '247af42e-1fd9-4d31-a330-a45d9d6ddbe5',
+        description: 'a'.repeat(256),
+      }).success,
+      false,
+    );
+  });
 });

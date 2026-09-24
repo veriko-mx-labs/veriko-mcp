@@ -157,7 +157,7 @@ export const createWebhookSchema = z
   .object({
     url: httpsUrl.max(2048),
     events: z.array(webhookEvents).min(1).max(10),
-    description: z.string().nullable().optional(),
+    description: z.string().max(255).nullable().optional(),
   })
   .strict();
 export const webhookIdSchema = z.object({ webhookId: uuid }).strict();
@@ -166,7 +166,7 @@ export const updateWebhookSchema = z
     webhookId: uuid,
     url: httpsUrl.max(2048).optional(),
     events: z.array(webhookEvents).min(1).max(10).optional(),
-    description: z.string().nullable().optional(),
+    description: z.string().max(255).nullable().optional(),
     status: z.enum(['active', 'disabled']).optional(),
   })
   .strict()
