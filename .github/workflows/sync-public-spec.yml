@@ -24,16 +24,16 @@ permissions:
 
 jobs:
   sync:
-    uses: veriko-mx-labs/.github/.github/workflows/sync-public-spec.yml@d2fa5326dce29d508af3ce20f7b80d47b279e511
+    uses: veriko-mx-labs/.github/.github/workflows/sync-public-spec.yml@dcaf6af21e8d1d0bec7d3c88cd6193de67141b32
     with:
       regenerate_command: npm ci && npm run sync:contract
       auto_merge: false
       draft: true
-      reviewers: ${{ secrets.VERIKO_LABS_DEFAULT_REVIEWER }}
       summary_file: /tmp/contract-summary.md
     secrets:
       app_id: ${{ secrets.VERIKO_LABS_APP_ID }}
       app_private_key: ${{ secrets.VERIKO_LABS_PRIVATE_KEY }}
+      reviewers: ${{ secrets.VERIKO_LABS_DEFAULT_REVIEWER }}
 
   sdk:
     name: El SDK consumido es el último publicado
