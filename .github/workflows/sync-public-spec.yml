@@ -24,7 +24,7 @@ permissions:
 
 jobs:
   sync:
-    uses: veriko-mx-labs/.github/.github/workflows/sync-public-spec.yml@dcaf6af21e8d1d0bec7d3c88cd6193de67141b32
+    uses: veriko-mx-labs/.github/.github/workflows/sync-public-spec.yml@eaaa2dca88eec1abbb98d75c8638290a28e0bbbb
     with:
       regenerate_command: npm ci && npm run sync:contract
       auto_merge: false
