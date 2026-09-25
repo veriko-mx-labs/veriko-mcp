@@ -6,7 +6,7 @@ import { assertPublicM2MSurface } from './public-surface.js';
 import { parse } from 'yaml';
 
 const EXPECTED_PUBLIC_SPEC_SHA256 =
-  '6094feca96ce83bda3ef38cdb3b70c30dedf02500dcb130232f690f69f8b228f';
+  'b17526f99a2ee026ba92d8f652f0f76e45a825e52f19f6a8c5df9ba4d435d013';
 /**
  * El contrato se lee de la copia versionada, como en los demás repositorios de la
  * organización.
