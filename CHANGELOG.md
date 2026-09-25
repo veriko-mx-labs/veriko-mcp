@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.1.3] - 2026-09-24
+
+- Los parámetros de las herramientas aplican los límites del contrato público:
+  longitud máxima de los textos, formato de cuentas y claves de banco, y topes
+  de `limit`. Un valor fuera de rango se rechaza antes de llamar a la API.
+- `format` es obligatorio al descargar la plantilla de importación de
+  beneficiarios (`downloadBeneficiaryImportTemplate`), como en la API.
+- Usa el SDK JavaScript `0.4.6` (contrato público `1.60.0`).
+
 ## [0.1.2] - 2026-09-23
 
 Sin cambios en la API. Actualiza documentación y metadatos.
