@@ -96,19 +96,19 @@ no una tokenización real, y sirven para comparar perfiles entre sí.
 
 | Perfil | Herramientas | Bytes de `tools/list` | Tokens estimados |
 |---|---:|---:|---:|
-| `core` | 5 | 5,651 | ~1,570 |
-| `validations` | 13 | 13,306 | ~3,696 |
+| `core` | 5 | 5,806 | ~1,613 |
+| `validations` | 13 | 13,539 | ~3,761 |
 | `webhooks` | 10 | 9,795 | ~2,721 |
 | `catalog` | 4 | 2,204 | ~612 |
-| `beneficiaries` | 14 | 10,060 | ~2,794 |
+| `beneficiaries` | 14 | 10,268 | ~2,852 |
 | `usage` | 7 | 3,756 | ~1,043 |
 | `account` | 3 | 1,953 | ~543 |
-| `dashboard` | 1 | 558 | ~155 |
+| `dashboard` | 1 | 557 | ~155 |
 | `plans` | 2 | 1,017 | ~283 |
-| `insights` | 4 | 2,365 | ~657 |
+| `insights` | 4 | 2,337 | ~649 |
 | `finance` | 7 | 6,470 | ~1,797 |
 | `billing` | 1 | 503 | ~140 |
-| `all` | 66 | 51,977 | ~14,438 |
+| `all` | 66 | 52,389 | ~14,553 |
 
 Medido con Node 22 y riesgo `destructive`, para no ocultar herramientas. `all`
 cuesta 9.2 veces lo que `core`; por eso el perfil predeterminado es `core` y se
@@ -146,10 +146,12 @@ npm run check:surface
 npm run measure:catalog
 ```
 
-`check:surface` compara el catálogo completo contra el spec público del
-SDK y fija su SHA-256. Una operación nueva, retirada o escondida, un esquema de
-autenticación distinto de la clave de API o cualquier cambio contractual deja el
-workflow de sincronización en rojo para revisión.
+`check:surface` compara el catálogo completo contra el spec público del SDK y
+fija su SHA-256. Una operación nueva, retirada o escondida, un esquema de
+autenticación distinto de la clave de API o cualquier cambio contractual falla
+esta comprobación. El workflow de sincronización deja el PR del contrato nuevo
+como borrador, con el CI corrido y un resumen del cambio en el cuerpo, para
+revisión antes de aceptarlo.
 
 La API real no se usa en las pruebas. `test/server.test.ts` conecta cliente y
 servidor MCP en memoria con un SDK falso.

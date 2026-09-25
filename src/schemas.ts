@@ -65,9 +65,9 @@ export const validateDirectSchema = z
     monto: z.union([z.number().positive(), z.string().regex(/^\d+(?:\.\d{1,2})?$/)]),
     claveRastreo: z.string().min(1).max(30).optional(),
     referenciaNumerica: z.string().regex(/^\d{1,7}$/).optional(),
-    cuentaBeneficiaria: z.string().optional(),
-    emisor: z.string().optional(),
-    receptor: z.string().optional(),
+    cuentaBeneficiaria: z.string().regex(/^(?:\d{10}|\d{16}|\d{18})$/).optional(),
+    emisor: z.string().max(255).optional(),
+    receptor: z.string().max(255).optional(),
     receptorParticipante: z.union([z.literal(0), z.literal(1)]).optional(),
     retryPolicy: retryPolicySchema.optional(),
     idempotencyKey,
@@ -82,7 +82,7 @@ export const validateOcrSchema = z
   .object({
     imageBase64: ocrImageBase64.optional(),
     imageUrl: httpsUrl.optional(),
-    cuentaBeneficiaria: z.string().optional(),
+    cuentaBeneficiaria: z.string().regex(/^(?:\d{10}|\d{16}|\d{18})$/).optional(),
     retryPolicy: retryPolicySchema.optional(),
     idempotencyKey,
     async: z.boolean().default(false),
@@ -97,11 +97,11 @@ export const validationFiltersShape = {
   type: z.enum(['direct', 'ocr']).optional(),
   from: date.optional(),
   to: date.optional(),
-  search: z.string().optional(),
+  search: z.string().max(100).optional(),
   playground: z.literal(true).optional(),
   withDeleted: z.boolean().optional(),
   batchId: z.number().int().positive().optional(),
-  bank: z.string().optional(),
+  bank: z.string().regex(/^\d{1,5}$/).optional(),
   amountMin: z.number().nonnegative().optional(),
   amountMax: z.number().nonnegative().optional(),
   retryState: z.enum(['pending', 'resolved', 'exhausted', 'cancelled']).optional(),
@@ -209,16 +209,16 @@ export const beneficiaryIdSchema = z.object({ beneficiaryId: entityId }).strict(
 export const createBeneficiarySchema = z
   .object({
     accountNumber: z.string().regex(/^(?:\d{10}|\d{16}|\d{18})$/),
-    bankCode: z.string().optional(),
-    label: z.string().optional(),
+    bankCode: z.string().regex(/^\d{4,5}$/).optional(),
+    label: z.string().max(100).optional(),
   })
   .strict();
 export const updateBeneficiarySchema = z
   .object({
     beneficiaryId: entityId,
-    label: z.string().optional(),
+    label: z.string().max(100).optional(),
     accountNumber: z.string().regex(/^(?:\d{10}|\d{16}|\d{18})$/).optional(),
-    bankCode: z.string().optional(),
+    bankCode: z.string().regex(/^\d{4,5}$/).optional(),
   })
   .strict()
   .refine(
@@ -229,7 +229,9 @@ export const updateBeneficiarySchema = z
 export const listBeneficiariesSchema = z
   .object({ withArchived: z.boolean().optional() })
   .strict();
-export const beneficiaryLookupSchema = z.object({ account: z.string().min(1) }).strict();
+export const beneficiaryLookupSchema = z
+  .object({ account: z.string().regex(/^\d{10,19}$/) })
+  .strict();
 export const exportBeneficiariesSchema = z
   .object({
     format: format.optional(),
@@ -238,7 +240,7 @@ export const exportBeneficiariesSchema = z
   })
   .strict();
 export const importTemplateSchema = z
-  .object({ format: z.enum(['csv', 'xlsx', 'xls', 'txt', 'json']).optional() })
+  .object({ format: z.enum(['csv', 'xlsx', 'xls', 'txt', 'json']) })
   .strict();
 export const createImportSchema = z
   .object({
@@ -263,11 +265,15 @@ export const editImportRowSchema = z
   .object({
     importId: entityId,
     rowId: entityId,
-    parsedAccount: z.string().optional(),
-    parsedLabel: z.string().optional(),
+    // El spec permite dígitos, espacios y guiones (además de un espacio de
+    // no separación que su propio patrón declara con un escape de bytes que
+    // esta expresión no reproduce literalmente); el servidor renormaliza el
+    // valor al reprocesar la fila.
+    parsedAccount: z.string().max(32).regex(/^[0-9 -]{0,32}$/).optional(),
+    parsedLabel: z.string().max(100).optional(),
     parsedAccountType: z.enum(['clabe', 'card', 'phone']).optional(),
-    parsedBankCode: z.string().optional(),
-    parsedBankName: z.string().optional(),
+    parsedBankCode: z.string().regex(/^\d{4,5}$/).optional(),
+    parsedBankName: z.string().max(50).optional(),
   })
   .strict()
   .refine(
@@ -298,7 +304,7 @@ export const updateMyRetryPolicySchema = z
   .object({ policy: retryPolicySchema, idempotencyKey })
   .strict();
 export const dashboardSchema = z
-  .object({ limit: z.number().int().min(1).max(100).optional() })
+  .object({ limit: z.number().int().min(1).max(10).optional() })
   .strict();
 export const trendsSchema = z
   .object({
@@ -309,11 +315,11 @@ export const trendsSchema = z
 export const topBanksSchema = z
   .object({
     metric: z.enum(['volume', 'errors']).optional(),
-    limit: z.number().int().positive().optional(),
+    limit: z.number().int().positive().max(50).optional(),
   })
   .strict();
 export const topBeneficiariesSchema = z
-  .object({ limit: z.number().int().positive().optional() })
+  .object({ limit: z.number().int().positive().max(50).optional() })
   .strict();
 
 const financeBase = { month, userId: uuid.optional() } as const;

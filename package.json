@@ -50,6 +50,7 @@
     "test": "node scripts/run-tests.mjs",
     "check:surface": "tsx scripts/check-public-surface.ts",
     "check:sdk": "tsx scripts/check-sdk-version.ts",
+    "sync:contract": "tsx scripts/sync-contract.ts",
     "measure:catalog": "tsx scripts/measure-catalog.ts",
     "evals": "tsx evals/runner.ts",
     "check": "npm run typecheck && npm test && npm run build",
