@@ -1,6 +1,6 @@
 {
   "name": "@veriko-mx/mcp",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Servidor MCP oficial de Veriko para validar y consultar transferencias SPEI",
   "keywords": [
     "mcp",
@@ -58,7 +58,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/server": "^2.0.0",
-    "@veriko-mx/sdk-runtime": "npm:@veriko-mx/sdk@0.4.6",
+    "@veriko-mx/sdk-runtime": "npm:@veriko-mx/sdk@0.4.7",
     "zod": "^4.6.5"
   },
   "bundleDependencies": [

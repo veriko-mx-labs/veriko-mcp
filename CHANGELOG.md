@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.1.4] - 2026-09-26
+
+- Usa el SDK JavaScript `0.4.7` (contrato público `1.60.0`).
+
 ## [0.1.3] - 2026-09-24
 
 - Los parámetros de las herramientas aplican los límites del contrato público:
