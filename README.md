@@ -125,7 +125,7 @@ amplía por familia cuando hace falta.
 - Las descargas se devuelven como recursos `veriko://artifact/...`; nunca como
   base64 dentro de texto ni como escrituras automáticas en el workspace.
 - Valida base64 canónico y los límites públicos antes de invocar el SDK: 12 MB
-  para imágenes OCR y 20 MB para importaciones de beneficiarios. El transporte
+  para comprobantes OCR (imagen o PDF) y 20 MB para importaciones de beneficiarios. El transporte
   stdio admite completa una importación máxima.
 - Los errores usan `error.code`, estado, puntero, `requestId` y `retryAfter`
   cuando existen; el texto traducible de la API no se usa como contrato.

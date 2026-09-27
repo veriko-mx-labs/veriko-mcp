@@ -134,7 +134,7 @@ export const TOOL_CATALOG: readonly ToolDefinition[] = [
   define({
     operationId: 'validateOcr',
     title: 'Validar un comprobante por OCR',
-    description: 'Extrae y valida una transferencia desde una imagen o URL HTTPS.',
+    description: 'Extrae y valida una transferencia desde una imagen, un PDF o una URL HTTPS.',
     family: 'validations',
     risk: 'write',
     cost: 'quota',
@@ -183,8 +183,8 @@ export const TOOL_CATALOG: readonly ToolDefinition[] = [
   }),
   define({
     operationId: 'getValidationImage',
-    title: 'Descargar imagen de validación',
-    description: 'Obtiene la imagen original de una validación OCR como recurso MCP.',
+    title: 'Descargar el comprobante de una validación',
+    description: 'Obtiene el comprobante original (imagen o PDF) de una validación OCR como recurso MCP.',
     family: 'validations',
     inputSchema: validationIdSchema,
     invoke: (client, { validationId }) => client.validations.image(validationId),

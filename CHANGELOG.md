@@ -1,5 +1,10 @@
 # Changelog
 
+## [No publicado]
+
+- `validateOcr` acepta el comprobante en PDF, y `getValidationImage` lo devuelve como recurso con
+  su tipo `application/pdf`.
+
 ## [0.1.4] - 2026-09-26
 
 - Usa el SDK JavaScript `0.4.7` (contrato público `1.60.0`).
