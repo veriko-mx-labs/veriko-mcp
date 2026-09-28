@@ -2,6 +2,11 @@
 
 ## [No publicado]
 
+## [0.1.6] - 2026-09-28
+
+- Usa el SDK JavaScript `0.4.9` (contrato público `1.60.0`): el resumen de uso distingue una cuota
+  de prueba (`quota_kind`) y si se repone (`renews`).
+
 ## [0.1.5] - 2026-09-27
 
 - `validateOcr` acepta el comprobante en PDF, y `getValidationImage` lo devuelve como recurso con
