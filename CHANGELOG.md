@@ -2,6 +2,13 @@
 
 ## [No publicado]
 
+## [0.1.7] - 2026-09-29
+
+- Usa el SDK JavaScript `0.4.10` (contrato público `1.60.0`): sus tipos documentan los códigos por
+  campo del `422` de la validación (`clabe_receptor_mismatch`, `tarjeta_receptor_mismatch` y
+  `clave_longitud_invalida`) y aclaran que ningún rechazo `preflight_failed` de esa ruta consume
+  cuota.
+
 ## [0.1.6] - 2026-09-28
 
 - Usa el SDK JavaScript `0.4.9` (contrato público `1.60.0`): el resumen de uso distingue una cuota
