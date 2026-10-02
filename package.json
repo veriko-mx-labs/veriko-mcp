@@ -58,7 +58,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/server": "^2.0.0",
-    "@veriko-mx/sdk-runtime": "npm:@veriko-mx/sdk@0.4.10",
+    "@veriko-mx/sdk-runtime": "npm:@veriko-mx/sdk@0.4.11",
     "zod": "^4.6.5"
   },
   "bundleDependencies": [
