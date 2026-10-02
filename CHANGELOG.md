@@ -2,6 +2,8 @@
 
 ## [No publicado]
 
+## [0.1.9] - 2026-10-02
+
 - Herramienta `recheckValidation`: vuelve a consultar a Banxico el estado de pago de una
   validación `valid` creada hace 72 horas como máximo, y la pasa a `returned` si el pago se
   devolvió. No consume cuota.
@@ -11,6 +13,7 @@
 - `validateOcr` acepta `retainImage`; con `false`, la plataforma no conserva el archivo del
   comprobante.
 - Los webhooks admiten suscribirse al evento `validation.returned`.
+- Usa el SDK JavaScript `0.4.12` (contrato público `1.61.0`).
 
 ## [0.1.8] - 2026-10-01
 
