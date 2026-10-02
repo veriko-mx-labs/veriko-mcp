@@ -9,6 +9,14 @@ const httpsUrl = z
   .url()
   .refine((value) => new URL(value).protocol === 'https:', 'La URL debe usar HTTPS.');
 const format = z.enum(['csv', 'xlsx']);
+const account = z.string().regex(/^(?:\d{10}|\d{16}|\d{18})$/);
+const candidateAccounts = z
+  .array(account)
+  .min(2)
+  .max(10)
+  .refine((accounts) => new Set(accounts).size === accounts.length, {
+    message: 'Las cuentas candidatas no pueden repetirse.',
+  });
 const clientRefFilter = z.string().min(1).max(64);
 const clientRef = clientRefFilter.regex(
   /^[^\x00-\x1f\x7f]+$/,
@@ -70,7 +78,8 @@ export const validateDirectSchema = z
     monto: z.union([z.number().positive(), z.string().regex(/^\d+(?:\.\d{1,2})?$/)]),
     claveRastreo: z.string().min(1).max(30).optional(),
     referenciaNumerica: z.string().regex(/^\d{1,7}$/).optional(),
-    cuentaBeneficiaria: z.string().regex(/^(?:\d{10}|\d{16}|\d{18})$/),
+    cuentaBeneficiaria: account.optional(),
+    cuentasCandidatas: candidateAccounts.optional(),
     emisor: z.string().max(255).optional(),
     receptor: z.string().max(255).optional(),
     receptorParticipante: z.union([z.literal(0), z.literal(1)]).optional(),
@@ -82,22 +91,32 @@ export const validateDirectSchema = z
   .strict()
   .refine((value) => value.claveRastreo || value.referenciaNumerica, {
     message: 'Se requiere claveRastreo o referenciaNumerica.',
-  });
+  })
+  .refine(
+    (value) => (value.cuentaBeneficiaria === undefined) !== (value.cuentasCandidatas === undefined),
+    { message: 'Se requiere cuentaBeneficiaria o cuentasCandidatas, y no las dos.' },
+  );
 
 export const validateOcrSchema = z
   .object({
     imageBase64: ocrImageBase64.optional(),
     imageUrl: httpsUrl.optional(),
-    cuentaBeneficiaria: z.string().regex(/^(?:\d{10}|\d{16}|\d{18})$/).optional(),
+    cuentaBeneficiaria: account.optional(),
+    cuentasCandidatas: candidateAccounts.optional(),
     retryPolicy: retryPolicySchema.optional(),
     clientRef: clientRef.optional(),
+    retainImage: z.boolean().optional(),
     idempotencyKey,
     async: z.boolean().default(false),
   })
   .strict()
   .refine((value) => value.imageBase64 || value.imageUrl, {
     message: 'Se requiere imageBase64 o imageUrl.',
-  });
+  })
+  .refine(
+    (value) => value.cuentaBeneficiaria === undefined || value.cuentasCandidatas === undefined,
+    { message: 'Envía cuentaBeneficiaria o cuentasCandidatas, no las dos.' },
+  );
 
 export const validationFiltersShape = {
   status: z.union([z.string(), z.array(z.string()).min(1)]).optional(),
@@ -152,6 +171,7 @@ const webhookEvents = z.enum([
   'validation.retry.scheduled',
   'validation.retry.resolved',
   'validation.retry.exhausted',
+  'validation.returned',
   'billing.payment_succeeded',
   'billing.payment_failed',
   'billing.trial_will_end',

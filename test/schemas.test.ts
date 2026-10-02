@@ -108,7 +108,7 @@ describe('cuenta beneficiaria de la validación por campos', () => {
     cuentaBeneficiaria: '012180004412345678',
   };
 
-  it('la exige', () => {
+  it('la exige, salvo que se envíen cuentas candidatas', () => {
     assert.equal(validateDirectSchema.safeParse(base).success, true);
 
     const { cuentaBeneficiaria: _omitida, ...sinCuenta } = base;
@@ -164,5 +164,75 @@ describe('referencia propia', () => {
       false,
     );
     assert.equal(validateDirectSchema.safeParse({ ...base, clientRef: 'orden 4812' }).success, true);
+  });
+});
+
+describe('cuentas candidatas', () => {
+  const base = { fecha: '2026-09-19', monto: 100, claveRastreo: 'ABC-123' };
+  const candidatas = ['012180004412345678', '002010077777777771'];
+
+  it('acepta de 2 a 10 cuentas en lugar de la cuenta beneficiaria', () => {
+    for (const cantidad of [2, 3, 10]) {
+      const lista = Array.from({ length: cantidad }, (_, index) => `00201007777777${String(7000 + index)}`);
+      assert.equal(validateDirectSchema.safeParse({ ...base, cuentasCandidatas: lista }).success, true);
+      assert.equal(
+        validateOcrSchema.safeParse({ imageUrl: 'https://example.com/a.png', cuentasCandidatas: lista }).success,
+        true,
+      );
+    }
+  });
+
+  it('rechaza una lista de menos de 2 o de más de 10 cuentas', () => {
+    for (const lista of [[], ['012180004412345678'], Array.from({ length: 11 }, (_, i) => `00201007777777${String(7000 + i)}`)]) {
+      assert.equal(validateDirectSchema.safeParse({ ...base, cuentasCandidatas: lista }).success, false);
+      assert.equal(
+        validateOcrSchema.safeParse({ imageUrl: 'https://example.com/a.png', cuentasCandidatas: lista }).success,
+        false,
+      );
+    }
+  });
+
+  it('rechaza cuentas repetidas y cuentas con otra longitud', () => {
+    for (const lista of [
+      ['012180004412345678', '012180004412345678'],
+      ['012180004412345678', '12345'],
+    ]) {
+      assert.equal(validateDirectSchema.safeParse({ ...base, cuentasCandidatas: lista }).success, false);
+    }
+  });
+
+  it('no admite la cuenta y las candidatas juntas', () => {
+    assert.equal(
+      validateDirectSchema.safeParse({
+        ...base,
+        cuentaBeneficiaria: '012180004412345678',
+        cuentasCandidatas: candidatas,
+      }).success,
+      false,
+    );
+    assert.equal(
+      validateOcrSchema.safeParse({
+        imageUrl: 'https://example.com/a.png',
+        cuentaBeneficiaria: '012180004412345678',
+        cuentasCandidatas: candidatas,
+      }).success,
+      false,
+    );
+  });
+
+  it('la validación por campos exige una de las dos formas', () => {
+    assert.equal(validateDirectSchema.safeParse(base).success, false);
+    assert.equal(validateDirectSchema.safeParse({ ...base, cuentasCandidatas: candidatas }).success, true);
+  });
+});
+
+describe('conservar el comprobante', () => {
+  const base = { imageUrl: 'https://example.com/a.png' };
+
+  it('acepta retainImage booleano y rechaza cualquier otro valor', () => {
+    assert.equal(validateOcrSchema.safeParse({ ...base, retainImage: false }).success, true);
+    assert.equal(validateOcrSchema.safeParse({ ...base, retainImage: true }).success, true);
+    assert.equal(validateOcrSchema.safeParse(base).success, true);
+    assert.equal(validateOcrSchema.safeParse({ ...base, retainImage: 'no' }).success, false);
   });
 });

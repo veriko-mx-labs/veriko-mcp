@@ -2,6 +2,16 @@
 
 ## [No publicado]
 
+- Herramienta `recheckValidation`: vuelve a consultar a Banxico el estado de pago de una
+  validación `valid` creada hace 72 horas como máximo, y la pasa a `returned` si el pago se
+  devolvió. No consume cuota.
+- `validateDirect` y `validateOcr` aceptan `cuentasCandidatas`, varias cuentas en una sola
+  validación y con una sola unidad de cuota, en lugar de `cuentaBeneficiaria`. `validateDirect`
+  exige una de las dos formas, no las dos.
+- `validateOcr` acepta `retainImage`; con `false`, la plataforma no conserva el archivo del
+  comprobante.
+- Los webhooks admiten suscribirse al evento `validation.returned`.
+
 ## [0.1.8] - 2026-10-01
 
 - `validateDirect` exige `cuentaBeneficiaria`: la API no la busca entre los beneficiarios

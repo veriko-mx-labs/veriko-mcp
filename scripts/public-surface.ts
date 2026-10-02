@@ -72,10 +72,16 @@ function assertSecurityScheme(document: OpenApiDocument): void {
   }
 }
 
+/**
+ * Compara el spec público con el catálogo. `expectedOperationIds` son las
+ * operaciones con adaptador y `notExposed` las que el catálogo decide no anunciar:
+ * unas y otras deben ser, juntas, exactamente las del spec.
+ */
 export function assertPublicM2MSurface(
   input: unknown,
   expectedOperationIds: readonly string[],
-  expectedCount = 66,
+  expectedCount = 69,
+  notExposed: readonly string[] = [],
 ): void {
   if (!input || typeof input !== 'object' || Array.isArray(input)) {
     throw new Error('El OpenAPI público no es un objeto.');
@@ -106,10 +112,15 @@ export function assertPublicM2MSurface(
     }
   }
 
-  const expected = new Set(expectedOperationIds);
-  if (expected.size !== expectedOperationIds.length) {
+  const exposed = new Set(expectedOperationIds);
+  if (exposed.size !== expectedOperationIds.length) {
     throw new Error('El catálogo MCP contiene operationId duplicados.');
   }
+  const withAdapter = notExposed.filter((operationId) => exposed.has(operationId)).sort();
+  if (withAdapter.length) {
+    throw new Error(`Operaciones no expuestas que tienen adaptador: ${withAdapter.join(', ')}`);
+  }
+  const expected = new Set([...exposed, ...notExposed]);
 
   const missing = [...actual.keys()].filter((operationId) => !expected.has(operationId)).sort();
   const obsolete = [...expected].filter((operationId) => !actual.has(operationId)).sort();

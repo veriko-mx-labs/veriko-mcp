@@ -1,4 +1,4 @@
-import type { Veriko } from '@veriko-mx/sdk-runtime';
+import type { ValidateOcrParams, ValidateTransferParams, Veriko } from '@veriko-mx/sdk-runtime';
 import type { z } from 'zod';
 
 import { type Family, type Profile, type Risk, riskAllowed } from './config.js';
@@ -52,6 +52,18 @@ import {
   webhookDeliveriesSchema,
   webhookIdSchema,
 } from './schemas.js';
+
+/**
+ * Operaciones públicas que el catálogo no anuncia como herramienta.
+ *
+ * El borrado definitivo de una validación no se puede deshacer, y un asistente no
+ * debe poder borrar datos. Cada una existe en el spec y en el SDK: `check:surface`
+ * las cuenta, pero ningún perfil ni nivel de riesgo las expone.
+ */
+export const NOT_EXPOSED_OPERATIONS = [
+  'prepareValidationPurge',
+  'executeValidationPurge',
+] as const;
 
 type Cost = 'none' | 'included' | 'quota';
 type InputSchema = z.ZodType<Record<string, unknown>>;
@@ -124,11 +136,13 @@ export const TOOL_CATALOG: readonly ToolDefinition[] = [
     core: true,
     inputSchema: validateDirectSchema,
     async invoke(client, args) {
-      const { async, idempotencyKey: _provided, ...params } = args;
-      const idempotencyKey = stableIdempotencyKey('validateDirect', args);
-      return async
-        ? client.validations.enqueue({ ...params, idempotencyKey })
-        : client.validations.validate({ ...params, idempotencyKey });
+      const { async, idempotencyKey: _provided, ...rest } = args;
+      // El esquema ya exige una de las dos formas de indicar la cuenta, y no las dos.
+      const params = {
+        ...rest,
+        idempotencyKey: stableIdempotencyKey('validateDirect', args),
+      } as ValidateTransferParams;
+      return async ? client.validations.enqueue(params) : client.validations.validate(params);
     },
   }),
   define({
@@ -146,7 +160,7 @@ export const TOOL_CATALOG: readonly ToolDefinition[] = [
         ...rest,
         ...(imageBase64 ? { image: Buffer.from(imageBase64, 'base64') } : {}),
         idempotencyKey: stableIdempotencyKey('validateOcr', args),
-      };
+      } as ValidateOcrParams;
       return async ? client.validations.enqueueOcr(params) : client.validations.validateOcr(params);
     },
   }),
@@ -204,6 +218,16 @@ export const TOOL_CATALOG: readonly ToolDefinition[] = [
     family: 'validations',
     inputSchema: exportValidationsSchema,
     invoke: (client, args) => client.validations.export(args),
+  }),
+  define({
+    operationId: 'recheckValidation',
+    title: 'Revisar el pago de una validación',
+    description:
+      'Vuelve a consultar a Banxico el estado de pago de una validación valid creada hace 72 horas como máximo, y la pasa a returned si el pago se devolvió. No consume cuota.',
+    family: 'validations',
+    risk: 'write',
+    inputSchema: validationIdSchema,
+    invoke: (client, { validationId }) => client.validations.recheck(validationId),
   }),
   define({
     operationId: 'listValidationRetryAttempts',

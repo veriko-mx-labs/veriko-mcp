@@ -103,3 +103,51 @@ describe('lo que el SDK envía a la API', () => {
     assert.equal(request.url.includes('client_ref'), false);
   });
 });
+
+describe('lo que el SDK envía a la API: cuentas, comprobante y revisión', () => {
+  it('cuentasCandidatas viaja como cuentas_candidatas, sin cuenta_beneficiaria', async () => {
+    const cuentas = ['012180004412345678', '002010077777777771'];
+
+    const directa = await invoke('validateDirect', {
+      fecha: '2026-09-19',
+      monto: 100,
+      claveRastreo: 'ABC-123',
+      cuentasCandidatas: cuentas,
+    });
+    const body = JSON.parse(directa.body) as Record<string, unknown>;
+    assert.equal(directa.url, '/v1/validate');
+    assert.deepEqual(body['cuentas_candidatas'], cuentas);
+    assert.equal('cuenta_beneficiaria' in body, false);
+
+    seen.length = 0;
+    const ocr = await invoke('validateOcr', {
+      imageUrl: 'https://example.com/a.png',
+      cuentasCandidatas: cuentas,
+      async: true,
+    });
+    assert.equal(ocr.url, '/v1/validate-ocr?async=1');
+    assert.deepEqual((JSON.parse(ocr.body) as Record<string, unknown>)['cuentas_candidatas'], cuentas);
+  });
+
+  it('retainImage viaja como retain_image, también en false', async () => {
+    const sin = await invoke('validateOcr', { imageUrl: 'https://example.com/a.png' });
+    assert.equal('retain_image' in (JSON.parse(sin.body) as Record<string, unknown>), false);
+
+    seen.length = 0;
+    const con = await invoke('validateOcr', {
+      imageUrl: 'https://example.com/a.png',
+      retainImage: false,
+    });
+    assert.equal((JSON.parse(con.body) as Record<string, unknown>)['retain_image'], false);
+  });
+
+  it('revisar el pago hace un POST a /recheck sin cuerpo', async () => {
+    const request = await invoke('recheckValidation', {
+      validationId: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+    });
+
+    assert.equal(request.method, 'POST');
+    assert.equal(request.url, '/v1/validations/f47ac10b-58cc-4372-a567-0e02b2c3d479/recheck');
+    assert.equal(request.body, '');
+  });
+});

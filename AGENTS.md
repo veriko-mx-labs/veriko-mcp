@@ -7,7 +7,9 @@ Reglas para cualquier agente que trabaje en este repositorio:
    HTTP, autenticación, reintentos, polling, descargas ni errores.
 2. La superficie es exactamente la pública M2M del spec.
 3. Todo `operationId` soportado por el SDK debe tener un adaptador en
-   `src/catalog.ts`. `known_gaps` no es una solución permanente.
+   `src/catalog.ts`. `known_gaps` no es una solución permanente. La única
+   excepción es `NOT_EXPOSED_OPERATIONS`: el borrado definitivo de una
+   validación no se anuncia, porque no se puede deshacer.
 4. La clave de API sólo entra por `VERIKO_API_KEY`. Nunca es argumento de herramienta,
    log, fixture, error, ejemplo real ni metadato MCP.
 5. Descargas y binarios se entregan como recursos MCP. No escribas en el

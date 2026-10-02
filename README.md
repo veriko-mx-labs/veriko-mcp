@@ -4,8 +4,9 @@ Este servidor MCP conecta Veriko a Claude, ChatGPT o Cursor: le pides al asisten
 por ejemplo, que compruebe un pago en el CEP de Banxico, que te diga en qué quedó una
 validación anterior o que descargue el comprobante.
 
-Cubre las 66 operaciones públicas de máquina a máquina. Lo que el asistente puede
-hacer aquí es exactamente lo que puede hacer una clave de API.
+Cubre 67 de las 69 operaciones públicas de máquina a máquina. Lo que el asistente puede
+hacer aquí es lo que puede hacer una clave de API, salvo el borrado definitivo de una
+validación: no se anuncia como herramienta porque no se puede deshacer.
 
 <!-- mcp-name: io.github.veriko-mx-labs/veriko -->
 
@@ -77,7 +78,7 @@ separadas por coma.
 | `insights` | métricas agregadas |
 | `finance` | resúmenes, vistas previas y descargas |
 | `billing` | suscripción activa |
-| `all` | las 66 operaciones disponibles |
+| `all` | las 67 herramientas disponibles |
 
 El perfil decide qué familias ve el modelo. El riesgo se controla de forma
 independiente con `VERIKO_MCP_MAX_RISK`:
@@ -96,9 +97,9 @@ no una tokenización real, y sirven para comparar perfiles entre sí.
 
 | Perfil | Herramientas | Bytes de `tools/list` | Tokens estimados |
 |---|---:|---:|---:|
-| `core` | 5 | 6,086 | ~1,691 |
-| `validations` | 13 | 13,969 | ~3,880 |
-| `webhooks` | 10 | 9,795 | ~2,721 |
+| `core` | 5 | 6,362 | ~1,767 |
+| `validations` | 14 | 15,136 | ~4,204 |
+| `webhooks` | 10 | 9,927 | ~2,758 |
 | `catalog` | 4 | 2,204 | ~612 |
 | `beneficiaries` | 14 | 10,268 | ~2,852 |
 | `usage` | 7 | 3,756 | ~1,043 |
@@ -108,10 +109,10 @@ no una tokenización real, y sirven para comparar perfiles entre sí.
 | `insights` | 4 | 2,337 | ~649 |
 | `finance` | 7 | 6,470 | ~1,797 |
 | `billing` | 1 | 503 | ~140 |
-| `all` | 66 | 52,819 | ~14,672 |
+| `all` | 67 | 54,118 | ~15,033 |
 
 Medido con Node 22 y riesgo `destructive`, para no ocultar herramientas. `all`
-cuesta 9.2 veces lo que `core`; por eso el perfil predeterminado es `core` y se
+cuesta 8.5 veces lo que `core`; por eso el perfil predeterminado es `core` y se
 amplía por familia cuando hace falta.
 
 ## Arquitectura
@@ -120,8 +121,7 @@ amplía por familia cuando hace falta.
   El código lo importa mediante `@veriko-mx/sdk-runtime`, un alias estable que
   permite cambiar la fuente de distribución sin reescribir el servidor.
 - El SDK runtime viaja incluido en el tarball del MCP.
-- Anuncia herramientas según perfil y riesgo, pero conserva adaptadores para
-  las 66 operaciones.
+- Anuncia herramientas según perfil y riesgo.
 - Las descargas se devuelven como recursos `veriko://artifact/...`; nunca como
   base64 dentro de texto ni como escrituras automáticas en el workspace.
 - Valida base64 canónico y los límites públicos antes de invocar el SDK: 12 MB
@@ -147,7 +147,8 @@ npm run measure:catalog
 ```
 
 `check:surface` compara el catálogo completo contra el spec público del SDK y
-fija su SHA-256. Una operación nueva, retirada o escondida, un esquema de
+fija su SHA-256. Las operaciones que el catálogo no anuncia, el borrado definitivo de una
+validación, se declaran aparte en `NOT_EXPOSED_OPERATIONS`. Una operación nueva, retirada o escondida, un esquema de
 autenticación distinto de la clave de API o cualquier cambio contractual falla
 esta comprobación. El workflow de sincronización deja el PR del contrato nuevo
 como borrador, con el CI corrido y un resumen del cambio en el cuerpo, para

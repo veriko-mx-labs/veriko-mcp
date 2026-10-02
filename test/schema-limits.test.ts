@@ -23,7 +23,7 @@ function asTool(inputSchema: z.ZodType): ToolDefinition {
 }
 
 describe('las restricciones del spec están reflejadas en los esquemas MCP', () => {
-  it('ninguna de las 66 operaciones deja sin reflejar un límite del spec', () => {
+  it('ninguna operación del catálogo deja sin reflejar un límite del spec', () => {
     const document = loadSpecDocument(specPath);
     const findings = checkCatalogAgainstSpec(document, TOOL_CATALOG);
     assert.deepEqual(findings, [], `\n${formatFindings(findings)}`);
