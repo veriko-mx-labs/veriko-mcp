@@ -65,7 +65,7 @@ export const validateDirectSchema = z
     monto: z.union([z.number().positive(), z.string().regex(/^\d+(?:\.\d{1,2})?$/)]),
     claveRastreo: z.string().min(1).max(30).optional(),
     referenciaNumerica: z.string().regex(/^\d{1,7}$/).optional(),
-    cuentaBeneficiaria: z.string().regex(/^(?:\d{10}|\d{16}|\d{18})$/).optional(),
+    cuentaBeneficiaria: z.string().regex(/^(?:\d{10}|\d{16}|\d{18})$/),
     emisor: z.string().max(255).optional(),
     receptor: z.string().max(255).optional(),
     receptorParticipante: z.union([z.literal(0), z.literal(1)]).optional(),

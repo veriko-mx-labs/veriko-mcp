@@ -5,6 +5,7 @@ import {
   createImportSchema,
   createWebhookSchema,
   updateWebhookSchema,
+  validateDirectSchema,
   validateOcrSchema,
 } from '../src/schemas.js';
 
@@ -92,6 +93,36 @@ describe('límites de entradas binarias y URLs', () => {
         description: 'a'.repeat(256),
       }).success,
       false,
+    );
+  });
+});
+
+describe('cuenta beneficiaria de la validación por campos', () => {
+  const base = {
+    fecha: '2026-09-19',
+    monto: 100,
+    claveRastreo: 'ABC-123',
+    cuentaBeneficiaria: '012180004412345678',
+  };
+
+  it('la exige', () => {
+    assert.equal(validateDirectSchema.safeParse(base).success, true);
+
+    const { cuentaBeneficiaria: _omitida, ...sinCuenta } = base;
+    assert.equal(validateDirectSchema.safeParse(sinCuenta).success, false);
+  });
+
+  it('acepta CLABE, tarjeta y celular, y rechaza otra longitud', () => {
+    for (const cuenta of ['012180004412345678', '4152313100001234', '5512345678']) {
+      assert.equal(validateDirectSchema.safeParse({ ...base, cuentaBeneficiaria: cuenta }).success, true);
+    }
+    assert.equal(validateDirectSchema.safeParse({ ...base, cuentaBeneficiaria: '12345' }).success, false);
+  });
+
+  it('en el comprobante sigue siendo opcional', () => {
+    assert.equal(
+      validateOcrSchema.safeParse({ imageUrl: 'https://example.com/a.png' }).success,
+      true,
     );
   });
 });

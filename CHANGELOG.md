@@ -2,6 +2,9 @@
 
 ## [No publicado]
 
+- `validateDirect` exige `cuentaBeneficiaria`: la API no la busca entre los beneficiarios
+  guardados.
+
 ## [0.1.7] - 2026-09-29
 
 - Usa el SDK JavaScript `0.4.10` (contrato público `1.60.0`): sus tipos documentan los códigos por

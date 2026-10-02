@@ -49,7 +49,12 @@ describe('catálogo MCP', () => {
     } as unknown as Veriko;
     const tool = TOOL_CATALOG.find((candidate) => candidate.operationId === 'validateDirect');
     assert.ok(tool);
-    const args = { fecha: '2026-09-19', monto: 100, claveRastreo: 'ABC-123' };
+    const args = {
+      fecha: '2026-09-19',
+      monto: 100,
+      claveRastreo: 'ABC-123',
+      cuentaBeneficiaria: '012180004412345678',
+    };
 
     await tool.invoke(client, args);
     await tool.invoke(client, { ...args });
