@@ -2,11 +2,14 @@
 
 ## [No publicado]
 
+## [0.1.8] - 2026-10-01
+
 - `validateDirect` exige `cuentaBeneficiaria`: la API no la busca entre los beneficiarios
   guardados.
 - `validateDirect`, `validateOcr`, `listValidations`, `validationStats` y `exportValidations`
   aceptan `clientRef`, una referencia propia de 1 a 64 caracteres. En las dos primeras vuelve en la
   validación y en los webhooks; en las otras tres filtra por coincidencia exacta.
+- Usa el SDK JavaScript `0.4.11` (contrato público `1.60.0`).
 
 ## [0.1.7] - 2026-09-29
 
