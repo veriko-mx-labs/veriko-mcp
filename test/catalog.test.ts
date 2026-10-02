@@ -63,6 +63,73 @@ describe('catálogo MCP', () => {
     assert.equal(keys[0], keys[1]);
   });
 
+  it('reenvía clientRef al SDK en la validación y en los filtros', async () => {
+    const received: Record<string, unknown> = {};
+    const record = (name: string) => async (args: unknown) => {
+      received[name] = args;
+      return { ok: true };
+    };
+    const client = {
+      validations: {
+        validate: record('validate'),
+        enqueue: record('enqueue'),
+        validateOcr: record('validateOcr'),
+        list: record('list'),
+        stats: record('stats'),
+        export: record('export'),
+      },
+    } as unknown as Veriko;
+    const invoke = (operationId: string, args: Record<string, unknown>) => {
+      const tool = TOOL_CATALOG.find((candidate) => candidate.operationId === operationId);
+      assert.ok(tool, operationId);
+      return tool.invoke(client, args);
+    };
+    const campos = {
+      fecha: '2026-09-19',
+      monto: 100,
+      claveRastreo: 'ABC-123',
+      cuentaBeneficiaria: '012180004412345678',
+      clientRef: 'orden-4812',
+    };
+
+    await invoke('validateDirect', campos);
+    await invoke('validateDirect', { ...campos, async: true });
+    await invoke('validateOcr', { imageUrl: 'https://example.com/a.png', clientRef: 'orden-4812' });
+    await invoke('listValidations', { clientRef: 'orden-4812' });
+    await invoke('validationStats', { clientRef: 'orden-4812' });
+    await invoke('exportValidations', { clientRef: 'orden-4812' });
+
+    for (const [name, args] of Object.entries(received)) {
+      assert.equal((args as { clientRef?: string }).clientRef, 'orden-4812', name);
+    }
+    assert.equal(Object.keys(received).length, 6);
+  });
+
+  it('cambia la clave de idempotencia cuando cambia clientRef', async () => {
+    const keys: string[] = [];
+    const client = {
+      validations: {
+        validate: async (args: { idempotencyKey?: string }) => {
+          keys.push(args.idempotencyKey ?? '');
+          return { ok: true };
+        },
+      },
+    } as unknown as Veriko;
+    const tool = TOOL_CATALOG.find((candidate) => candidate.operationId === 'validateDirect');
+    assert.ok(tool);
+    const args = {
+      fecha: '2026-09-19',
+      monto: 100,
+      claveRastreo: 'ABC-123',
+      cuentaBeneficiaria: '012180004412345678',
+    };
+
+    await tool.invoke(client, { ...args, clientRef: 'orden-1' });
+    await tool.invoke(client, { ...args, clientRef: 'orden-2' });
+
+    assert.notEqual(keys[0], keys[1]);
+  });
+
   it('reenvía description nula al crear un webhook', async () => {
     const received: unknown[] = [];
     const client = {

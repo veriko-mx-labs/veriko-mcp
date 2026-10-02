@@ -9,6 +9,11 @@ const httpsUrl = z
   .url()
   .refine((value) => new URL(value).protocol === 'https:', 'La URL debe usar HTTPS.');
 const format = z.enum(['csv', 'xlsx']);
+const clientRefFilter = z.string().min(1).max(64);
+const clientRef = clientRefFilter.regex(
+  /^[^\x00-\x1f\x7f]+$/,
+  'No uses saltos de línea ni caracteres de control.',
+);
 const idempotencyKey = z
   .string()
   .regex(/^[A-Za-z0-9_-]{1,255}$/, 'Usa sólo A-Z, a-z, 0-9, _ o -.')
@@ -70,6 +75,7 @@ export const validateDirectSchema = z
     receptor: z.string().max(255).optional(),
     receptorParticipante: z.union([z.literal(0), z.literal(1)]).optional(),
     retryPolicy: retryPolicySchema.optional(),
+    clientRef: clientRef.optional(),
     idempotencyKey,
     async: z.boolean().default(false),
   })
@@ -84,6 +90,7 @@ export const validateOcrSchema = z
     imageUrl: httpsUrl.optional(),
     cuentaBeneficiaria: z.string().regex(/^(?:\d{10}|\d{16}|\d{18})$/).optional(),
     retryPolicy: retryPolicySchema.optional(),
+    clientRef: clientRef.optional(),
     idempotencyKey,
     async: z.boolean().default(false),
   })
@@ -104,6 +111,7 @@ export const validationFiltersShape = {
   bank: z.string().regex(/^\d{1,5}$/).optional(),
   amountMin: z.number().nonnegative().optional(),
   amountMax: z.number().nonnegative().optional(),
+  clientRef: clientRefFilter.optional(),
   retryState: z.enum(['pending', 'resolved', 'exhausted', 'cancelled']).optional(),
 } as const;
 

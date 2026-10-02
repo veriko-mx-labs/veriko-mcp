@@ -4,9 +4,12 @@ import { describe, it } from 'node:test';
 import {
   createImportSchema,
   createWebhookSchema,
+  exportValidationsSchema,
+  listValidationsSchema,
   updateWebhookSchema,
   validateDirectSchema,
   validateOcrSchema,
+  validationFiltersSchema,
 } from '../src/schemas.js';
 
 function encodedBytes(size: number): string {
@@ -124,5 +127,42 @@ describe('cuenta beneficiaria de la validación por campos', () => {
       validateOcrSchema.safeParse({ imageUrl: 'https://example.com/a.png' }).success,
       true,
     );
+  });
+});
+
+describe('referencia propia', () => {
+  const base = {
+    fecha: '2026-09-19',
+    monto: 100,
+    claveRastreo: 'ABC-123',
+    cuentaBeneficiaria: '012180004412345678',
+  };
+
+  it('acepta clientRef de 1 a 64 caracteres en la validación y en los filtros', () => {
+    for (const largo of [1, 64]) {
+      const valor = 'a'.repeat(largo);
+      assert.equal(validateDirectSchema.safeParse({ ...base, clientRef: valor }).success, true);
+      assert.equal(validateOcrSchema.safeParse({ imageUrl: 'https://example.com/a.png', clientRef: valor }).success, true);
+      assert.equal(listValidationsSchema.safeParse({ clientRef: valor }).success, true);
+      assert.equal(validationFiltersSchema.safeParse({ clientRef: valor }).success, true);
+      assert.equal(exportValidationsSchema.safeParse({ clientRef: valor }).success, true);
+    }
+  });
+
+  it('rechaza un clientRef vacío o de más de 64 caracteres', () => {
+    for (const valor of ['', 'a'.repeat(65)]) {
+      assert.equal(validateDirectSchema.safeParse({ ...base, clientRef: valor }).success, false);
+      assert.equal(validateOcrSchema.safeParse({ imageUrl: 'https://example.com/a.png', clientRef: valor }).success, false);
+      assert.equal(listValidationsSchema.safeParse({ clientRef: valor }).success, false);
+    }
+  });
+
+  it('rechaza saltos de línea y caracteres de control en el clientRef de la validación', () => {
+    assert.equal(validateDirectSchema.safeParse({ ...base, clientRef: 'orden\n4812' }).success, false);
+    assert.equal(
+      validateOcrSchema.safeParse({ imageUrl: 'https://example.com/a.png', clientRef: 'orden\t4812' }).success,
+      false,
+    );
+    assert.equal(validateDirectSchema.safeParse({ ...base, clientRef: 'orden 4812' }).success, true);
   });
 });
