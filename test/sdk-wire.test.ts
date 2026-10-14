@@ -150,4 +150,10 @@ describe('lo que el SDK envía a la API: cuentas, comprobante y revisión', () =
     assert.equal(request.url, '/v1/validations/f47ac10b-58cc-4372-a567-0e02b2c3d479/recheck');
     assert.equal(request.body, '');
   });
+  it('el calendario SPEI hace un GET con el año en la ruta', async () => {
+    const request = await invoke('getSpeiCalendar', { year: 2026 });
+
+    assert.equal(request.method, 'GET');
+    assert.equal(request.url, '/v1/public/spei-calendar/2026');
+  });
 });

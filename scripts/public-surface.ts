@@ -80,7 +80,7 @@ function assertSecurityScheme(document: OpenApiDocument): void {
 export function assertPublicM2MSurface(
   input: unknown,
   expectedOperationIds: readonly string[],
-  expectedCount = 69,
+  expectedCount = 70,
   notExposed: readonly string[] = [],
 ): void {
   if (!input || typeof input !== 'object' || Array.isArray(input)) {

@@ -11,10 +11,10 @@ import {
 } from '../src/catalog.js';
 
 describe('catálogo MCP', () => {
-  it('anuncia 67 herramientas sin nombres duplicados', () => {
-    assert.equal(TOOL_CATALOG.length, 67);
-    assert.equal(new Set(TOOL_CATALOG.map((tool) => tool.operationId)).size, 67);
-    assert.equal(new Set(TOOL_CATALOG.map((tool) => tool.name)).size, 67);
+  it('anuncia 68 herramientas sin nombres duplicados', () => {
+    assert.equal(TOOL_CATALOG.length, 68);
+    assert.equal(new Set(TOOL_CATALOG.map((tool) => tool.operationId)).size, 68);
+    assert.equal(new Set(TOOL_CATALOG.map((tool) => tool.name)).size, 68);
   });
 
   it('no anuncia el borrado definitivo con ningún perfil ni nivel de riesgo', () => {
@@ -48,8 +48,8 @@ describe('catálogo MCP', () => {
     );
   });
 
-  it('all expone 67 y el límite de riesgo se aplica aparte', () => {
-    assert.equal(selectTools(new Set(['all']), 'destructive').length, 67);
+  it('all expone 68 y el límite de riesgo se aplica aparte', () => {
+    assert.equal(selectTools(new Set(['all']), 'destructive').length, 68);
     assert.ok(selectTools(new Set(['all']), 'read').every((tool) => tool.risk === 'read'));
     assert.ok(selectTools(new Set(['core']), 'write').every((tool) => tool.core));
   });
@@ -296,6 +296,30 @@ describe('cuentas candidatas, comprobante y revisión del pago', () => {
     assert.equal(tool.family, 'validations');
     assert.equal(tool.risk, 'write');
     assert.equal(tool.cost, 'included');
+    assert.equal(tool.core, false);
+    assert.equal(tool.description.includes(AVISO_DE_CUOTA), false);
+  });
+  it('el calendario SPEI llama a speiCalendar con el año y no consume cuota', async () => {
+    const received: unknown[] = [];
+    const invoke = invoker({
+      catalog: {
+        speiCalendar: async (year: number, options: Record<string, unknown>) => {
+          received.push(year, options);
+          return { attributes: { year } };
+        },
+      },
+    });
+    const tool = TOOL_CATALOG.find((candidate) => candidate.operationId === 'getSpeiCalendar');
+    assert.ok(tool);
+
+    const result = await invoke('getSpeiCalendar', { year: 2026, ifNoneMatch: '"a1b2c3d4e5f6"' });
+
+    assert.deepEqual(received, [2026, { ifNoneMatch: '"a1b2c3d4e5f6"' }]);
+    assert.deepEqual(result, { attributes: { year: 2026 } });
+    assert.equal(tool.name, 'veriko_get_spei_calendar');
+    assert.equal(tool.family, 'catalog');
+    assert.equal(tool.risk, 'read');
+    assert.equal(tool.cost, 'none');
     assert.equal(tool.core, false);
     assert.equal(tool.description.includes(AVISO_DE_CUOTA), false);
   });

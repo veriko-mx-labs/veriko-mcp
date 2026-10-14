@@ -77,7 +77,7 @@ describe('superficie pública', () => {
 
   it('cuenta las operaciones que el catálogo decide no exponer', () => {
     assert.doesNotThrow(() => validate(validDocument()));
-    assert.equal(TOOL_CATALOG.length + NOT_EXPOSED_OPERATIONS.length, 69);
+    assert.equal(TOOL_CATALOG.length + NOT_EXPOSED_OPERATIONS.length, 70);
   });
 
   it('rechaza una operación del spec sin adaptador que no está declarada como no expuesta', () => {
@@ -93,7 +93,7 @@ describe('superficie pública', () => {
     assert.ok(hidden);
     delete paths[hidden[0]];
     assert.throws(
-      () => assertPublicM2MSurface(document, TOOL_CATALOG.map((tool) => tool.operationId), 68, NOT_EXPOSED_OPERATIONS),
+      () => assertPublicM2MSurface(document, TOOL_CATALOG.map((tool) => tool.operationId), 69, NOT_EXPOSED_OPERATIONS),
       /Sobran adaptadores MCP: /,
     );
   });

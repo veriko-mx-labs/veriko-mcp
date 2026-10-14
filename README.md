@@ -4,7 +4,7 @@ Este servidor MCP conecta Veriko a Claude, ChatGPT o Cursor: le pides al asisten
 por ejemplo, que compruebe un pago en el CEP de Banxico, que te diga en qué quedó una
 validación anterior o que descargue el comprobante.
 
-Cubre 67 de las 69 operaciones públicas de máquina a máquina. Lo que el asistente puede
+Cubre 68 de las 70 operaciones públicas de máquina a máquina. Lo que el asistente puede
 hacer aquí es lo que puede hacer una clave de API, salvo el borrado definitivo de una
 validación: no se anuncia como herramienta porque no se puede deshacer.
 
@@ -69,7 +69,7 @@ separadas por coma.
 | `core` | validar, listar, consultar y descargar CEP |
 | `validations` | ciclo completo de validaciones |
 | `webhooks` | endpoints y entregas |
-| `catalog` | bancos, BIN y estado de Banxico |
+| `catalog` | bancos, calendario SPEI, BIN y estado de Banxico |
 | `beneficiaries` | lista e importación masiva |
 | `usage` | consumo, límites y exportación |
 | `account` | perfil y política de reintentos |
@@ -78,7 +78,7 @@ separadas por coma.
 | `insights` | métricas agregadas |
 | `finance` | resúmenes, vistas previas y descargas |
 | `billing` | suscripción activa |
-| `all` | las 67 herramientas disponibles |
+| `all` | las 68 herramientas disponibles |
 
 El perfil decide qué familias ve el modelo. El riesgo se controla de forma
 independiente con `VERIKO_MCP_MAX_RISK`:
@@ -100,7 +100,7 @@ no una tokenización real, y sirven para comparar perfiles entre sí.
 | `core` | 5 | 6,362 | ~1,767 |
 | `validations` | 14 | 15,136 | ~4,204 |
 | `webhooks` | 10 | 9,927 | ~2,758 |
-| `catalog` | 4 | 2,204 | ~612 |
+| `catalog` | 5 | 2,841 | ~789 |
 | `beneficiaries` | 14 | 10,268 | ~2,852 |
 | `usage` | 7 | 3,756 | ~1,043 |
 | `account` | 3 | 1,953 | ~543 |
@@ -109,10 +109,10 @@ no una tokenización real, y sirven para comparar perfiles entre sí.
 | `insights` | 4 | 2,337 | ~649 |
 | `finance` | 7 | 6,470 | ~1,797 |
 | `billing` | 1 | 503 | ~140 |
-| `all` | 67 | 54,118 | ~15,033 |
+| `all` | 68 | 54,755 | ~15,210 |
 
 Medido con Node 22 y riesgo `destructive`, para no ocultar herramientas. `all`
-cuesta 8.5 veces lo que `core`; por eso el perfil predeterminado es `core` y se
+cuesta 8.6 veces lo que `core`; por eso el perfil predeterminado es `core` y se
 amplía por familia cuando hace falta.
 
 ## Arquitectura

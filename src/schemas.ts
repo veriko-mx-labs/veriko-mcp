@@ -226,6 +226,9 @@ export const exportAllDeliveriesSchema = z.object(exportDeliveriesShape).strict(
 
 export const banksSchema = z.object({ ifNoneMatch: z.string().optional() }).strict();
 export const binSchema = z.object({ bin: z.string().regex(/^\d{6,8}$/) }).strict();
+export const speiCalendarSchema = z
+  .object({ year: z.number().int().min(1000).max(9999), ifNoneMatch: z.string().optional() })
+  .strict();
 export const banxicoTimeseriesSchema = z
   .object({
     metric: z.enum(['probe_latency', 'verdict']).optional(),

@@ -34,6 +34,7 @@ import {
   importTemplateSchema,
   listBeneficiariesSchema,
   listValidationsSchema,
+  speiCalendarSchema,
   topBanksSchema,
   topBeneficiariesSchema,
   trendsSchema,
@@ -390,6 +391,16 @@ export const TOOL_CATALOG: readonly ToolDefinition[] = [
     family: 'catalog',
     inputSchema: binSchema,
     invoke: (client, { bin }) => client.catalog.binLookup(bin),
+  }),
+  define({
+    operationId: 'getSpeiCalendar',
+    title: 'Consultar calendario SPEI',
+    description:
+      'Obtiene los días inhábiles SPEI de un año y la disposición oficial de la que salen.',
+    family: 'catalog',
+    cost: 'none',
+    inputSchema: speiCalendarSchema,
+    invoke: (client, { year, ...options }) => client.catalog.speiCalendar(year, options),
   }),
   define({
     operationId: 'banxicoPublicStatus',

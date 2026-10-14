@@ -2,6 +2,9 @@
 
 ## [No publicado]
 
+- Herramienta `getSpeiCalendar`: devuelve los días inhábiles SPEI de un año y la disposición oficial
+  de la que salen. Admite `ifNoneMatch`. No consume cuota.
+
 ## [0.1.9] - 2026-10-02
 
 - Herramienta `recheckValidation`: vuelve a consultar a Banxico el estado de pago de una

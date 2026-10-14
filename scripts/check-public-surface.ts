@@ -47,7 +47,7 @@ if (sha256 !== EXPECTED_PUBLIC_SPEC_SHA256) {
     `El contrato público cambió (${sha256}); revisa parámetros, cuerpos, respuestas y seguridad antes de actualizar EXPECTED_PUBLIC_SPEC_SHA256.`,
   );
 }
-const OPERACIONES_PUBLICAS = 69;
+const OPERACIONES_PUBLICAS = 70;
 assertPublicM2MSurface(
   parse(body),
   TOOL_CATALOG.map((tool) => tool.operationId),
