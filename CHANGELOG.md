@@ -2,8 +2,11 @@
 
 ## [No publicado]
 
+## [0.1.10] - 2026-10-14
+
 - Herramienta `getSpeiCalendar`: devuelve los días inhábiles SPEI de un año y la disposición oficial
   de la que salen. Admite `ifNoneMatch`. No consume cuota.
+- Usa el SDK JavaScript `0.4.13` (contrato público `1.72.5`).
 
 ## [0.1.9] - 2026-10-02
 
