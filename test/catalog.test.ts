@@ -299,6 +299,29 @@ describe('cuentas candidatas, comprobante y revisión del pago', () => {
     assert.equal(tool.core, false);
     assert.equal(tool.description.includes(AVISO_DE_CUOTA), false);
   });
+  it('crear un beneficiario devuelve lo que dice el SDK, también reactivated', async () => {
+    const invoke = invoker({
+      beneficiaries: {
+        create: async (args: Record<string, unknown>) => ({
+          id: '42',
+          attributes: { account_number: args['accountNumber'], status: 'active' },
+          reactivated: true,
+        }),
+      },
+    });
+    const tool = TOOL_CATALOG.find((candidate) => candidate.operationId === 'createBeneficiary');
+    assert.ok(tool);
+
+    const result = await invoke('createBeneficiary', { accountNumber: '012180004412345678' });
+
+    assert.deepEqual(result, {
+      id: '42',
+      attributes: { account_number: '012180004412345678', status: 'active' },
+      reactivated: true,
+    });
+    assert.equal(tool.risk, 'write');
+    assert.equal(tool.description.includes('reactivated'), true);
+  });
   it('el calendario SPEI llama a speiCalendar con el año y no consume cuota', async () => {
     const received: unknown[] = [];
     const invoke = invoker({

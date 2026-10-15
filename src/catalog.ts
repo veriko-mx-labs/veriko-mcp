@@ -431,7 +431,8 @@ export const TOOL_CATALOG: readonly ToolDefinition[] = [
   define({
     operationId: 'createBeneficiary',
     title: 'Crear beneficiario',
-    description: 'Guarda una cuenta beneficiaria.',
+    description:
+      'Guarda una cuenta beneficiaria. Si la cuenta estaba archivada, la reactiva y devuelve reactivated en true.',
     family: 'beneficiaries',
     risk: 'write',
     inputSchema: createBeneficiarySchema,
