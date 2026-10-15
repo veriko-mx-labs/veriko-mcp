@@ -2,6 +2,12 @@
 
 ## [No publicado]
 
+## [0.1.11] - 2026-10-15
+
+- `createBeneficiary` devuelve `reactivated`: `true` cuando el alta reactivó una cuenta archivada con
+  el mismo número, y `false` en un alta nueva.
+- Usa el SDK JavaScript `0.4.14` (contrato público `1.76.2`).
+
 ## [0.1.10] - 2026-10-15
 
 - Herramienta `getSpeiCalendar`: devuelve los días inhábiles SPEI de un año y la disposición oficial

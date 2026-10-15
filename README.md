@@ -101,7 +101,7 @@ no una tokenización real, y sirven para comparar perfiles entre sí.
 | `validations` | 14 | 15,761 | ~4,378 |
 | `webhooks` | 10 | 18,945 | ~5,263 |
 | `catalog` | 5 | 2,845 | ~790 |
-| `beneficiaries` | 14 | 10,268 | ~2,852 |
+| `beneficiaries` | 14 | 10,343 | ~2,873 |
 | `usage` | 7 | 3,756 | ~1,043 |
 | `account` | 3 | 1,953 | ~543 |
 | `dashboard` | 1 | 557 | ~155 |
@@ -109,7 +109,7 @@ no una tokenización real, y sirven para comparar perfiles entre sí.
 | `insights` | 4 | 2,337 | ~649 |
 | `finance` | 7 | 6,470 | ~1,797 |
 | `billing` | 1 | 503 | ~140 |
-| `all` | 68 | 64,402 | ~17,889 |
+| `all` | 68 | 64,477 | ~17,910 |
 
 Medido con Node 22 y riesgo `destructive`, para no ocultar herramientas. `all`
 cuesta 9.7 veces lo que `core`; por eso el perfil predeterminado es `core` y se
