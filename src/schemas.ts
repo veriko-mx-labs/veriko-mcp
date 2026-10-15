@@ -3,6 +3,8 @@ import { z } from 'zod';
 const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Usa YYYY-MM-DD.');
 const month = z.string().regex(/^\d{4}-\d{2}$/, 'Usa YYYY-MM.');
 const uuid = z.string().uuid();
+const instant = z.union([date, z.string().datetime({ offset: true })]);
+const speiBankCode = z.string().regex(/^\d{4,5}$/);
 const entityId = z.union([z.string().min(1), z.number().int().positive()]);
 const httpsUrl = z
   .string()
@@ -106,6 +108,8 @@ export const validateOcrSchema = z
     retryPolicy: retryPolicySchema.optional(),
     clientRef: clientRef.optional(),
     retainImage: z.boolean().optional(),
+    bancoEmisor: speiBankCode.optional(),
+    bancoReceptor: speiBankCode.optional(),
     idempotencyKey,
     async: z.boolean().default(false),
   })
@@ -128,6 +132,12 @@ export const validationFiltersShape = {
   withDeleted: z.boolean().optional(),
   batchId: z.number().int().positive().optional(),
   bank: z.string().regex(/^\d{1,5}$/).optional(),
+  banks: z
+    .union([
+      z.string().regex(/^\d{1,5}(,\d{1,5}){0,49}$/),
+      z.array(z.string().regex(/^\d{1,5}$/)).min(1).max(50),
+    ])
+    .optional(),
   amountMin: z.number().nonnegative().optional(),
   amountMax: z.number().nonnegative().optional(),
   clientRef: clientRefFilter.optional(),
@@ -203,26 +213,44 @@ export const updateWebhookSchema = z
       Object.values(changes).some((value) => value !== undefined),
     { message: 'Indica al menos un cambio.' },
   );
+const responseStatus = z.union([
+  z.number().int().min(100).max(599),
+  z.string().regex(/^([1-5][0-9]{2}|[1-5]xx|none)$/),
+]);
+const deliveryFiltersShape = {
+  status: z.union([deliveryStatus, z.array(deliveryStatus).min(1)]).optional(),
+  eventType: z.union([deliveryEvent, z.array(deliveryEvent).min(1)]).optional(),
+  responseStatus: z.union([responseStatus, z.array(responseStatus).min(1).max(20)]).optional(),
+  validationId: uuid.optional(),
+  q: z.string().max(100).optional(),
+  from: instant.optional(),
+  to: instant.optional(),
+  minAttempt: z.number().int().min(1).max(255).optional(),
+  minResponseTimeMs: z.number().int().min(0).max(600_000).optional(),
+} as const;
 const deliveriesShape = {
   page: z.number().int().positive().optional(),
   perPage: z.number().int().min(1).max(100).optional(),
-  status: deliveryStatus.optional(),
-  eventType: deliveryEvent.optional(),
+  ...deliveryFiltersShape,
 } as const;
+const endpointIds = z.array(uuid).min(1).max(20);
 export const webhookDeliveriesSchema = z
   .object({ webhookId: uuid, ...deliveriesShape })
   .strict();
-export const allDeliveriesSchema = z.object(deliveriesShape).strict();
+export const allDeliveriesSchema = z
+  .object({ endpointIds: endpointIds.optional(), ...deliveriesShape })
+  .strict();
 const exportDeliveriesShape = {
   format: format.optional(),
   limit: z.number().int().min(1).max(100_000).optional(),
-  status: deliveryStatus.optional(),
-  eventType: deliveryEvent.optional(),
+  ...deliveryFiltersShape,
 } as const;
 export const exportWebhookDeliveriesSchema = z
   .object({ webhookId: uuid, ...exportDeliveriesShape })
   .strict();
-export const exportAllDeliveriesSchema = z.object(exportDeliveriesShape).strict();
+export const exportAllDeliveriesSchema = z
+  .object({ endpointIds: endpointIds.optional(), ...exportDeliveriesShape })
+  .strict();
 
 export const banksSchema = z.object({ ifNoneMatch: z.string().optional() }).strict();
 export const binSchema = z.object({ bin: z.string().regex(/^\d{6,8}$/) }).strict();

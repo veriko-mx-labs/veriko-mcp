@@ -355,7 +355,11 @@ export const TOOL_CATALOG: readonly ToolDefinition[] = [
     description: 'Lista entregas de todos los webhooks con filtros.',
     family: 'webhooks',
     inputSchema: allDeliveriesSchema,
-    invoke: (client, args) => client.webhooks.deliveries(args),
+    invoke(client, { endpointIds, ...params }) {
+      return endpointIds
+        ? client.webhooks.deliveries(endpointIds, params)
+        : client.webhooks.deliveries(params);
+    },
   }),
   define({
     operationId: 'exportWebhookDeliveries',
@@ -373,7 +377,11 @@ export const TOOL_CATALOG: readonly ToolDefinition[] = [
     description: 'Exporta entregas consolidadas como recurso CSV o XLSX.',
     family: 'webhooks',
     inputSchema: exportAllDeliveriesSchema,
-    invoke: (client, args) => client.webhooks.exportDeliveries(args),
+    invoke(client, { endpointIds, ...params }) {
+      return endpointIds
+        ? client.webhooks.exportDeliveries(endpointIds, params)
+        : client.webhooks.exportDeliveries(params);
+    },
   }),
 
   define({
@@ -398,7 +406,6 @@ export const TOOL_CATALOG: readonly ToolDefinition[] = [
     description:
       'Obtiene los días inhábiles SPEI de un año y la disposición oficial de la que salen.',
     family: 'catalog',
-    cost: 'none',
     inputSchema: speiCalendarSchema,
     invoke: (client, { year, ...options }) => client.catalog.speiCalendar(year, options),
   }),

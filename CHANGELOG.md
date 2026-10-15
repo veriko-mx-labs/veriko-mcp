@@ -2,11 +2,18 @@
 
 ## [No publicado]
 
-## [0.1.10] - 2026-10-14
+## [0.1.10] - 2026-10-15
 
 - Herramienta `getSpeiCalendar`: devuelve los días inhábiles SPEI de un año y la disposición oficial
   de la que salen. Admite `ifNoneMatch`. No consume cuota.
-- Usa el SDK JavaScript `0.4.13` (contrato público `1.72.5`).
+- `validateOcr` acepta `bancoEmisor` y `bancoReceptor`: la clave SPEI de 4 o 5 dígitos sustituye
+  al banco leído del comprobante antes de consultar a Banxico.
+- `listValidations`, `validationStats` y `exportValidations` aceptan `banks`, hasta 50 claves
+  SPEI; filtra por banco emisor o receptor.
+- Las cuatro herramientas de entregas aceptan `responseStatus`, `validationId`, `q`, `from`, `to`,
+  `minAttempt` y `minResponseTimeMs`, y `status`, `eventType` y `responseStatus` admiten una
+  lista. `listAllDeliveries` y `exportAllDeliveries` aceptan `endpointIds`, hasta 20 endpoints.
+- Usa el SDK JavaScript `0.4.13` (contrato público `1.76.0`).
 
 ## [0.1.9] - 2026-10-02
 

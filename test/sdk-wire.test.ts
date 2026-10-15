@@ -157,3 +157,56 @@ describe('lo que el SDK envía a la API: cuentas, comprobante y revisión', () =
     assert.equal(request.url, '/v1/public/spei-calendar/2026');
   });
 });
+
+describe('lo que el SDK envía a la API: bancos y filtros de entregas', () => {
+  it('bancoEmisor y bancoReceptor viajan como banco_emisor y banco_receptor', async () => {
+    const request = await invoke('validateOcr', {
+      imageUrl: 'https://example.com/a.png',
+      bancoEmisor: '40012',
+      bancoReceptor: '40002',
+    });
+
+    const body = JSON.parse(request.body) as Record<string, unknown>;
+    assert.equal(body['banco_emisor'], '40012');
+    assert.equal(body['banco_receptor'], '40002');
+  });
+
+  it('banks viaja separado por comas en el listado de validaciones', async () => {
+    const request = await invoke('listValidations', { banks: ['40012', '40014'] });
+
+    assert.equal(new URL(request.url, 'http://x').searchParams.get('banks'), '40012,40014');
+  });
+
+  it('los filtros de entregas viajan con el nombre y el formato de la API', async () => {
+    const request = await invoke('listAllDeliveries', {
+      endpointIds: ['a1b2c3d4-e5f6-4789-abcd-ef0123456789', '7c9e6679-7425-40de-944b-e07fc1f90ae7'],
+      status: ['failed', 'retrying'],
+      responseStatus: ['5xx', 404],
+      from: '2026-10-01',
+      minAttempt: 2,
+    });
+
+    const url = new URL(request.url, 'http://x');
+    assert.equal(url.pathname, '/v1/webhooks/deliveries');
+    assert.equal(
+      url.searchParams.get('endpoint_id'),
+      'a1b2c3d4-e5f6-4789-abcd-ef0123456789,7c9e6679-7425-40de-944b-e07fc1f90ae7',
+    );
+    assert.equal(url.searchParams.get('status'), 'failed,retrying');
+    assert.equal(url.searchParams.get('response_status'), '5xx,404');
+    assert.equal(url.searchParams.get('from'), '2026-10-01');
+    assert.equal(url.searchParams.get('min_attempt'), '2');
+  });
+
+  it('un endpoint con un filtro exporta desde el listado global', async () => {
+    const request = await invoke('exportWebhookDeliveries', {
+      webhookId: 'a1b2c3d4-e5f6-4789-abcd-ef0123456789',
+      q: 'erp.example.com',
+    });
+
+    const url = new URL(request.url, 'http://x');
+    assert.equal(url.pathname, '/v1/webhooks/deliveries/export');
+    assert.equal(url.searchParams.get('endpoint_id'), 'a1b2c3d4-e5f6-4789-abcd-ef0123456789');
+    assert.equal(url.searchParams.get('q'), 'erp.example.com');
+  });
+});

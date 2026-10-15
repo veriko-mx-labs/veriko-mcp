@@ -97,10 +97,10 @@ no una tokenización real, y sirven para comparar perfiles entre sí.
 
 | Perfil | Herramientas | Bytes de `tools/list` | Tokens estimados |
 |---|---:|---:|---:|
-| `core` | 5 | 6,362 | ~1,767 |
-| `validations` | 14 | 15,136 | ~4,204 |
-| `webhooks` | 10 | 9,927 | ~2,758 |
-| `catalog` | 5 | 2,841 | ~789 |
+| `core` | 5 | 6,645 | ~1,846 |
+| `validations` | 14 | 15,761 | ~4,378 |
+| `webhooks` | 10 | 18,945 | ~5,263 |
+| `catalog` | 5 | 2,845 | ~790 |
 | `beneficiaries` | 14 | 10,268 | ~2,852 |
 | `usage` | 7 | 3,756 | ~1,043 |
 | `account` | 3 | 1,953 | ~543 |
@@ -109,10 +109,10 @@ no una tokenización real, y sirven para comparar perfiles entre sí.
 | `insights` | 4 | 2,337 | ~649 |
 | `finance` | 7 | 6,470 | ~1,797 |
 | `billing` | 1 | 503 | ~140 |
-| `all` | 68 | 54,755 | ~15,210 |
+| `all` | 68 | 64,402 | ~17,889 |
 
 Medido con Node 22 y riesgo `destructive`, para no ocultar herramientas. `all`
-cuesta 8.6 veces lo que `core`; por eso el perfil predeterminado es `core` y se
+cuesta 9.7 veces lo que `core`; por eso el perfil predeterminado es `core` y se
 amplía por familia cuando hace falta.
 
 ## Arquitectura

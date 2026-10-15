@@ -319,7 +319,7 @@ describe('cuentas candidatas, comprobante y revisión del pago', () => {
     assert.equal(tool.name, 'veriko_get_spei_calendar');
     assert.equal(tool.family, 'catalog');
     assert.equal(tool.risk, 'read');
-    assert.equal(tool.cost, 'none');
+    assert.equal(tool.cost, 'included');
     assert.equal(tool.core, false);
     assert.equal(tool.description.includes(AVISO_DE_CUOTA), false);
   });
