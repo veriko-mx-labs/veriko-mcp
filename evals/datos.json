@@ -1,0 +1,109 @@
+{
+  "aviso": "Datos ficticios construidos para las evaluaciones. Ninguna cifra, cuenta, clave de rastreo ni nombre corresponde a un cliente real, y nada de esto sale de una respuesta de la API de producción.",
+  "validaciones": [
+    {
+      "id": "2f4a7c91-1111-4a11-8a11-000000000001",
+      "status": "verified",
+      "veredicto": "verified",
+      "monto": 18450.5,
+      "moneda": "MXN",
+      "fechaDeEnvio": "2026-08-11",
+      "bancoEmisor": "BBVA MEXICO",
+      "bancoReceptor": "STP",
+      "claveDeRastreo": "MBAN01002608110000000001",
+      "cuentaBeneficiaria": "•••357",
+      "cepDisponible": true
+    },
+    {
+      "id": "7b1e30d5-2222-4a22-8a22-000000000002",
+      "status": "verified",
+      "veredicto": "returned",
+      "monto": 6200.0,
+      "moneda": "MXN",
+      "fechaDeEnvio": "2026-08-12",
+      "bancoEmisor": "SANTANDER",
+      "bancoReceptor": "BANORTE",
+      "claveDeRastreo": "SANT01002608120000000002",
+      "cuentaBeneficiaria": "•••884",
+      "cepDisponible": true
+    },
+    {
+      "id": "9c5d24ab-3333-4a33-8a33-000000000003",
+      "status": "failed",
+      "veredicto": "not_found",
+      "monto": 990.0,
+      "moneda": "MXN",
+      "fechaDeEnvio": "2026-08-12",
+      "bancoEmisor": "BANORTE",
+      "bancoReceptor": "BBVA MEXICO",
+      "claveDeRastreo": "BNTE01002608120000000003",
+      "cuentaBeneficiaria": "•••110",
+      "cepDisponible": false
+    },
+    {
+      "id": "4e8f61c2-4444-4a44-8a44-000000000004",
+      "status": "pending",
+      "veredicto": null,
+      "monto": 31000.0,
+      "moneda": "MXN",
+      "fechaDeEnvio": "2026-08-13",
+      "bancoEmisor": "STP",
+      "bancoReceptor": "SANTANDER",
+      "claveDeRastreo": "STPS01002608130000000004",
+      "cuentaBeneficiaria": "•••702",
+      "cepDisponible": false
+    },
+    {
+      "id": "1a6b93f7-5555-4a55-8a55-000000000005",
+      "status": "verified",
+      "veredicto": "verified",
+      "monto": 2750.25,
+      "moneda": "MXN",
+      "fechaDeEnvio": "2026-08-14",
+      "bancoEmisor": "BBVA MEXICO",
+      "bancoReceptor": "BANORTE",
+      "claveDeRastreo": "MBAN01002608140000000005",
+      "cuentaBeneficiaria": "•••357",
+      "cepDisponible": true
+    }
+  ],
+  "ceps": {
+    "2f4a7c91-1111-4a11-8a11-000000000001": { "contenido": "Q0VQIGZpY3RpY2lvIHBhcmEgZXZhbHVhY2lvbmVz", "tipo": "application/pdf" },
+    "7b1e30d5-2222-4a22-8a22-000000000002": { "contenido": "Q0VQIGZpY3RpY2lvIGRlIGRldm9sdWNpb24=", "tipo": "application/pdf" }
+  },
+  "bancos": [
+    { "clave": "40012", "nombre": "BBVA MEXICO", "participaEnSpei": true },
+    { "clave": "40014", "nombre": "SANTANDER", "participaEnSpei": true },
+    { "clave": "40072", "nombre": "BANORTE", "participaEnSpei": true },
+    { "clave": "90646", "nombre": "STP", "participaEnSpei": true }
+  ],
+  "bines": {
+    "455512": { "banco": "BBVA MEXICO", "clave": "40012", "marca": "VISA", "tipo": "debito" }
+  },
+  "banxico": { "disponible": true, "ultimaRevision": "2026-08-14T15:00:00Z", "latenciaMs": 1840 },
+  "consumo": {
+    "resumen": { "plan": "Negocio", "incluidas": 1300, "usadas": 412, "restantes": 888, "periodo": "2026-08" },
+    "limites": { "porMinuto": 60, "porDia": 5000 }
+  },
+  "planes": [
+    { "id": "personal", "nombre": "Personal", "validacionesIncluidas": 650 },
+    { "id": "negocio", "nombre": "Negocio", "validacionesIncluidas": 1300 },
+    { "id": "empresa", "nombre": "Empresa", "validacionesIncluidas": 2500 }
+  ],
+  "webhooks": [
+    { "id": "wh_3d7a", "url": "https://ejemplo.test/veriko", "activo": true, "eventos": ["validation.completed"] },
+    { "id": "wh_8f2c", "url": "https://ejemplo.test/respaldo", "activo": false, "eventos": ["validation.failed"] }
+  ],
+  "beneficiarios": [
+    { "id": "ben_51c9", "alias": "Proveedor A", "cuenta": "•••357", "banco": "BBVA MEXICO" },
+    { "id": "ben_77e4", "alias": "Proveedor B", "cuenta": "•••884", "banco": "BANORTE" }
+  ],
+  "insights": {
+    "topBancos": [
+      { "banco": "BBVA MEXICO", "validaciones": 2 },
+      { "banco": "SANTANDER", "validaciones": 1 },
+      { "banco": "BANORTE", "validaciones": 1 },
+      { "banco": "STP", "validaciones": 1 }
+    ]
+  }
+}
