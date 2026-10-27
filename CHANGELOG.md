@@ -2,6 +2,12 @@
 
 ## [No publicado]
 
+## [0.1.12] - 2026-10-27
+
+- `myProfile` sigue el contrato `1.111.0`: ya no devuelve `role`, añade `platform_access` y
+  `roles`, y las claves de `permissions` tienen la forma `validations.records.read`.
+- Usa el SDK JavaScript `0.5.0` (contrato público `1.111.0`).
+
 ## [0.1.11] - 2026-10-15
 
 - `createBeneficiary` devuelve `reactivated`: `true` cuando el alta reactivó una cuenta archivada con
