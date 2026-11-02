@@ -2,6 +2,13 @@
 
 ## [No publicado]
 
+- Transporte Streamable HTTP sin estado, además de stdio (nuevo ejecutable `veriko-mcp-http`). La
+  clave de API del integrador viaja como `Authorization: Bearer` en cada petición y no se guarda.
+  En HTTP las descargas se incrustan en la respuesta (tope de 8 MB) en lugar de usar enlaces
+  `veriko://artifact/` que dependen de la memoria del proceso. El modo stdio no cambia.
+- La versión que anuncia el servidor sale de `package.json` (antes reportaba `0.1.1`).
+- README: comando de instalación con `npx`, y se retira la mención a ChatGPT, que no admite servidores MCP locales por stdio.
+
 ## [0.1.12] - 2026-10-27
 
 - `myProfile` sigue el contrato `1.111.0`: ya no devuelve `role`, añade `platform_access` y

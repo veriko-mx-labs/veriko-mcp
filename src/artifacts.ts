@@ -15,6 +15,18 @@ interface StoredArtifact extends ArtifactReference {
   content: Uint8Array;
 }
 
+/** Metadatos de un archivo descargado, sin guardarlo. La URI sale del hash. */
+export function describeArtifact(file: DownloadedFile): ArtifactReference {
+  const sha256 = createHash('sha256').update(file.content).digest('hex');
+  return {
+    uri: `veriko://artifact/${sha256.slice(0, 32)}`,
+    name: file.filename,
+    mimeType: file.contentType,
+    size: file.content.byteLength,
+    sha256,
+  };
+}
+
 export class ArtifactLimitError extends Error {
   readonly size: number;
   readonly limit: number;

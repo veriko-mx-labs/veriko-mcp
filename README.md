@@ -1,6 +1,6 @@
 # Veriko MCP
 
-Este servidor MCP conecta Veriko a ChatGPT, Cursor u otro cliente MCP: le pides al asistente,
+Este servidor MCP conecta Veriko a Claude, Cursor u otro cliente MCP compatible: le pides al asistente,
 por ejemplo, que compruebe un pago en el CEP de Banxico, que te diga en qué quedó una
 validación anterior o que descargue el comprobante.
 
@@ -10,9 +10,29 @@ validación: no se anuncia como herramienta porque no se puede deshacer.
 
 <!-- mcp-name: io.github.veriko-mx-labs/veriko -->
 
-## Probarlo ahora
+## Instalación
 
-Requiere Node.js 20 o posterior.
+Requiere Node.js 20 o posterior. Sin clonar nada, el cliente arranca el servidor con `npx`:
+
+```bash
+npx -y @veriko-mx/mcp
+```
+
+En un host que acepta configuración JSON (Claude Desktop, Cursor y similares):
+
+```json
+{
+  "mcpServers": {
+    "veriko": {
+      "command": "npx",
+      "args": ["-y", "@veriko-mx/mcp"],
+      "env": { "VERIKO_API_KEY": "veriko_..." }
+    }
+  }
+}
+```
+
+## Probarlo desde el código fuente
 
 ```bash
 git clone https://github.com/veriko-mx-labs/veriko-mcp.git
@@ -155,14 +175,50 @@ como borrador, con el CI corrido y un resumen del cambio en el cuerpo, para
 revisión antes de aceptarlo.
 
 La API real no se usa en las pruebas. `test/server.test.ts` conecta cliente y
-servidor MCP en memoria con un SDK falso.
+servidor MCP en memoria con un SDK falso; `test/http.test.ts` levanta el modo HTTP
+en un puerto local.
 
 ## Transportes
 
-La entrada publicada es `stdio`. El núcleo vive en `createVerikoServer()` y
-no depende del transporte, de modo que un futuro Streamable HTTP puede reutilizar
-catálogo, políticas, errores y recursos. Un endpoint remoto requerirá
-autenticación por usuario y no se presentará como equivalente al paquete local.
+El núcleo vive en `createVerikoServer()` y no depende del transporte. Hay dos:
+
+- **stdio** (`veriko-mcp`): el cliente lo arranca como proceso local y la clave
+  se lee de `VERIKO_API_KEY`. Las descargas son recursos `veriko://artifact/...`.
+- **Streamable HTTP sin estado** (`veriko-mcp-http`): un endpoint que se puede
+  poner detrás de un proxy. No hay sesiones ni memoria entre peticiones.
+
+### Modo HTTP
+
+```bash
+npm run build
+VERIKO_MCP_HTTP_PORT=3000 node dist/http-index.js
+```
+
+Escucha en `127.0.0.1:3000/mcp`; `GET /healthz` responde sin autenticación.
+
+- **Autenticación.** Cada petición lleva la clave de API del integrador como
+  `Authorization: Bearer <clave>`. Sin ella, responde 401. El servidor crea un
+  cliente nuevo por petición, no guarda ni registra la clave e ignora
+  `VERIKO_API_KEY` del entorno, para que nunca se use una clave del servidor en
+  nombre de otro.
+- **Descargas.** Como la siguiente petición puede caer en otro proceso, el
+  archivo no se guarda: viaja incrustado en la respuesta como recurso con
+  `blob` en base64, con un tope de 8 MB. Más allá devuelve el error
+  `artifact_too_large`; para archivos grandes usa stdio o la API.
+- **Perfiles y riesgo.** Valen `VERIKO_MCP_PROFILE` y `VERIKO_MCP_MAX_RISK` para
+  todo el servidor, igual que en stdio.
+
+| Variable | Descripción | Predeterminado |
+|---|---|---|
+| `VERIKO_MCP_HTTP_PORT` | Puerto | `3000` |
+| `VERIKO_MCP_HTTP_HOST` | Dirección de escucha | `127.0.0.1` |
+| `VERIKO_MCP_HTTP_PATH` | Ruta del endpoint | `/mcp` |
+| `VERIKO_MCP_ALLOWED_ORIGINS` | Orígenes permitidos, separados por coma; vacío no restringe | vacío |
+| `VERIKO_MCP_HTTP_MAX_BODY_BYTES` | Tamaño máximo del cuerpo | 32 MiB |
+| `VERIKO_MCP_HTTP_MAX_INLINE_BYTES` | Tope de un archivo incrustado | 8 MiB |
+
+El servidor no termina TLS: se despliega detrás de un proxy HTTPS. Hasta que
+exista OAuth para cuentas de cliente, la clave de API es la única credencial.
 
 ## Seguridad
 

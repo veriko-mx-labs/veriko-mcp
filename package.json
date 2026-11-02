@@ -27,7 +27,8 @@
   "private": false,
   "types": "./dist/server.d.ts",
   "bin": {
-    "veriko-mcp": "dist/index.js"
+    "veriko-mcp": "dist/index.js",
+    "veriko-mcp-http": "dist/http-index.js"
   },
   "exports": {
     ".": {
