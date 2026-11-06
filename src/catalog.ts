@@ -23,6 +23,8 @@ import {
   exportValidationsSchema,
   exportWebhookDeliveriesSchema,
   financeAccountingSchema,
+  financeCepExportCreateSchema,
+  financeCepExportIdSchema,
   financeCepsSchema,
   financePreviewSchema,
   financeStatementSchema,
@@ -759,6 +761,47 @@ export const TOOL_CATALOG: readonly ToolDefinition[] = [
     family: 'finance',
     inputSchema: financeCepsSchema,
     invoke: (client, args) => client.finance.getCeps(args),
+  }),
+  define({
+    operationId: 'createFinanceCepExport',
+    title: 'Pedir exportación de CEP',
+    description:
+      'Pide el ZIP de CEP de un rango para armarlo en segundo plano. Si ya hay una exportación en curso del mismo rango, devuelve esa.',
+    family: 'finance',
+    risk: 'write',
+    inputSchema: financeCepExportCreateSchema,
+    invoke(client, args) {
+      const { idempotencyKey: _provided, ...rest } = args;
+      return client.finance.createCepExport({
+        ...rest,
+        idempotencyKey: stableIdempotencyKey('createFinanceCepExport', args),
+      });
+    },
+  }),
+  define({
+    operationId: 'listFinanceCepExports',
+    title: 'Listar exportaciones de CEP',
+    description: 'Lista las exportaciones de CEP recientes, la más reciente primero.',
+    family: 'finance',
+    inputSchema: emptySchema,
+    invoke: (client) => client.finance.listCepExports(),
+  }),
+  define({
+    operationId: 'getFinanceCepExport',
+    title: 'Consultar exportación de CEP',
+    description:
+      'Obtiene el estado de una exportación de CEP. Con `ready`, el ZIP ya se puede descargar.',
+    family: 'finance',
+    inputSchema: financeCepExportIdSchema,
+    invoke: (client, { exportId }) => client.finance.getCepExport(exportId),
+  }),
+  define({
+    operationId: 'downloadFinanceCepExport',
+    title: 'Descargar exportación de CEP',
+    description: 'Descarga como recurso MCP el ZIP de una exportación de CEP en `ready`.',
+    family: 'finance',
+    inputSchema: financeCepExportIdSchema,
+    invoke: (client, { exportId }) => client.finance.downloadCepExport(exportId),
   }),
   define({
     operationId: 'billingGetSubscription',

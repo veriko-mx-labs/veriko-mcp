@@ -4,7 +4,7 @@ Este servidor MCP conecta Veriko a Claude, Cursor u otro cliente MCP compatible:
 por ejemplo, que compruebe un pago en el CEP de Banxico, que te diga en qué quedó una
 validación anterior o que descargue el comprobante.
 
-Cubre 68 de las 70 operaciones públicas de máquina a máquina. Lo que el asistente puede
+Cubre 72 de las 74 operaciones públicas de máquina a máquina. Lo que el asistente puede
 hacer aquí es lo que puede hacer una clave de API, salvo el borrado definitivo de una
 validación: no se anuncia como herramienta porque no se puede deshacer.
 
@@ -98,7 +98,7 @@ separadas por coma.
 | `insights` | métricas agregadas |
 | `finance` | resúmenes, vistas previas y descargas |
 | `billing` | suscripción activa |
-| `all` | las 68 herramientas disponibles |
+| `all` | las 72 herramientas disponibles |
 
 El perfil decide qué familias ve el modelo. El riesgo se controla de forma
 independiente con `VERIKO_MCP_MAX_RISK`:
@@ -127,9 +127,9 @@ no una tokenización real, y sirven para comparar perfiles entre sí.
 | `dashboard` | 1 | 557 | ~155 |
 | `plans` | 2 | 1,017 | ~283 |
 | `insights` | 4 | 2,337 | ~649 |
-| `finance` | 7 | 6,470 | ~1,797 |
+| `finance` | 11 | 9,609 | ~2,669 |
 | `billing` | 1 | 503 | ~140 |
-| `all` | 68 | 64,477 | ~17,910 |
+| `all` | 72 | 67,616 | ~18,782 |
 
 Medido con Node 22 y riesgo `destructive`, para no ocultar herramientas. `all`
 cuesta 9.7 veces lo que `core`; por eso el perfil predeterminado es `core` y se

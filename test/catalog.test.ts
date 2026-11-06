@@ -11,10 +11,10 @@ import {
 } from '../src/catalog.js';
 
 describe('catálogo MCP', () => {
-  it('anuncia 68 herramientas sin nombres duplicados', () => {
-    assert.equal(TOOL_CATALOG.length, 68);
-    assert.equal(new Set(TOOL_CATALOG.map((tool) => tool.operationId)).size, 68);
-    assert.equal(new Set(TOOL_CATALOG.map((tool) => tool.name)).size, 68);
+  it('anuncia 72 herramientas sin nombres duplicados', () => {
+    assert.equal(TOOL_CATALOG.length, 72);
+    assert.equal(new Set(TOOL_CATALOG.map((tool) => tool.operationId)).size, 72);
+    assert.equal(new Set(TOOL_CATALOG.map((tool) => tool.name)).size, 72);
   });
 
   it('no anuncia el borrado definitivo con ningún perfil ni nivel de riesgo', () => {
@@ -48,8 +48,8 @@ describe('catálogo MCP', () => {
     );
   });
 
-  it('all expone 68 y el límite de riesgo se aplica aparte', () => {
-    assert.equal(selectTools(new Set(['all']), 'destructive').length, 68);
+  it('all expone 72 y el límite de riesgo se aplica aparte', () => {
+    assert.equal(selectTools(new Set(['all']), 'destructive').length, 72);
     assert.ok(selectTools(new Set(['all']), 'read').every((tool) => tool.risk === 'read'));
     assert.ok(selectTools(new Set(['core']), 'write').every((tool) => tool.core));
   });

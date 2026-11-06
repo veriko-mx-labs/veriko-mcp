@@ -404,3 +404,7 @@ export const financeAccountingSchema = z
 export const financeCepsSchema = z
   .object({ from: date, to: date, userId: uuid.optional() })
   .strict();
+export const financeCepExportCreateSchema = z
+  .object({ from: date, to: date, userId: uuid.optional(), idempotencyKey })
+  .strict();
+export const financeCepExportIdSchema = z.object({ exportId: uuid }).strict();

@@ -8,6 +8,9 @@
   `veriko://artifact/` que dependen de la memoria del proceso. El modo stdio no cambia.
 - La versión que anuncia el servidor sale de `package.json` (antes reportaba `0.1.1`).
 - README: comando de instalación con `npx`, y se retira la mención a ChatGPT, que no admite servidores MCP locales por stdio.
+- Herramientas para exportar CEP en segundo plano: `createFinanceCepExport`, `listFinanceCepExports`,
+  `getFinanceCepExport` y `downloadFinanceCepExport`.
+- Usa el SDK JavaScript `0.5.1` (contrato público `1.163.5`).
 
 ## [0.1.12] - 2026-10-27
 

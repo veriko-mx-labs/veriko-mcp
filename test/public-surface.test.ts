@@ -77,7 +77,7 @@ describe('superficie pública', () => {
 
   it('cuenta las operaciones que el catálogo decide no exponer', () => {
     assert.doesNotThrow(() => validate(validDocument()));
-    assert.equal(TOOL_CATALOG.length + NOT_EXPOSED_OPERATIONS.length, 70);
+    assert.equal(TOOL_CATALOG.length + NOT_EXPOSED_OPERATIONS.length, 74);
   });
 
   it('rechaza una operación del spec sin adaptador que no está declarada como no expuesta', () => {
