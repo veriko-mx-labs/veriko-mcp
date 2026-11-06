@@ -1,6 +1,6 @@
 # Veriko MCP
 
-Este servidor MCP conecta Veriko a Claude, Cursor u otro cliente MCP compatible: le pides al asistente,
+Este servidor MCP conecta Veriko a Cursor u otro cliente MCP compatible: le pides al asistente,
 por ejemplo, que compruebe un pago en el CEP de Banxico, que te diga en qué quedó una
 validación anterior o que descargue el comprobante.
 
@@ -18,7 +18,7 @@ Requiere Node.js 20 o posterior. Sin clonar nada, el cliente arranca el servidor
 npx -y @veriko-mx/mcp
 ```
 
-En un host que acepta configuración JSON (Claude Desktop, Cursor y similares):
+En un host que acepta configuración JSON (Cursor y similares):
 
 ```json
 {
