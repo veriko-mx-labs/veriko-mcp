@@ -9,7 +9,7 @@ info:
     Todas las fechas se emiten en UTC; cada respuesta lo confirma en `meta.datetime`.
 
     Las integraciones programáticas se autentican mediante una clave de API (`Authorization: Bearer veriko_…`).
-  version: 1.163.5
+  version: 1.167.0
   contact:
     name: Veriko Support
     email: soporte@veriko.mx
@@ -259,7 +259,7 @@ paths:
 
         Se requieren los siguientes datos:
 
-        - Fecha.
+        - Fecha (opcional: si falta o no es utilizable, el servicio prueba fechas candidatas contra Banxico —reintentos de fecha, RN-VALID-013—).
         - Monto.
         - Clave de rastreo / Referencia numérica.
         - Banco emisor.
@@ -503,10 +503,10 @@ paths:
         '413':
           $ref: '#/components/responses/PayloadTooLarge'
         '422':
-          description: 'Falló la validación de la petición. Códigos típicos: `clave_or_ref_required`, `required` (fecha/monto), `invalid_date`, `invalid_amount`, `invalid_account_format`, `invalid_account_length`, `invalid_clabe_checksum`, `invalid_card_luhn`, `invalid_bank_code` (`emisor`/`receptor` no reconocidos), `intra_bank_no_cep` (emisor y receptor son el mismo banco), `invalid_field_type` (un campo que debe ser texto llegó como arreglo u objeto — p. ej. `emisor`, `receptor` o `referencia_numerica`), `invalid_receptor_participante`, `retry_policy_invalid`, `retry_pending_cap_exceeded`, `cuenta_y_candidatas_excluyentes` (`cuenta_beneficiaria` y `cuentas_candidatas` juntas), `cuentas_candidatas_invalidas` (la lista no tiene de 2 al máximo vigente de cuentas válidas y distintas) y `cuenta_unresolvable_after_probes` (ninguna candidata coincidió con la transferencia). También se emite cuando se reutiliza `Idempotency-Key` con un cuerpo distinto (`idempotency_key_reused`). Cuando los datos se contradicen entre sí, la petición se rechaza antes de consultar a Banxico con `preflight_failed` y el detalle por campo en `errors` (`clabe_receptor_mismatch` y `tarjeta_receptor_mismatch`: la cuenta pertenece a otro banco que el `receptor`; `cuenta_invalid_luhn`; `clave_fecha_incoherente`; `clave_longitud_invalida`). También se rechaza con `preflight_failed` cuando falta `cuenta_beneficiaria` (`cuenta_required`). Ningún rechazo `preflight_failed` de esta ruta consume cuota, sea por datos que se contradicen, por un campo mal formado o por una cuenta ausente.'
+          description: 'Falló la validación de la petición. Códigos típicos: `clave_or_ref_required`, `required` (monto; `fecha` sólo cuando no hay datos con los que adivinarla, con `fecha_required` en el cuerpo), `invalid_date`, `invalid_amount`, `invalid_account_format`, `invalid_account_length`, `invalid_clabe_checksum`, `invalid_card_luhn`, `invalid_bank_code` (`emisor`/`receptor` no reconocidos), `intra_bank_no_cep` (emisor y receptor son el mismo banco), `invalid_field_type` (un campo que debe ser texto llegó como arreglo u objeto — p. ej. `emisor`, `receptor` o `referencia_numerica`), `invalid_receptor_participante`, `retry_policy_invalid`, `retry_pending_cap_exceeded`, `cuenta_y_candidatas_excluyentes` (`cuenta_beneficiaria` y `cuentas_candidatas` juntas), `cuentas_candidatas_invalidas` (la lista no tiene de 2 al máximo vigente de cuentas válidas y distintas) y `cuenta_unresolvable_after_probes` (ninguna candidata coincidió con la transferencia). También se emite cuando se reutiliza `Idempotency-Key` con un cuerpo distinto (`idempotency_key_reused`). Cuando los datos se contradicen entre sí, la petición se rechaza antes de consultar a Banxico con `preflight_failed` y el detalle por campo en `errors` (`clabe_receptor_mismatch` y `tarjeta_receptor_mismatch`: la cuenta pertenece a otro banco que el `receptor`; `cuenta_invalid_luhn`; `clave_fecha_incoherente`; `clave_longitud_invalida`). También se rechaza con `preflight_failed` cuando falta `cuenta_beneficiaria` (`cuenta_required`). Ningún rechazo `preflight_failed` de esta ruta consume cuota, sea por datos que se contradicen, por un campo mal formado o por una cuenta ausente.'
           x-translations:
             en:
-              description: 'Request validation failed. Typical codes: `clave_or_ref_required`, `required` (fecha/monto), `invalid_date`, `invalid_amount`, `invalid_account_format`, `invalid_account_length`, `invalid_clabe_checksum`, `invalid_card_luhn`, `invalid_bank_code` (`emisor`/`receptor` not recognized), `intra_bank_no_cep` (sender and receiver are the same bank), `invalid_field_type` (a field that must be text arrived as an array or object — e.g. `emisor`, `receptor`, or `referencia_numerica`), `invalid_receptor_participante`, `retry_policy_invalid`, `retry_pending_cap_exceeded`, `cuenta_y_candidatas_excluyentes` (`cuenta_beneficiaria` and `cuentas_candidatas` together), `cuentas_candidatas_invalidas` (the list does not hold from 2 up to the current maximum of valid, distinct accounts) and `cuenta_unresolvable_after_probes` (no candidate matched the transfer). Also emitted when an `Idempotency-Key` is reused with a different body (`idempotency_key_reused`). When the submitted data contradicts itself, the request is rejected before Banxico is queried with `preflight_failed` and per-field detail in `errors` (`clabe_receptor_mismatch` and `tarjeta_receptor_mismatch`: the account belongs to a bank other than `receptor`; `cuenta_invalid_luhn`; `clave_fecha_incoherente`; `clave_longitud_invalida`). It is also rejected with `preflight_failed` when `cuenta_beneficiaria` is missing (`cuenta_required`). No `preflight_failed` rejection on this route consumes quota, whether the data contradicts itself, a field is malformed or the account is absent.'
+              description: 'Request validation failed. Typical codes: `clave_or_ref_required`, `required` (amount; `fecha` only when there is nothing to guess it from, with `fecha_required` in the body), `invalid_date`, `invalid_amount`, `invalid_account_format`, `invalid_account_length`, `invalid_clabe_checksum`, `invalid_card_luhn`, `invalid_bank_code` (`emisor`/`receptor` not recognized), `intra_bank_no_cep` (sender and receiver are the same bank), `invalid_field_type` (a field that must be text arrived as an array or object — e.g. `emisor`, `receptor`, or `referencia_numerica`), `invalid_receptor_participante`, `retry_policy_invalid`, `retry_pending_cap_exceeded`, `cuenta_y_candidatas_excluyentes` (`cuenta_beneficiaria` and `cuentas_candidatas` together), `cuentas_candidatas_invalidas` (the list does not hold from 2 up to the current maximum of valid, distinct accounts) and `cuenta_unresolvable_after_probes` (no candidate matched the transfer). Also emitted when an `Idempotency-Key` is reused with a different body (`idempotency_key_reused`). When the submitted data contradicts itself, the request is rejected before Banxico is queried with `preflight_failed` and per-field detail in `errors` (`clabe_receptor_mismatch` and `tarjeta_receptor_mismatch`: the account belongs to a bank other than `receptor`; `cuenta_invalid_luhn`; `clave_fecha_incoherente`; `clave_longitud_invalida`). It is also rejected with `preflight_failed` when `cuenta_beneficiaria` is missing (`cuenta_required`). No `preflight_failed` rejection on this route consumes quota, whether the data contradicts itself, a field is malformed or the account is absent.'
           content:
             application/json:
               schema:
@@ -12390,7 +12390,6 @@ components:
     ValidationRequest:
       type: object
       required:
-        - fecha
         - monto
       anyOf:
         - required:
@@ -12404,11 +12403,11 @@ components:
             - required:
                 - cuentas_candidatas
       description: |
-        Cuerpo de `POST /v1/validate` para una validación manual SPEI; exige `clave_rastreo` o `referencia_numerica`, y una sola de las dos formas de indicar la cuenta: `cuenta_beneficiaria` o `cuentas_candidatas`.
+        Cuerpo de `POST /v1/validate` para una validación manual SPEI; exige `clave_rastreo` o `referencia_numerica`, y una sola de las dos formas de indicar la cuenta: `cuenta_beneficiaria` o `cuentas_candidatas`. `fecha` es condicionalmente opcional: si falta o no es utilizable, el servicio prueba fechas candidatas (reintentos de fecha, RN-VALID-013).
       x-translations:
         en:
           description: |
-            Body for `POST /v1/validate` for a manual SPEI validation; requires `clave_rastreo` or `referencia_numerica`, and exactly one of the two ways to give the account: `cuenta_beneficiaria` or `cuentas_candidatas`.
+            Body for `POST /v1/validate` for a manual SPEI validation; requires `clave_rastreo` or `referencia_numerica`, and exactly one of the two ways to give the account: `cuenta_beneficiaria` or `cuentas_candidatas`. `fecha` is conditionally optional: when missing or unusable, the service tries candidate dates (date retries, RN-VALID-013).
       properties:
         fecha:
           type: string
@@ -12416,11 +12415,11 @@ components:
           pattern: ^\d{4}-\d{2}-\d{2}$
           minLength: 10
           maxLength: 10
-          description: Fecha de envío de la transferencia en formato ISO 8601 (YYYY-MM-DD). Con ella Banxico localiza el CEP, y puede diferir del día de operación que el CEP imprime (`banxico_result.operationDate`).
+          description: 'Fecha de envío de la transferencia en formato ISO 8601 (YYYY-MM-DD). Con ella Banxico localiza el CEP, y puede diferir del día de operación que el CEP imprime (`banxico_result.operationDate`). Es condicionalmente opcional: si no se envía, o si la enviada no es utilizable (futura más allá del siguiente día hábil, o incoherente con la fecha de la clave), el servicio prueba fechas candidatas (reintentos de fecha, RN-VALID-013): hasta 8 intentos por emisor desde un ancla —la fecha del pago si la trae, si no la de creación de la validación—, 5 días hábiles hacia atrás y 2 hacia adelante (16 si la clave contradice al emisor declarado, R8); la fecha con la que se encontró el pago queda sellada en `banxico_result._fecha` con `reason: reintento_fecha`. Si no hay datos para adivinar, la petición se rechaza con `422 preflight_failed` (`fecha_required`).'
           example: '2025-03-15'
           x-translations:
             en:
-              description: Sending date of the transfer in ISO 8601 format (YYYY-MM-DD). Banxico locates the CEP with it, and it can differ from the operation day the CEP prints (`banxico_result.operationDate`).
+              description: 'Sending date of the transfer in ISO 8601 format (YYYY-MM-DD). Banxico locates the CEP with it, and it can differ from the operation day the CEP prints (`banxico_result.operationDate`). It is conditionally optional: when not sent, or when the one sent is not usable (a future date beyond the next business day, or one inconsistent with the tracking-key date), the service tries candidate dates (date retries, RN-VALID-013): up to 8 attempts per issuer from an anchor —the payment date when present, otherwise the validation creation date—, 5 business days back and 2 forward (16 when the tracking key contradicts the declared issuer, R8); the date the payment was found with is sealed in `banxico_result._fecha` with `reason: reintento_fecha`. When there is nothing to guess from, the request is rejected with `422 preflight_failed` (`fecha_required`).'
           x-invalid-examples:
             - 15/03/2025
             - 2025-3-15
@@ -13087,7 +13086,7 @@ components:
                     Su ausencia significa que no se pudo saber, nunca que el pago esté liquidado.
                     Se actualiza en cada revisión posterior, y con `devuelto` o `en_proceso_devolucion` la validación pasa a `returned`.
 
-                    `_fecha` aparece cuando Banxico no encontró el pago con la fecha enviada y sí con otra.
+                    `_fecha` aparece cuando Banxico no encontró el pago con la fecha enviada y sí con otra, o cuando no se envió una fecha utilizable y los reintentos lo encontraron con una candidata.
                     `used` es la fecha con la que se encontró, `requested` es la fecha con la que se consultó primero
                     y `reason` es el motivo por el que se probó `used`.
                     Valores de `reason`:
@@ -13097,8 +13096,11 @@ components:
                     `dia_operacion`: La clave incrusta la fecha enviada, porque el comprobante trae la de operación,
                     y se probó un día anterior hasta el día hábil previo;
                     `future_date`: El comprobante trae el siguiente día hábil (el banco lo imprime así cuando el pago fue en día inhábil o fuera de horario),
-                    y se probaron los días anteriores hasta hoy.
-                    El veredicto sigue siendo el de Banxico, y `request_data.fecha` conserva la fecha enviada.
+                    y se probaron los días anteriores hasta hoy;
+                    `reintento_fecha`: No se envió una fecha utilizable (o la enviada no servía); se probaron hasta 8 candidatas
+                    desde el ancla —la fecha del pago si la trae, si no la de creación de la validación—, 5 días hábiles atrás
+                    y 2 adelante, y `requested` es el ancla.
+                    El veredicto sigue siendo el de Banxico, y `request_data.fecha` conserva la fecha enviada, si la hubo.
                   x-translations:
                     en:
                       description: |-
@@ -13117,7 +13119,7 @@ components:
                         Its absence means it could not be determined, never that the payment is settled.
                         It is updated on every follow-up check, and with `devuelto` or `en_proceso_devolucion` the validation moves to `returned`.
 
-                        `_fecha` appears when Banxico did not find the payment with the date sent and did find it with another.
+                        `_fecha` appears when Banxico did not find the payment with the date sent and did find it with another, or when no usable date was sent and the date retries found it with a candidate.
                         `used` is the date it was found with, `requested` is the date first queried, and `reason` is why `used` was tried.
                         Values of `reason`:
                         `clave_embedded_date`: The tracking key embeds another date, at most one SPEI business day from the one sent;
@@ -13126,8 +13128,11 @@ components:
                         `dia_operacion`: The key embeds the date sent, because the receipt carries the operation date,
                         and an earlier day was tried back to the previous business day;
                         `future_date`: The receipt shows the next business day (banks print it when the payment was made on a non-business day or after hours),
-                        so the earlier days were tried back to today.
-                        The verdict is still Banxico's, and `request_data.fecha` keeps the date sent.
+                        so the earlier days were tried back to today;
+                        `reintento_fecha`: No usable date was sent (or the one sent did not work); up to 8 candidates were tried
+                        from the anchor —the payment date when present, otherwise the validation creation date—, 5 business days back
+                        and 2 forward, and `requested` is the anchor.
+                        The verdict is still Banxico's, and `request_data.fecha` keeps the date sent, when one was sent.
                   properties:
                     operationDate:
                       type: string
