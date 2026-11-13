@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  autoria:
+    if: github.event_name != 'workflow_dispatch'
+    uses: veriko-mx-labs/.github/.github/workflows/autoria.yml@39a6ff721b020af5a33fb370b62a829eaacbeab3
+    secrets:
+      config: ${{ secrets.VERIKO_LABS_AUTORIA_CONFIG }}
+
+  test:
+    name: Tests (Node ${{ matrix.node-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ['20', '22', '24']
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+
+  package:
+    name: Build and consume the package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Pack
+        shell: bash
+        run: |
+          mkdir package
+          npm pack --pack-destination package
+          test -f package/veriko-mx-mcp-*.tgz
+      - name: Install in a clean consumer
+        shell: bash
+        run: |
+          mkdir /tmp/veriko-mcp-consumer
+          cd /tmp/veriko-mcp-consumer
+          npm init -y >/dev/null
+          npm pkg set type=module
+          npm install "$GITHUB_WORKSPACE"/package/veriko-mx-mcp-*.tgz
+          npm install --save-dev @modelcontextprotocol/client@2.0.0 @types/node@24.13.6 typescript@7.0.2
+          test -f node_modules/@veriko-mx/mcp/node_modules/@veriko-mx/sdk-runtime/package.json
+          cp "$GITHUB_WORKSPACE"/test/fixtures/package-consumer.mjs consumer.mjs
+          cp "$GITHUB_WORKSPACE"/test/fixtures/package-consumer.ts.fixture consumer.ts
+          cp "$GITHUB_WORKSPACE"/test/fixtures/package-consumer-tsconfig.json tsconfig.json
+          node consumer.mjs
+          "$GITHUB_WORKSPACE"/node_modules/.bin/tsc -p tsconfig.json
+
+  surface:
+    name: Full public surface
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm run check:surface

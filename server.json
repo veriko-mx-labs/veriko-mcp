@@ -1,0 +1,80 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.veriko-mx-labs/veriko",
+  "title": "Veriko",
+  "description": "Verify Mexican SPEI transfers against the Banxico CEP and operate the Veriko public API.",
+  "version": "0.2.0",
+  "websiteUrl": "https://docs.veriko.mx/en/mcp",
+  "repository": {
+    "url": "https://github.com/veriko-mx-labs/veriko-mcp",
+    "source": "github",
+    "id": "1457206579"
+  },
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "@veriko-mx/mcp",
+      "version": "0.2.0",
+      "runtimeHint": "npx",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "VERIKO_API_KEY",
+          "description": "Integrator API key (veriko_ followed by 64 hexadecimal characters). Optional for the tools that read public data.",
+          "format": "string",
+          "isRequired": false,
+          "isSecret": true
+        },
+        {
+          "name": "VERIKO_MCP_PROFILE",
+          "description": "Tool profile: core, all or families separated by commas.",
+          "format": "string",
+          "isRequired": false,
+          "default": "core"
+        },
+        {
+          "name": "VERIKO_MCP_MAX_RISK",
+          "description": "Highest risk advertised: read, write or destructive.",
+          "format": "string",
+          "isRequired": false,
+          "default": "write"
+        },
+        {
+          "name": "VERIKO_BASE_URL",
+          "description": "API base URL. HTTPS only, except localhost.",
+          "format": "string",
+          "isRequired": false
+        },
+        {
+          "name": "VERIKO_TIMEOUT_MS",
+          "description": "Timeout per request in milliseconds, from 1000 to 300000.",
+          "format": "number",
+          "isRequired": false,
+          "default": "60000"
+        },
+        {
+          "name": "VERIKO_MAX_RETRIES",
+          "description": "Automatic retries of transient failures, from 0 to 5.",
+          "format": "number",
+          "isRequired": false,
+          "default": "2"
+        },
+        {
+          "name": "VERIKO_ACCEPT_LANGUAGE",
+          "description": "Language of the API error text: en or es.",
+          "format": "string",
+          "isRequired": false,
+          "default": "en"
+        },
+        {
+          "name": "VERIKO_MCP_FILE_ROOTS",
+          "description": "Absolute directories, separated by the platform path delimiter, that image_path and file_path may read from. Without it those arguments are not advertised.",
+          "format": "string",
+          "isRequired": false
+        }
+      ]
+    }
+  ]
+}

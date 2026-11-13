@@ -1,0 +1,85 @@
+name: Bug report
+description: Report something that does not work as documented.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not paste API keys, receipts, account numbers or customer data. Replace them with placeholders.
+        For a security vulnerability, follow the [security policy](https://github.com/veriko-mx-labs/veriko-mcp/security/policy) instead.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happens
+      description: 'Describe the behavior you see.'
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: 'Give the smallest sequence that reproduces it.'
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expect
+      description: 'Describe the behavior the documentation or the spec leads you to expect.'
+    validations:
+      required: true
+  - type: input
+    id: v0
+    attributes:
+      label: '`@veriko-mx/mcp` version'
+      placeholder: '0.2.0'
+    validations:
+      required: true
+  - type: input
+    id: v1
+    attributes:
+      label: 'Node.js version'
+    validations:
+      required: true
+  - type: dropdown
+    id: v2
+    attributes:
+      label: 'Transport'
+      options:
+        - 'stdio'
+        - 'HTTP'
+    validations:
+      required: true
+  - type: input
+    id: v3
+    attributes:
+      label: 'MCP client and version'
+      placeholder: 'the name and version of your editor or assistant'
+    validations:
+      required: true
+  - type: input
+    id: v4
+    attributes:
+      label: '`VERIKO_MCP_PROFILE` and `VERIKO_MCP_MAX_RISK`'
+      description: 'The values you set, if any.'
+    validations:
+      required: true
+  - type: input
+    id: request-id
+    attributes:
+      label: 'request_id'
+      description: 'The `request_id` of the error response, when the API answered with an error (the `request_id` field of the tool result).'
+  - type: textarea
+    id: output
+    attributes:
+      label: Output or logs
+      description: 'Paste the error or the response body. Remove secrets first.'
+  - type: checkboxes
+    id: confirmation
+    attributes:
+      label: Before you submit
+      options:
+        - label: I searched the open issues.
+          required: true
+        - label: I removed API keys and personal data from this report.
+          required: true

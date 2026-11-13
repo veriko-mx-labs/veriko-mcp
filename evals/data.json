@@ -1,0 +1,197 @@
+{
+  "notice": "Fictitious data built for the evaluations. No figure, account, tracking key or name corresponds to a real customer, and none of it comes from a production API response.",
+  "validations": [
+    {
+      "id": "2f4a7c91-1111-4a11-8a11-000000000001",
+      "status": "verified",
+      "verdict": "verified",
+      "amount": 18450.5,
+      "currency": "MXN",
+      "send_date": "2026-08-11",
+      "sender_bank": "BBVA MEXICO",
+      "receiver_bank": "STP",
+      "tracking_key": "MBAN01002608110000000001",
+      "beneficiary_account": "•••357",
+      "cep_available": true
+    },
+    {
+      "id": "7b1e30d5-2222-4a22-8a22-000000000002",
+      "status": "verified",
+      "verdict": "returned",
+      "amount": 6200.0,
+      "currency": "MXN",
+      "send_date": "2026-08-12",
+      "sender_bank": "SANTANDER",
+      "receiver_bank": "BANORTE",
+      "tracking_key": "SANT01002608120000000002",
+      "beneficiary_account": "•••884",
+      "cep_available": true
+    },
+    {
+      "id": "9c5d24ab-3333-4a33-8a33-000000000003",
+      "status": "failed",
+      "verdict": "not_found",
+      "amount": 990.0,
+      "currency": "MXN",
+      "send_date": "2026-08-12",
+      "sender_bank": "BANORTE",
+      "receiver_bank": "BBVA MEXICO",
+      "tracking_key": "BNTE01002608120000000003",
+      "beneficiary_account": "•••110",
+      "cep_available": false
+    },
+    {
+      "id": "4e8f61c2-4444-4a44-8a44-000000000004",
+      "status": "queued",
+      "verdict": null,
+      "amount": 31000.0,
+      "currency": "MXN",
+      "send_date": "2026-08-13",
+      "sender_bank": "STP",
+      "receiver_bank": "SANTANDER",
+      "tracking_key": "STPS01002608130000000004",
+      "beneficiary_account": "•••702",
+      "cep_available": false
+    },
+    {
+      "id": "1a6b93f7-5555-4a55-8a55-000000000005",
+      "status": "verified",
+      "verdict": "verified",
+      "amount": 2750.25,
+      "currency": "MXN",
+      "send_date": "2026-08-14",
+      "sender_bank": "BBVA MEXICO",
+      "receiver_bank": "BANORTE",
+      "tracking_key": "MBAN01002608140000000005",
+      "beneficiary_account": "•••357",
+      "cep_available": true
+    }
+  ],
+  "ceps": {
+    "2f4a7c91-1111-4a11-8a11-000000000001": {
+      "content": "Q0VQIGZpY3RpY2lvIHBhcmEgZXZhbHVhY2lvbmVz",
+      "type": "application/pdf"
+    },
+    "7b1e30d5-2222-4a22-8a22-000000000002": {
+      "content": "Q0VQIGZpY3RpY2lvIGRlIGRldm9sdWNpb24=",
+      "type": "application/pdf"
+    }
+  },
+  "banks": [
+    {
+      "code": "40012",
+      "name": "BBVA MEXICO",
+      "participates_in_spei": true
+    },
+    {
+      "code": "40014",
+      "name": "SANTANDER",
+      "participates_in_spei": true
+    },
+    {
+      "code": "40072",
+      "name": "BANORTE",
+      "participates_in_spei": true
+    },
+    {
+      "code": "90646",
+      "name": "STP",
+      "participates_in_spei": true
+    }
+  ],
+  "bins": {
+    "455512": {
+      "bank": "BBVA MEXICO",
+      "code": "40012",
+      "brand": "VISA",
+      "type": "debit"
+    }
+  },
+  "banxico": {
+    "available": true,
+    "last_checked_at": "2026-08-14T15:00:00Z",
+    "latency_ms": 1840
+  },
+  "usage": {
+    "summary": {
+      "plan": "Business",
+      "included": 1300,
+      "used": 412,
+      "remaining": 888,
+      "period": "2026-08"
+    },
+    "limits": {
+      "per_minute": 60,
+      "per_day": 5000
+    }
+  },
+  "plans": [
+    {
+      "id": "personal",
+      "name": "Personal",
+      "included_validations": 650
+    },
+    {
+      "id": "negocio",
+      "name": "Business",
+      "included_validations": 1300
+    },
+    {
+      "id": "empresa",
+      "name": "Enterprise",
+      "included_validations": 2500
+    }
+  ],
+  "webhooks": [
+    {
+      "id": "wh_3d7a",
+      "url": "https://example.test/veriko",
+      "active": true,
+      "events": [
+        "validation.completed"
+      ]
+    },
+    {
+      "id": "wh_8f2c",
+      "url": "https://example.test/backup",
+      "active": false,
+      "events": [
+        "validation.failed"
+      ]
+    }
+  ],
+  "beneficiaries": [
+    {
+      "id": "ben_51c9",
+      "alias": "Supplier A",
+      "account": "•••357",
+      "bank": "BBVA MEXICO"
+    },
+    {
+      "id": "ben_77e4",
+      "alias": "Supplier B",
+      "account": "•••884",
+      "bank": "BANORTE"
+    }
+  ],
+  "insights": {
+    "top_banks": [
+      {
+        "bank": "BBVA MEXICO",
+        "validations": 2
+      },
+      {
+        "bank": "SANTANDER",
+        "validations": 1
+      },
+      {
+        "bank": "BANORTE",
+        "validations": 1
+      },
+      {
+        "bank": "STP",
+        "validations": 1
+      }
+    ]
+  }
+}

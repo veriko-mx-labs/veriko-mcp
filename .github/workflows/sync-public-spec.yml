@@ -1,0 +1,50 @@
+name: Sync the public spec
+
+# The MCP depends on two sources that change on their own:
+#
+#   · the public contract, which the organization's reusable workflow brings in:
+#     it downloads the portal export and writes it to `spec/openapi.yaml`;
+#   · the SDK this server consumes, pinned by version and integrity, which the
+#     reusable workflow does not check.
+#
+# When the contract changes, `sync:contract` pins the new SHA-256 in
+# `check:surface`, writes a summary of the change operation by operation and
+# regenerates the cost-per-profile table in the README. The PR is left as a draft,
+# with a reviewer requested and no auto-merge: CI runs in full and is visible
+# before someone reviews it and marks it ready.
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 11 * * *'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    uses: veriko-mx-labs/.github/.github/workflows/sync-public-spec.yml@39a6ff721b020af5a33fb370b62a829eaacbeab3
+    with:
+      regenerate_command: npm ci && npm run sync:contract
+      auto_merge: false
+      draft: true
+      summary_file: /tmp/contract-summary.md
+    secrets:
+      app_id: ${{ secrets.VERIKO_LABS_APP_ID }}
+      app_private_key: ${{ secrets.VERIKO_LABS_PRIVATE_KEY }}
+
+  sdk:
+    name: The consumed SDK is the latest published
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm run check:sdk
+        env:
+          # Only to avoid hitting the per-IP limit of the GitHub API.
+          GITHUB_TOKEN: ${{ github.token }}
