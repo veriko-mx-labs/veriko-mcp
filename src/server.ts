@@ -18,6 +18,7 @@ import {
   type DownloadedFile,
 } from './artifacts.js';
 import { confirmOperation } from './confirm.js';
+import { acceptingFormerNames } from './legacy-names.js';
 import { callInfoFrom, withErrorHeaders, type CallInfo } from './call-info.js';
 import { selectTools, type ToolDefinition, type ToolRuntime } from './catalog.js';
 import { clientTuningFromEnv, createClient, withCapture, type CallCapture } from './client.js';
@@ -283,7 +284,7 @@ export function createVerikoServer(options: CreateServerOptions = {}): McpServer
       {
         title: tool.title,
         description: tool.description,
-        inputSchema: files && tool.localInputSchema ? tool.localInputSchema : tool.inputSchema,
+        inputSchema: acceptingFormerNames(files && tool.localInputSchema ? tool.localInputSchema : tool.inputSchema),
         outputSchema: outputSchemaFor(tool.operationId, tool.helper),
         annotations: annotations(tool),
         _meta: {

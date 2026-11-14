@@ -74,10 +74,6 @@
 - The wait tools pace their polls with `meta.next_poll_after_seconds` from the response body, and
   not only with `Retry-After`.
 
-### Removed
-
-- Input names other than the English `snake_case` ones. Every field uses the name the API gives it.
-
 ## [0.1.14] - 2026-11-09
 
 - Uses JavaScript SDK 0.5.4 and public spec 1.181.7. With the new SDK, an API key that is not

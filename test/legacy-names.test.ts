@@ -87,3 +87,86 @@ describe('former field names', () => {
     }
   });
 });
+
+/** Calls a tool with the current names and then with the former ones; both requests must match. */
+async function sameRequest(name: string, current: Record<string, unknown>, former: Record<string, unknown>) {
+  const api = await startFakeApi();
+  try {
+    const connected = await connect({ config: ALL, client: clientFor(api) });
+    open.push(connected);
+    const first = await connected.client.callTool({ name, arguments: current });
+    const second = await connected.client.callTool({ name, arguments: former });
+    assert.notEqual(second.isError, true, `${name} rejected the former names: ${JSON.stringify(second.content)}`);
+    assert.equal(first.isError, second.isError);
+    const [a, b] = api.seen;
+    assert.ok(a && b, `${name} did not reach the API twice`);
+    assert.equal(b.method, a.method);
+    assert.equal(b.url, a.url);
+    assert.equal(b.body, a.body);
+  } finally {
+    await api.close();
+  }
+}
+
+describe('former field names in a call', () => {
+  const VALIDATION = 'f47ac10b-58cc-4372-a567-0e02b2c3d479';
+  const ENDPOINT = '0b6f3c2e-1d4a-4f5b-9c8d-7e6f5a4b3c2d';
+
+  it('reach the API as the current names in a direct validation', async () => {
+    await sameRequest(
+      'veriko_validate_direct',
+      {
+        amount: 100,
+        tracking_key: 'ABC-123',
+        beneficiary_account: '012180004412345678',
+        send_date: '2026-11-13',
+        recipient_is_bank: true,
+        client_ref: 'order-1',
+        idempotency_key: 'same-key',
+      },
+      {
+        monto: 100,
+        claveRastreo: 'ABC-123',
+        cuentaBeneficiaria: '012180004412345678',
+        fecha: '2026-11-13',
+        receptorParticipante: 1,
+        clientRef: 'order-1',
+        idempotencyKey: 'same-key',
+      },
+    );
+  });
+
+  it('reach the API as the current names in list filters', async () => {
+    await sameRequest(
+      'veriko_list_validations',
+      { with_deleted: 1, per_page: 5, client_ref: 'order-1' },
+      { withDeleted: true, perPage: 5, clientRef: 'order-1' },
+    );
+    await sameRequest(
+      'veriko_list_all_deliveries',
+      { endpoint_id: [ENDPOINT], validation_id: VALIDATION },
+      { endpointIds: [ENDPOINT], validationId: VALIDATION },
+    );
+  });
+
+  it('reach the API as the current names in a path parameter', async () => {
+    await sameRequest('veriko_get_validation', { validation_id: VALIDATION }, { validationId: VALIDATION });
+  });
+
+  it('lose to the current name when both are sent', async () => {
+    await sameRequest('veriko_list_validations', { per_page: 5 }, { per_page: 5, perPage: 50 });
+  });
+
+  it('stay rejected when they were withdrawn on purpose', async () => {
+    const api = await startFakeApi();
+    try {
+      const connected = await connect({ config: ALL, client: clientFor(api) });
+      open.push(connected);
+      const result = await connected.client.callTool({ name: 'veriko_list_validations', arguments: { userId: 7 } });
+      assert.equal(result.isError, true);
+      assert.equal(api.seen.length, 0);
+    } finally {
+      await api.close();
+    }
+  });
+});
