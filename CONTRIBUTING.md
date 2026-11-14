@@ -1,21 +1,21 @@
-# Contributing
+# Contribuir
 
-Issues and pull requests are welcome.
+Los issues y los pull requests son bienvenidos.
 
-## Report a bug or request a change
+## Reportar un error o pedir un cambio
 
-Open an issue with the [bug report](https://github.com/veriko-mx-labs/veriko-mcp/issues/new?template=bug_report.yml) or [feature request](https://github.com/veriko-mx-labs/veriko-mcp/issues/new?template=feature_request.yml) form. Search the open issues first.
+Abre un issue con el formulario de [reporte de error](https://github.com/veriko-mx-labs/veriko-mcp/issues/new?template=bug_report.yml) o de [solicitud de mejora](https://github.com/veriko-mx-labs/veriko-mcp/issues/new?template=feature_request.yml). Antes, busca entre los issues abiertos.
 
-A bug report needs the versions you use, the steps that reproduce it and, when the API answered with an error, its `request_id` (the `request_id` field of the tool result). Remove API keys, receipts, account numbers and customer data from anything you paste.
+Un reporte de error necesita las versiones que usas, los pasos para reproducirlo y, cuando la API respondió con un error, su `request_id` (el campo `request_id` del resultado de la herramienta). Quita las claves de API, los comprobantes, los números de cuenta y los datos de clientes de todo lo que pegues.
 
-Do not open a public issue for a security vulnerability. Follow [SECURITY.md](SECURITY.md).
+No abras un issue público por una vulnerabilidad de seguridad. Sigue [SECURITY.md](SECURITY.md).
 
-## Propose a change
+## Proponer un cambio
 
-1. For anything larger than a fix, open an issue first so the change can be agreed before you write it.
-2. Fork the repository and create a branch from `main`.
-3. Make the change. Add or update the tests in `test/`.
-4. Run the checks of this repository:
+1. Si el cambio es más grande que una corrección, abre antes un issue para acordarlo antes de escribirlo.
+2. Haz un fork del repositorio y crea una rama desde `main`.
+3. Haz el cambio. Agrega o actualiza las pruebas en `test/`.
+4. Ejecuta las comprobaciones de este repositorio:
 
    ```bash
    npm ci
@@ -25,17 +25,17 @@ Do not open a public issue for a security vulnerability. Follow [SECURITY.md](SE
    npm run check:surface
    ```
 
-   `npm test` uses a fake API and never reaches the real one. `npm run evals` runs the scenarios in `evals/`. Use Node.js 20 or later.
+   `npm test` usa una API falsa y nunca llega a la real. `npm run evals` ejecuta los escenarios de `evals/`. Usa Node.js 20 o posterior.
 
-5. Update README.md and CHANGELOG.md when the behavior that users see changes.
-6. Open a pull request against `main` and fill in the template.
+5. Actualiza README.md y CHANGELOG.md cuando cambie el comportamiento que ven las personas usuarias.
+6. Abre un pull request contra `main` y llena la plantilla.
 
-Write commit messages in English, in the imperative, and keep one change in each commit.
+Escribe los mensajes de commit en español, en imperativo, y deja un solo cambio en cada commit.
 
-The server reaches the API only through the official JavaScript SDK. Do not add HTTP code to a tool. `npm run check:surface` compares the tools with the public surface of the spec.
+El servidor llega a la API sólo mediante el SDK oficial de JavaScript. No agregues código HTTP a una herramienta. `npm run check:surface` compara las herramientas con la superficie pública del spec.
 
-When a tool or a profile changes, update the README. `npm run measure:catalog` regenerates the cost per profile.
+Cuando cambie una herramienta o un perfil, actualiza el README. `npm run measure:catalog` regenera el costo por perfil.
 
-## The API contract
+## El contrato de la API
 
-The API contract is the public spec at <https://docs.veriko.mx/openapi.yaml>. `spec/openapi.yaml` is a copy that a scheduled workflow syncs. Do not edit it by hand. When the API behaves differently from the spec, open an issue.
+El contrato de la API es el spec público en <https://docs.veriko.mx/openapi.yaml>. `spec/openapi.yaml` es una copia que sincroniza un workflow programado. No la edites a mano. Cuando la API se comporte distinto del spec, abre un issue.

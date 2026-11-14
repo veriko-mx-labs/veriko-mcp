@@ -1,50 +1,50 @@
 name: Bug report
-description: Report something that does not work as documented.
+description: Reporta algo que no funciona como dice la documentación.
 labels: [bug]
 body:
   - type: markdown
     attributes:
       value: |
-        Do not paste API keys, receipts, account numbers or customer data. Replace them with placeholders.
-        For a security vulnerability, follow the [security policy](https://github.com/veriko-mx-labs/veriko-mcp/security/policy) instead.
+        No pegues claves de API, comprobantes, números de cuenta ni datos de clientes. Reemplázalos por valores de ejemplo.
+        Si es una vulnerabilidad de seguridad, sigue la [política de seguridad](https://github.com/veriko-mx-labs/veriko-mcp/security/policy).
   - type: textarea
     id: what-happened
     attributes:
-      label: What happens
-      description: 'Describe the behavior you see.'
+      label: Qué sucede
+      description: 'Describe lo que observas.'
     validations:
       required: true
   - type: textarea
     id: reproduce
     attributes:
-      label: Steps to reproduce
-      description: 'Give the smallest sequence that reproduces it.'
+      label: Pasos para reproducirlo
+      description: 'Da la secuencia más corta que lo reproduce.'
     validations:
       required: true
   - type: textarea
     id: expected
     attributes:
-      label: What you expect
-      description: 'Describe the behavior the documentation or the spec leads you to expect.'
+      label: Qué esperas
+      description: 'Describe el comportamiento que te hace esperar la documentación o el spec.'
     validations:
       required: true
   - type: input
     id: v0
     attributes:
-      label: '`@veriko-mx/mcp` version'
+      label: 'Versión de `@veriko-mx/mcp`'
       placeholder: '0.2.0'
     validations:
       required: true
   - type: input
     id: v1
     attributes:
-      label: 'Node.js version'
+      label: 'Versión de Node.js'
     validations:
       required: true
   - type: dropdown
     id: v2
     attributes:
-      label: 'Transport'
+      label: 'Transporte'
       options:
         - 'stdio'
         - 'HTTP'
@@ -53,33 +53,33 @@ body:
   - type: input
     id: v3
     attributes:
-      label: 'MCP client and version'
-      placeholder: 'the name and version of your editor or assistant'
+      label: 'Cliente MCP y versión'
+      placeholder: 'el nombre y la versión de tu editor o asistente'
     validations:
       required: true
   - type: input
     id: v4
     attributes:
-      label: '`VERIKO_MCP_PROFILE` and `VERIKO_MCP_MAX_RISK`'
-      description: 'The values you set, if any.'
+      label: '`VERIKO_MCP_PROFILE` y `VERIKO_MCP_MAX_RISK`'
+      description: 'Los valores que fijaste, si hay.'
     validations:
       required: true
   - type: input
     id: request-id
     attributes:
       label: 'request_id'
-      description: 'The `request_id` of the error response, when the API answered with an error (the `request_id` field of the tool result).'
+      description: 'El `request_id` de la respuesta de error, cuando la API respondió con un error (el campo `request_id` del resultado de la herramienta).'
   - type: textarea
     id: output
     attributes:
-      label: Output or logs
-      description: 'Paste the error or the response body. Remove secrets first.'
+      label: Salida o registros
+      description: 'Pega el error o el cuerpo de la respuesta. Quita antes los secretos.'
   - type: checkboxes
     id: confirmation
     attributes:
-      label: Before you submit
+      label: Antes de enviar
       options:
-        - label: I searched the open issues.
+        - label: Busqué entre los issues abiertos.
           required: true
-        - label: I removed API keys and personal data from this report.
+        - label: Quité las claves de API y los datos personales de este reporte.
           required: true
