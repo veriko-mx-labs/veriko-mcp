@@ -437,8 +437,10 @@ export const TOOL_CATALOG: readonly ToolDefinition[] = [
     family: 'validations',
     risk: 'write',
     openWorld: true,
-    inputSchema: validationIdSchema,
-    invoke: (client, { validation_id }) => client.validations.sendCepToTelegram(validation_id),
+    idempotencyKey: true,
+    inputSchema: validationIdempotentSchema,
+    invoke: (client, args, runtime) =>
+      client.validations.sendCepToTelegram(args.validation_id, { idempotencyKey: runtime.idempotencyKey }),
   }),
 
   define({

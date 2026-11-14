@@ -142,7 +142,7 @@ incluyen el esquema de salida de cada herramienta.
 | Perfil | Herramientas | Bytes de `tools/list` | Tokens estimados |
 |---|---:|---:|---:|
 | `core` | 8 | 26,952 | ~7,487 |
-| `validations` | 15 | 45,347 | ~12,596 |
+| `validations` | 15 | 45,822 | ~12,728 |
 | `webhooks` | 10 | 29,850 | ~8,292 |
 | `catalog` | 5 | 6,898 | ~1,916 |
 | `beneficiaries` | 16 | 27,784 | ~7,718 |
@@ -153,7 +153,7 @@ incluyen el esquema de salida de cada herramienta.
 | `insights` | 4 | 5,094 | ~1,415 |
 | `finance` | 12 | 21,221 | ~5,895 |
 | `billing` | 1 | 1,087 | ~302 |
-| `all` | 76 | 154,743 | ~42,984 |
+| `all` | 76 | 155,218 | ~43,116 |
 
 Medido con Node 22 y riesgo `destructive`, para no ocultar herramientas. `all`
 cuesta 5.7 veces lo que `core`; por eso el perfil predeterminado es `core` y se
