@@ -1,27 +1,28 @@
 # Veriko MCP
 
-The Veriko MCP server connects Veriko to Cursor or any other MCP-compatible
-client. Ask the assistant to check a payment against the Banxico CEP, to tell
-you what became of an earlier validation, or to download the receipt.
+El servidor MCP de Veriko conecta Veriko con Cursor u otro cliente compatible
+con MCP. Le pides al asistente que compruebe un pago en el CEP de Banxico, que te
+diga en qué quedó una validación anterior o que descargue el comprobante.
 
-The server covers 73 of the 75 public machine-to-machine operations as tools.
-It leaves out the two purge operations (`prepare` and `execute`), because a
-permanent deletion cannot be undone. Three more tools wait for an asynchronous
-result: `veriko_wait_for_validation`, `veriko_wait_for_cep_export` and
-`veriko_wait_for_beneficiary_import`. That makes 76 tools in the `all` profile.
+El servidor cubre como herramientas 73 de las 75 operaciones públicas de máquina
+a máquina. Deja fuera las dos operaciones de purga (`prepare` y `execute`),
+porque un borrado definitivo no se puede deshacer. Otras tres herramientas
+esperan un resultado asíncrono: `veriko_wait_for_validation`,
+`veriko_wait_for_cep_export` y `veriko_wait_for_beneficiary_import`. Con eso son
+76 herramientas en el perfil `all`.
 
 <!-- mcp-name: io.github.veriko-mx-labs/veriko -->
 
-## Install
+## Instalación
 
-Requires Node.js 20 or later. Without cloning anything, the client starts the
-server with `npx`:
+Requiere Node.js 20 o posterior. Sin clonar nada, el cliente arranca el
+servidor con `npx`:
 
 ```bash
 npx -y @veriko-mx/mcp
 ```
 
-In a host that accepts JSON configuration (Cursor and similar):
+En un host que acepta configuración JSON (Cursor y similares):
 
 ```json
 {
@@ -35,7 +36,7 @@ In a host that accepts JSON configuration (Cursor and similar):
 }
 ```
 
-## Try it from source
+## Probarlo desde el código fuente
 
 ```bash
 git clone https://github.com/veriko-mx-labs/veriko-mcp.git
@@ -44,23 +45,23 @@ npm ci
 npm run build
 ```
 
-This leaves a runnable server at `dist/index.js`. To see it answer without an
-API key, the public plans profile needs no credentials:
+Queda un servidor ejecutable en `dist/index.js`. Para verlo responder sin clave
+de API, el perfil de planes públicos no necesita credenciales:
 
 ```bash
 VERIKO_MCP_PROFILE=plans VERIKO_MCP_MAX_RISK=read node dist/index.js
 ```
 
-The process waits for MCP messages on stdin; your client normally starts it.
-This is the host configuration, with the absolute path to the copy you just
-built:
+El proceso se queda esperando mensajes MCP por stdin; lo normal es que lo
+arranque tu cliente. Esta es la configuración del host, con la ruta absoluta a
+la copia que acabas de construir:
 
 ```json
 {
   "mcpServers": {
     "veriko": {
       "command": "node",
-      "args": ["/path/to/veriko-mcp/dist/index.js"],
+      "args": ["/ruta/a/veriko-mcp/dist/index.js"],
       "env": {
         "VERIKO_API_KEY": "veriko_...",
         "VERIKO_MCP_PROFILE": "core",
@@ -71,71 +72,72 @@ built:
 }
 ```
 
-Get the key at `app.veriko.mx`. The key is never a tool argument: the server
-reads it only from `VERIKO_API_KEY`, so text injected into a page the model is
-reading cannot ask for it. The tools that read public data (`plans` profile,
-Banxico status, bank catalog) work without a key.
+La clave se obtiene en `app.veriko.mx`. Nunca es un argumento de una
+herramienta: el servidor sólo la lee de `VERIKO_API_KEY`, de modo que un texto
+inyectado en una página que el modelo esté leyendo no puede pedírsela. Las
+herramientas que leen datos públicos (perfil `plans`, estado de Banxico,
+catálogo de bancos) funcionan sin clave.
 
-## Environment variables
+## Variables de entorno
 
-| Variable | Description | Default |
+| Variable | Descripción | Predeterminado |
 |---|---|---|
-| `VERIKO_API_KEY` | Integrator API key (`veriko_` followed by 64 hexadecimal characters) | none |
-| `VERIKO_MCP_PROFILE` | `core`, `all`, one family or several families separated by commas | `core` |
-| `VERIKO_MCP_MAX_RISK` | Highest risk advertised: `read`, `write` or `destructive` | `write` |
-| `VERIKO_BASE_URL` | API base URL (HTTPS; HTTP only for `localhost`) | production API |
-| `VERIKO_TIMEOUT_MS` | Timeout per request, from 1,000 to 300,000 | 60,000 |
-| `VERIKO_MAX_RETRIES` | Automatic retries of transient failures, from 0 to 5 | 2 |
-| `VERIKO_ACCEPT_LANGUAGE` | Language of the API error text: `en` or `es` | `en` |
-| `VERIKO_MCP_FILE_ROOTS` | Absolute directories, separated by the platform path delimiter, that `image_path` and `file_path` may read from (stdio only) | none |
+| `VERIKO_API_KEY` | Clave de API del integrador (`veriko_` seguido de 64 caracteres hexadecimales) | ninguno |
+| `VERIKO_MCP_PROFILE` | `core`, `all`, una familia o varias familias separadas por coma | `core` |
+| `VERIKO_MCP_MAX_RISK` | Riesgo máximo que se anuncia: `read`, `write` o `destructive` | `write` |
+| `VERIKO_BASE_URL` | URL base de la API (HTTPS; HTTP sólo para `localhost`) | API de producción |
+| `VERIKO_TIMEOUT_MS` | Tiempo límite por petición, de 1,000 a 300,000 | 60,000 |
+| `VERIKO_MAX_RETRIES` | Reintentos automáticos de fallas transitorias, de 0 a 5 | 2 |
+| `VERIKO_ACCEPT_LANGUAGE` | Idioma del texto de los errores de la API: `en` o `es` | `en` |
+| `VERIKO_MCP_FILE_ROOTS` | Directorios absolutos, separados por el delimitador de rutas de la plataforma, de los que pueden leer `image_path` y `file_path` (sólo stdio) | ninguno |
 
-## What consumes quota
+## Lo que consume cuota
 
-`veriko_validate_direct` and `veriko_validate_ocr` consume plan quota, charged
-when the API accepts the request. Each description says so, because an agent
-loop can empty a monthly quota in minutes. The result reports the remaining
-allowance, and the text warns when it runs low. The rest of the catalog queries,
-exports or downloads without consuming validations.
+`veriko_validate_direct` y `veriko_validate_ocr` consumen cuota del plan, que se
+descuenta cuando la API acepta la petición. Cada descripción lo dice, porque un
+ciclo de un agente puede vaciar una cuota mensual en minutos. El resultado
+informa el saldo restante, y el texto avisa cuando queda poco. El resto del
+catálogo consulta, exporta o descarga sin consumir validaciones.
 
-Check the allowance first with `veriko_get_usage_limits`, which belongs to the
-`core` profile.
+Consulta antes el saldo con `veriko_get_usage_limits`, que pertenece al perfil
+`core`.
 
-## Profiles
+## Perfiles
 
-`VERIKO_MCP_PROFILE` accepts `core`, `all`, one family or several families
-separated by commas.
+`VERIKO_MCP_PROFILE` acepta `core`, `all`, una familia o varias familias
+separadas por coma.
 
-| Profile | Advertised tools |
+| Perfil | Herramientas anunciadas |
 |---|---|
-| `core` | validate, validate an account, list, get, wait for and download a CEP, usage limits |
-| `validations` | full validation lifecycle |
-| `webhooks` | endpoints, deliveries and secrets |
-| `catalog` | banks, SPEI calendar, BIN and Banxico status |
-| `beneficiaries` | list and bulk import |
-| `usage` | consumption, limits and export |
-| `account` | profile and retry policy |
-| `dashboard` | operational summary |
-| `plans` | public plans |
-| `insights` | aggregated metrics |
-| `finance` | summaries, previews, downloads and CEP exports |
-| `billing` | active subscription |
-| `all` | all 76 tools |
+| `core` | validar, validar una cuenta, listar, consultar, esperar y descargar un CEP, límites de uso |
+| `validations` | ciclo completo de validaciones |
+| `webhooks` | endpoints, entregas y secretos |
+| `catalog` | bancos, calendario SPEI, BIN y estado de Banxico |
+| `beneficiaries` | lista e importación masiva |
+| `usage` | consumo, límites y exportación |
+| `account` | perfil y política de reintentos |
+| `dashboard` | resumen operativo |
+| `plans` | planes públicos |
+| `insights` | métricas agregadas |
+| `finance` | resúmenes, vistas previas, descargas y exportaciones de CEP |
+| `billing` | suscripción activa |
+| `all` | las 76 herramientas |
 
-The profile decides which families the model sees. Risk is controlled
-independently with `VERIKO_MCP_MAX_RISK`:
+El perfil decide qué familias ve el modelo. El riesgo se controla de forma
+independiente con `VERIKO_MCP_MAX_RISK`:
 
-- `read`: queries and downloads only;
-- `write` (default): adds validations and ordinary changes;
-- `destructive`: adds deletions, cancellations, secret rotation and import
-  confirmation.
+- `read`: sólo consultas y descargas;
+- `write` (predeterminado): agrega validaciones y cambios normales;
+- `destructive`: agrega eliminaciones, cancelaciones, rotación de secretos y la
+  confirmación de importaciones.
 
-### What advertising each profile costs
+### Lo que cuesta anunciar cada perfil
 
-Advertising a tool spends context before the model calls anything. These
-figures come from the server itself: bytes of the `tools/list` response, from
-`npm run measure:catalog`. Tokens are an estimate at 3.6 bytes per token, not a
-real tokenization, and serve to compare profiles with each other. The figures
-include each tool's output schema.
+Anunciar una herramienta gasta contexto antes de que el modelo llame a ninguna.
+Estas cifras salen del propio servidor: bytes de la respuesta `tools/list`, con
+`npm run measure:catalog`. Los tokens son una estimación a 3.6 bytes por token,
+no una tokenización real, y sirven para comparar perfiles entre sí. Las cifras
+incluyen el esquema de salida de cada herramienta.
 
 | Profile | Tools | Bytes of `tools/list` | Estimated tokens |
 |---|---:|---:|---:|
@@ -153,102 +155,107 @@ include each tool's output schema.
 | `billing` | 1 | 1,049 | ~291 |
 | `all` | 76 | 147,699 | ~41,028 |
 
-Measured with Node 22 and risk `destructive`, so that no tool is hidden. `all`
-costs 5.8 times what `core` does; for that reason the default profile is `core`
-and families are added when needed. `test/tools-list-size.test.ts` fails when a
-profile grows past its budget.
+Medido con Node 22 y riesgo `destructive`, para no ocultar herramientas. `all`
+cuesta 5.8 veces lo que `core`; por eso el perfil predeterminado es `core` y se
+amplía por familia cuando hace falta. `test/tools-list-size.test.ts` falla cuando
+un perfil rebasa su presupuesto.
 
-## Behavior of the tools
+## Comportamiento de las herramientas
 
-- **Names and inputs.** Tools are named `veriko_<operationId in snake_case>`.
-  The prefix keeps the names unique in a host that connects several servers, and
-  the names do not change between releases. Input fields use the API's English names in `snake_case`, each with a
-  description, and the enums, minimums and maximums of the public contract.
-- **Structured output.** Every tool declares an `outputSchema` and returns
-  `structuredContent` plus the same JSON as text. A `_call` object carries the
-  request id, the `Idempotent-Replayed` flag, the quota, the rate-limit window,
-  `retry_after_seconds` and, when the API announces it, `deprecation` and
-  `sunset`. Text is capped at 64 KiB; `structuredContent` is never cut.
-- **Idempotency.** Each write sends a random `Idempotency-Key` per call. To retry
-  safely after a lost response, repeat the call with the same
-  `idempotency_key`; `idempotent_replayed: true` means the API returned the
-  stored response.
-- **Asynchronous results.** A validation can answer `queued` or `processing`.
-  `veriko_wait_for_validation`, `veriko_wait_for_cep_export` and
-  `veriko_wait_for_beneficiary_import` poll until the resource reaches a
-  terminal status or the wait ends (25 seconds by default, up to 40). They honor
-  `next_poll_after_seconds` and `Retry-After`, and answer `terminal: false` with
-  the interval when time runs out. Conditional reads that return `304` come back
-  as `{ "not_modified": true, "etag": ... }`, not as errors.
-- **Errors.** A failed call returns `isError` with `code`, `status`,
-  `retryable`, `retry_after_seconds`, `request_id` and the full `errors` list
-  (`code`, `title`, `detail`, `hint`, `docs_url`, `pointer`, `meta`). A `429`
-  from an exhausted quota (`kind: quota`) and a rate limit (`kind: rate_limit`)
-  return at once, with `retry_after_seconds`; the server does not sleep through
-  them.
-- **Confirmation.** When the client declares the `elicitation` capability, the
-  server asks before `veriko_delete_validation`, `veriko_delete_webhook`,
+- **Nombres y entradas.** Las herramientas se llaman
+  `veriko_<operationId en snake_case>`. El prefijo mantiene únicos los nombres en
+  un host que conecta varios servidores, y los nombres no cambian entre
+  versiones. Los campos de entrada usan los nombres de la API en `snake_case`,
+  cada uno con su descripción, y los enums, mínimos y máximos del contrato público.
+- **Salida estructurada.** Cada herramienta declara un `outputSchema` y devuelve
+  `structuredContent` más el mismo JSON como texto. Un objeto `_call` lleva el id
+  de la petición, la marca `Idempotent-Replayed`, la cuota, la ventana de límite
+  de frecuencia, `retry_after_seconds` y, cuando la API lo anuncia, `deprecation`
+  y `sunset`. El texto se recorta a 64 KiB; `structuredContent` nunca se recorta.
+- **Idempotencia.** Cada escritura envía un `Idempotency-Key` aleatorio por
+  llamada. Para reintentar sin riesgo tras una respuesta perdida, repite la
+  llamada con la misma `idempotency_key`; `idempotent_replayed: true` significa
+  que la API devolvió la respuesta guardada.
+- **Resultados asíncronos.** Una validación puede responder `queued` o
+  `processing`. `veriko_wait_for_validation`, `veriko_wait_for_cep_export` y
+  `veriko_wait_for_beneficiary_import` consultan hasta que el recurso llega a un
+  estado terminal o termina la espera (25 segundos por omisión, hasta 40).
+  Respetan `next_poll_after_seconds` y `Retry-After`, y responden
+  `terminal: false` con el intervalo cuando se acaba el tiempo. Las lecturas
+  condicionales que devuelven `304` llegan como
+  `{ "not_modified": true, "etag": ... }`, no como errores.
+- **Errores.** Una llamada fallida devuelve `isError` con `code`, `status`,
+  `retryable`, `retry_after_seconds`, `request_id` y la lista completa `errors`
+  (`code`, `title`, `detail`, `hint`, `docs_url`, `pointer`, `meta`). Un `429` por
+  cuota agotada (`kind: quota`) y uno por límite de frecuencia
+  (`kind: rate_limit`) regresan de inmediato, con `retry_after_seconds`; el
+  servidor no espera dormido a que pasen.
+- **Confirmación.** Cuando el cliente declara la capacidad `elicitation`, el
+  servidor pregunta antes de `veriko_delete_validation`, `veriko_delete_webhook`,
   `veriko_regenerate_webhook_secret`, `veriko_delete_beneficiary`,
   `veriko_delete_beneficiary_import_row`, `veriko_commit_beneficiary_import`,
-  `veriko_update_validation_retry_policy` and `veriko_update_my_retry_policy`.
-  A declined or dismissed question returns `executed: false` with the `reason`,
-  and nothing is sent to the API. A client without the capability runs the
-  operation, and `VERIKO_MCP_MAX_RISK` remains the gate.
-- **Progress and cancellation.** When the request carries a `progressToken`, the
-  wait tools send one `notifications/progress` per poll, and downloads send one
-  when the request starts and one when the file arrives. Cancelling the request
-  aborts the call in flight, its retries and the pause between polls; the result
-  is `cancelled`.
-- **Downloads.** Files return as embedded resources up to 256 KiB, and as
-  `veriko://artifact/...` links above that (stdio), with the right MIME type. The
-  server infers the type of an `application/octet-stream` download from the
-  extension and the leading bytes.
-- **Limits.** The server validates canonical base64 and the public limits before
-  calling the SDK: 12 MB for OCR receipts (image or PDF) and 20 MB for
-  beneficiary imports. The stdio transport accepts a maximum import in full.
-- **Local files.** Over stdio, set `VERIKO_MCP_FILE_ROOTS` and
-  `veriko_validate_ocr` accepts `image_path`, and `veriko_create_beneficiary_import`
-  accepts `file_path`, instead of base64. The path must be absolute and, once
-  links are resolved, inside one of the roots. The server checks the size limits
-  above, the leading bytes of a receipt (JPEG, PNG, WebP or PDF) and the
-  extension of an import file before it sends anything. Without the variable the
-  arguments are not advertised, and the HTTP server never advertises or reads them.
-- **Completion.** Prompt arguments and resource template variables answer
-  `completion/complete`: validation statuses, webhook events and export formats
-  come from the spec enums, bank codes from the public bank catalog (by code, name
-  or alias), and the year of the SPEI calendar from the current year.
-- **User agent.** Requests send
-  `veriko-mcp/<version> (<transport>) veriko-sdk-js/<version> (...)`.
+  `veriko_update_validation_retry_policy` y `veriko_update_my_retry_policy`.
+  Una pregunta rechazada o cerrada devuelve `executed: false` con el `reason`, y
+  no se envía nada a la API. Un cliente sin la capacidad ejecuta la operación, y
+  `VERIKO_MCP_MAX_RISK` sigue siendo la compuerta.
+- **Avance y cancelación.** Cuando la petición trae un `progressToken`, las
+  herramientas de espera envían una `notifications/progress` por consulta, y las
+  descargas envían una al empezar la petición y otra cuando llega el archivo.
+  Cancelar la petición aborta la llamada en curso, sus reintentos y la pausa entre
+  consultas; el resultado es `cancelled`.
+- **Descargas.** Los archivos regresan como recursos incrustados hasta 256 KiB, y
+  como enlaces `veriko://artifact/...` por encima de eso (stdio), con el tipo MIME
+  correcto. El servidor infiere el tipo de una descarga `application/octet-stream`
+  por la extensión y los primeros bytes.
+- **Límites.** El servidor valida base64 canónico y los límites públicos antes de
+  llamar al SDK: 12 MB para comprobantes OCR (imagen o PDF) y 20 MB para
+  importaciones de beneficiarios. El transporte stdio admite completa una
+  importación máxima.
+- **Archivos locales.** Por stdio, define `VERIKO_MCP_FILE_ROOTS` y
+  `veriko_validate_ocr` acepta `image_path`, y `veriko_create_beneficiary_import`
+  acepta `file_path`, en lugar de base64. La ruta debe ser absoluta y, una vez
+  resueltos los enlaces, estar dentro de una de las raíces. El servidor revisa los
+  límites de tamaño anteriores, los primeros bytes de un comprobante (JPEG, PNG,
+  WebP o PDF) y la extensión de un archivo de importación antes de enviar nada.
+  Sin la variable, los argumentos no se anuncian, y el servidor HTTP nunca los
+  anuncia ni los lee.
+- **Autocompletado.** Los argumentos de los prompts y las variables de las
+  plantillas de recursos responden `completion/complete`: los estados de
+  validación, los eventos de webhook y los formatos de exportación salen de los
+  enums del spec, los códigos de banco del catálogo público de bancos (por código,
+  nombre o alias), y el año del calendario SPEI del año en curso.
+- **User agent.** Las peticiones envían
+  `veriko-mcp/<versión> (<transporte>) veriko-sdk-js/<versión> (...)`.
 
-### Resources
+### Recursos
 
-| URI | Content |
+| URI | Contenido |
 |---|---|
-| `veriko://catalog/banks` | SPEI bank catalog |
-| `veriko://catalog/banks/{code}` | One SPEI bank by its 5-digit code |
-| `veriko://catalog/spei-calendar/{year}` | Non-business SPEI days of a year |
-| `veriko://plans` | Public plans |
-| `veriko://status/banxico` | Banxico service status |
-| `veriko://docs` | Links to the documentation at `https://docs.veriko.mx/en/` |
-| `veriko://artifact/...` | Files downloaded in the current session (stdio) |
+| `veriko://catalog/banks` | Catálogo de bancos SPEI |
+| `veriko://catalog/banks/{code}` | Un banco SPEI por su código de 5 dígitos |
+| `veriko://catalog/spei-calendar/{year}` | Días inhábiles SPEI de un año |
+| `veriko://plans` | Planes públicos |
+| `veriko://status/banxico` | Estado del servicio de Banxico |
+| `veriko://docs` | Enlaces a la documentación en `https://docs.veriko.mx/en/` |
+| `veriko://artifact/...` | Archivos descargados en la sesión actual (stdio) |
 
 ### Prompts
 
 `check_transfer`, `reconcile_month`, `triage_failed_validations`,
-`set_up_webhook`, `export_validations` and `import_beneficiaries` start a guided flow with the real
-tools of the catalog.
+`set_up_webhook`, `export_validations` e `import_beneficiaries` inician un flujo
+guiado con las herramientas reales del catálogo.
 
-## Architecture
+## Arquitectura
 
-- It uses the official JavaScript SDK as the only transport layer to the API.
-  The code imports it through `@veriko-mx/sdk-runtime`, a stable alias that
-  allows changing the distribution source without rewriting the server.
-- The runtime SDK ships inside the MCP tarball.
-- It advertises tools by profile and risk.
-- Errors use `error.code`, status, pointer, request id and retry interval when
-  they exist; the API's translatable text is not a contract.
+- Usa el SDK oficial de JavaScript como única capa de transporte hacia la API.
+  El código lo importa mediante `@veriko-mx/sdk-runtime`, un alias estable que
+  permite cambiar la fuente de distribución sin reescribir el servidor.
+- El SDK runtime viaja incluido en el tarball del MCP.
+- Anuncia herramientas según perfil y riesgo.
+- Los errores usan `error.code`, estado, puntero, id de la petición e intervalo de
+  reintento cuando existen; el texto traducible de la API no es un contrato.
 
-## Development
+## Desarrollo
 
 ```bash
 npm ci
@@ -260,81 +267,81 @@ npm run measure:catalog
 npm run evals
 ```
 
-`check:surface` compares the full catalog against the SDK's public spec and pins
-its SHA-256. The operations the catalog does not advertise, the two purge
-operations, are declared apart in `NOT_EXPOSED_OPERATIONS`. A new, removed or
-hidden operation, an authentication scheme other than the API key, or any
-contract change fails this check. The sync workflow opens the PR for the new
-contract as a draft, with CI run and a summary of the change in the body, for
-review before accepting it.
+`check:surface` compara el catálogo completo contra el spec público del SDK y
+fija su SHA-256. Las operaciones que el catálogo no anuncia, las dos operaciones
+de purga, se declaran aparte en `NOT_EXPOSED_OPERATIONS`. Una operación nueva,
+retirada o escondida, un esquema de autenticación distinto de la clave de API o
+cualquier cambio contractual falla esta comprobación. El workflow de
+sincronización deja el PR del contrato nuevo como borrador, con el CI corrido y
+un resumen del cambio en el cuerpo, para revisarlo antes de aceptarlo.
 
-The tests do not use the real API. `test/server.test.ts` connects an MCP client
-and server in memory with a fake SDK; `test/http.test.ts` starts the HTTP mode on
-a local port. `npm run evals` runs the scenarios in `evals/` against a fake API.
+Las pruebas no usan la API real. `test/server.test.ts` conecta un cliente y un
+servidor MCP en memoria con un SDK falso; `test/http.test.ts` levanta el modo
+HTTP en un puerto local. `npm run evals` ejecuta los escenarios de `evals/`
+contra una API falsa.
 
-## Transports
+## Transportes
 
-The core lives in `createVerikoServer()` and does not depend on the transport.
-There are two:
+El núcleo vive en `createVerikoServer()` y no depende del transporte. Hay dos:
 
-- **stdio** (`veriko-mcp`): the client starts it as a local process and the key
-  is read from `VERIKO_API_KEY`. Downloads are `veriko://artifact/...`
-  resources or embedded resources.
-- **Stateless Streamable HTTP** (`veriko-mcp-http`): an endpoint that can sit
-  behind a proxy. There are no sessions and no memory between requests.
+- **stdio** (`veriko-mcp`): el cliente lo arranca como proceso local y la clave
+  se lee de `VERIKO_API_KEY`. Las descargas son recursos `veriko://artifact/...`
+  o recursos incrustados.
+- **Streamable HTTP sin estado** (`veriko-mcp-http`): un endpoint que se puede
+  poner detrás de un proxy. No hay sesiones ni memoria entre peticiones.
 
-### HTTP mode
+### Modo HTTP
 
 ```bash
 npm run build
 VERIKO_MCP_HTTP_PORT=3000 node dist/http-index.js
 ```
 
-It listens on `127.0.0.1:3000/mcp`; `GET /healthz` answers without
-authentication.
+Escucha en `127.0.0.1:3000/mcp`; `GET /healthz` responde sin autenticación.
 
-- **Authentication.** Every request carries the integrator API key as
-  `Authorization: Bearer <key>`. Without it, or if it does not have the shape of
-  a Veriko key, the answer is 401. The server creates a new client per request,
-  does not store or log the key, and ignores `VERIKO_API_KEY` from the
-  environment, so a server key is never used on behalf of someone else.
-- **Downloads.** Because the next request can land on another process, the file
-  is not stored: it travels embedded in the response as a resource with a base64
-  `blob`, capped at 8 MB. Beyond that it returns the `artifact_too_large` error
-  with the size, the limit and a `hint`: lower `limit`, narrow `from` and `to`,
-  add a filter, or use stdio or the API.
-- **Host and Origin.** The `Host` header must be in `VERIKO_MCP_ALLOWED_HOSTS`;
-  without it only `localhost`, `127.0.0.1` and `[::1]` are accepted, and the
-  server does not start if it listens on another address. A request with
-  `Origin` (browser requests) passes only if that origin is in
-  `VERIKO_MCP_ALLOWED_ORIGINS`; non-browser clients do not send it.
-- **Body size.** A body declared larger than the cap is rejected with 413
-  without being read.
-- **Profiles and risk.** `VERIKO_MCP_PROFILE` and `VERIKO_MCP_MAX_RISK` apply to
-  the whole server, as in stdio. A request can narrow them with
-  `X-Veriko-Profile` and `X-Veriko-Max-Risk`; a wider value answers 403 and an
-  unknown one 400. The checks run after the `Host`, `Origin` and key checks.
-- **Language.** `Accept-Language` (`en` or `es`) sets the language of the API
-  error text for that request.
+- **Autenticación.** Cada petición lleva la clave de API del integrador como
+  `Authorization: Bearer <clave>`. Sin ella, o si no tiene la forma de una clave
+  de Veriko, la respuesta es 401. El servidor crea un cliente nuevo por petición,
+  no guarda ni registra la clave e ignora `VERIKO_API_KEY` del entorno, para que
+  nunca se use una clave del servidor en nombre de otra persona.
+- **Descargas.** Como la siguiente petición puede caer en otro proceso, el
+  archivo no se guarda: viaja incrustado en la respuesta como recurso con `blob`
+  en base64, con un tope de 8 MB. Más allá devuelve el error `artifact_too_large`
+  con el tamaño, el límite y un `hint`: baja `limit`, acota `from` y `to`, agrega
+  un filtro, o usa stdio o la API.
+- **Host y Origin.** El encabezado `Host` debe estar en `VERIKO_MCP_ALLOWED_HOSTS`;
+  sin configurarla sólo se admiten `localhost`, `127.0.0.1` y `[::1]`, y el
+  servidor no arranca si escucha en otra dirección. Una petición con `Origin`
+  (las de un navegador) sólo pasa si ese origen está en
+  `VERIKO_MCP_ALLOWED_ORIGINS`; los clientes que no son navegador no lo envían.
+- **Tamaño del cuerpo.** Un cuerpo declarado mayor que el tope se rechaza con 413
+  sin leerlo.
+- **Perfiles y riesgo.** `VERIKO_MCP_PROFILE` y `VERIKO_MCP_MAX_RISK` valen para
+  todo el servidor, igual que en stdio. Una petición puede acotarlos con
+  `X-Veriko-Profile` y `X-Veriko-Max-Risk`; un valor más amplio responde 403 y
+  uno desconocido 400. Las comprobaciones corren después de las de `Host`,
+  `Origin` y clave.
+- **Idioma.** `Accept-Language` (`en` o `es`) fija el idioma del texto de los
+  errores de la API para esa petición.
 
-| Variable | Description | Default |
+| Variable | Descripción | Predeterminado |
 |---|---|---|
-| `VERIKO_MCP_HTTP_PORT` | Port | `3000` |
-| `VERIKO_MCP_HTTP_HOST` | Listen address | `127.0.0.1` |
-| `VERIKO_MCP_HTTP_PATH` | Endpoint path | `/mcp` |
-| `VERIKO_MCP_ALLOWED_HOSTS` | Host names accepted in `Host`, without port, separated by commas; required if it listens outside `127.0.0.1` | `localhost`, `127.0.0.1`, `[::1]` |
-| `VERIKO_MCP_ALLOWED_ORIGINS` | Allowed browser origins (`https://app.example.com`), separated by commas; empty rejects every request with `Origin` | empty |
-| `VERIKO_MCP_HTTP_MAX_BODY_BYTES` | Maximum body size | 32 MiB |
-| `VERIKO_MCP_HTTP_MAX_INLINE_BYTES` | Cap of an embedded file | 8 MiB |
+| `VERIKO_MCP_HTTP_PORT` | Puerto | `3000` |
+| `VERIKO_MCP_HTTP_HOST` | Dirección de escucha | `127.0.0.1` |
+| `VERIKO_MCP_HTTP_PATH` | Ruta del endpoint | `/mcp` |
+| `VERIKO_MCP_ALLOWED_HOSTS` | Nombres de host admitidos en `Host`, sin puerto, separados por coma; obligatoria si escucha fuera de `127.0.0.1` | `localhost`, `127.0.0.1`, `[::1]` |
+| `VERIKO_MCP_ALLOWED_ORIGINS` | Orígenes de navegador permitidos (`https://app.ejemplo.com`), separados por coma; vacío rechaza toda petición con `Origin` | vacío |
+| `VERIKO_MCP_HTTP_MAX_BODY_BYTES` | Tamaño máximo del cuerpo | 32 MiB |
+| `VERIKO_MCP_HTTP_MAX_INLINE_BYTES` | Tope de un archivo incrustado | 8 MiB |
 
-The server does not terminate TLS: deploy it behind an HTTPS proxy. Until OAuth
-exists for customer accounts, the API key is the only credential.
+El servidor no termina TLS: se despliega detrás de un proxy HTTPS. Hasta que
+exista OAuth para cuentas de cliente, la clave de API es la única credencial.
 
-## Security
+## Seguridad
 
-See [SECURITY.md](SECURITY.md). Never open issues with API keys, real payloads,
-receipts, account numbers or unsanitized responses.
+Consulta [SECURITY.md](SECURITY.md). Nunca abras issues con claves de API, payloads
+reales, comprobantes, números de cuenta o respuestas sin sanitizar.
 
-## License
+## Licencia
 
 MIT.
