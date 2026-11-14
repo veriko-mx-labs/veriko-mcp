@@ -1,13 +1,14 @@
 name: Register in the MCP Registry
 
-# Registers on registry.modelcontextprotocol.io the version that is already on npm.
+# Registra en registry.modelcontextprotocol.io la versión que ya está en npm.
 #
-# It is launched by hand (workflow_dispatch): registering is publishing, and it
-# must not happen unless someone asks for it. It authenticates through OIDC, with
-# no token: the registry recognizes the io.github.veriko-mx-labs namespace by the
-# owner of the repository that runs the workflow.
+# Se lanza a mano (workflow_dispatch): registrar es publicar, y no debe
+# ocurrir si nadie lo pide. Se autentica con DNS: el espacio de nombres
+# mx.veriko se demuestra con un registro TXT en veriko.mx, y el workflow firma
+# con la llave privada correspondiente, que vive en el secret
+# MCP_REGISTRY_PRIVATE_KEY del entorno `npm`. La llave nunca se imprime.
 #
-# It reuses the `npm` environment, the same one that guards publishing the package.
+# Reutiliza el entorno `npm`, el mismo que protege la publicación del paquete.
 
 on:
   workflow_dispatch:
@@ -24,7 +25,6 @@ jobs:
       name: npm
     permissions:
       contents: read
-      id-token: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -33,7 +33,7 @@ jobs:
           node-version: '24'
           package-manager-cache: false
 
-      - name: Check that server.json describes the published version
+      - name: Comprobar que server.json describe la versión publicada
         shell: bash
         run: |
           set -euo pipefail
@@ -43,11 +43,11 @@ jobs:
           test "$(npm view "@veriko-mx/mcp@$version" version)" = "$version"
           test "$(npm view "@veriko-mx/mcp@$version" mcpName)" = "$(node -p "require('./server.json').name")"
 
-      - name: Install mcp-publisher
+      - name: Instalar mcp-publisher
         shell: bash
         run: |
           set -euo pipefail
-          # Pinned version and checksum: updating the binary is a reviewed change.
+          # Versión y suma de verificación fijas: actualizar el binario es un cambio revisado.
           tag=v1.8.1
           archive=mcp-publisher_linux_amd64.tar.gz
           sha256=a06c9096dcb9727c13555b6be26c7effa707b01f06a4c561ba7a3635443cf2cc
@@ -55,24 +55,33 @@ jobs:
           echo "$sha256  $archive" | sha256sum -c -
           tar xzf "$archive" mcp-publisher
 
-      - name: Authenticate with OIDC
-        run: ./mcp-publisher login github-oidc
+      - name: Iniciar sesión en el registro con DNS
+        shell: bash
+        env:
+          MCP_REGISTRY_PRIVATE_KEY: ${{ secrets.MCP_REGISTRY_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "$MCP_REGISTRY_PRIVATE_KEY" ]; then
+            echo "El secret MCP_REGISTRY_PRIVATE_KEY del entorno npm está vacío o no existe." >&2
+            exit 1
+          fi
+          ./mcp-publisher login dns --domain veriko.mx --private-key "$MCP_REGISTRY_PRIVATE_KEY"
 
-      - name: Validate and publish
+      - name: Validar y publicar
         run: |
           ./mcp-publisher validate
           ./mcp-publisher publish
 
-      - name: Check that the server is listed
+      - name: Comprobar que el servidor aparece en el listado
         shell: bash
         run: |
           name="$(node -p "require('./server.json').name")"
           for attempt in $(seq 1 12); do
             if curl -fsS "https://registry.modelcontextprotocol.io/v0.1/servers?search=$name" | grep -q "\"$name\""; then
-              echo "$name is in the registry."
+              echo "$name está en el registro."
               exit 0
             fi
             sleep 10
           done
-          echo "$name did not appear in the registry after two minutes." >&2
+          echo "$name no apareció en el registro después de dos minutos." >&2
           exit 1

@@ -1,10 +1,26 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-  "name": "io.github.veriko-mx-labs/veriko",
+  "name": "mx.veriko/veriko",
   "title": "Veriko",
-  "description": "Verify Mexican SPEI transfers against the Banxico CEP and operate the Veriko public API.",
-  "version": "0.2.0",
-  "websiteUrl": "https://docs.veriko.mx/en/mcp",
+  "description": "Verifica transferencias SPEI contra el CEP de Banxico y opera la API pública de Veriko.",
+  "version": "0.2.1",
+  "websiteUrl": "https://docs.veriko.mx/es/mcp",
+  "icons": [
+    {
+      "src": "https://docs.veriko.mx/mcp-icon-96.png",
+      "mimeType": "image/png",
+      "sizes": [
+        "96x96"
+      ]
+    },
+    {
+      "src": "https://docs.veriko.mx/mcp-icon-48.png",
+      "mimeType": "image/png",
+      "sizes": [
+        "48x48"
+      ]
+    }
+  ],
   "repository": {
     "url": "https://github.com/veriko-mx-labs/veriko-mcp",
     "source": "github",
@@ -14,7 +30,7 @@
     {
       "registryType": "npm",
       "identifier": "@veriko-mx/mcp",
-      "version": "0.2.0",
+      "version": "0.2.1",
       "runtimeHint": "npx",
       "transport": {
         "type": "stdio"
@@ -22,57 +38,71 @@
       "environmentVariables": [
         {
           "name": "VERIKO_API_KEY",
-          "description": "Integrator API key (veriko_ followed by 64 hexadecimal characters). Optional for the tools that read public data.",
+          "description": "Clave de API del integrador (veriko_ seguido de 64 caracteres hexadecimales). Es opcional para las herramientas que leen datos públicos.",
           "format": "string",
           "isRequired": false,
           "isSecret": true
         },
         {
           "name": "VERIKO_MCP_PROFILE",
-          "description": "Tool profile: core, all or families separated by commas.",
+          "description": "Perfil de herramientas: core, all o familias separadas por comas.",
           "format": "string",
           "isRequired": false,
           "default": "core"
         },
         {
           "name": "VERIKO_MCP_MAX_RISK",
-          "description": "Highest risk advertised: read, write or destructive.",
+          "description": "Riesgo máximo que se anuncia: read, write o destructive.",
           "format": "string",
           "isRequired": false,
           "default": "write"
         },
         {
           "name": "VERIKO_BASE_URL",
-          "description": "API base URL. HTTPS only, except localhost.",
+          "description": "URL base de la API. Sólo HTTPS, salvo localhost.",
           "format": "string",
           "isRequired": false
         },
         {
           "name": "VERIKO_TIMEOUT_MS",
-          "description": "Timeout per request in milliseconds, from 1000 to 300000.",
+          "description": "Tiempo límite por petición en milisegundos, de 1000 a 300000.",
           "format": "number",
           "isRequired": false,
           "default": "60000"
         },
         {
           "name": "VERIKO_MAX_RETRIES",
-          "description": "Automatic retries of transient failures, from 0 to 5.",
+          "description": "Reintentos automáticos de fallas transitorias, de 0 a 5.",
           "format": "number",
           "isRequired": false,
           "default": "2"
         },
         {
           "name": "VERIKO_ACCEPT_LANGUAGE",
-          "description": "Language of the API error text: en or es.",
+          "description": "Idioma del texto de los errores de la API: en o es.",
           "format": "string",
           "isRequired": false,
           "default": "en"
         },
         {
           "name": "VERIKO_MCP_FILE_ROOTS",
-          "description": "Absolute directories, separated by the platform path delimiter, that image_path and file_path may read from. Without it those arguments are not advertised.",
+          "description": "Directorios absolutos, separados por el delimitador de rutas de la plataforma, de los que image_path y file_path pueden leer. Sin esta variable esos argumentos no se anuncian.",
           "format": "string",
           "isRequired": false
+        }
+      ]
+    }
+  ],
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://api.veriko.mx/mcp",
+      "headers": [
+        {
+          "name": "Authorization",
+          "description": "Bearer seguido de tu clave de API de Veriko",
+          "isRequired": true,
+          "isSecret": true
         }
       ]
     }

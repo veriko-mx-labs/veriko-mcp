@@ -11,9 +11,15 @@ esperan un resultado asíncrono: `veriko_wait_for_validation`,
 `veriko_wait_for_cep_export` y `veriko_wait_for_beneficiary_import`. Con eso son
 76 herramientas en el perfil `all`.
 
-<!-- mcp-name: io.github.veriko-mx-labs/veriko -->
+<!-- mcp-name: mx.veriko/veriko -->
 
 ## Instalación
+
+Hay dos formas de conectar el servidor. Con la local, tu cliente arranca el
+paquete en tu computadora. Con la remota, se conecta al servidor que Veriko
+mantiene en `https://api.veriko.mx/mcp`, sin instalar nada.
+
+### Local, con npx
 
 Requiere Node.js 20 o posterior. Sin clonar nada, el cliente arranca el
 servidor con `npx`:
@@ -22,7 +28,8 @@ servidor con `npx`:
 npx -y @veriko-mx/mcp
 ```
 
-En un host que acepta configuración JSON (Cursor y similares):
+En Cursor y en otros editores compatibles con MCP que leen `mcpServers` en su
+archivo de configuración de MCP:
 
 ```json
 {
@@ -35,6 +42,75 @@ En un host que acepta configuración JSON (Cursor y similares):
   }
 }
 ```
+
+En VS Code (`.vscode/mcp.json`), que pide la clave al arrancar en lugar de
+guardarla en el archivo:
+
+```json
+{
+  "inputs": [
+    {
+      "type": "promptString",
+      "id": "veriko-api-key",
+      "description": "Clave de API de Veriko",
+      "password": true
+    }
+  ],
+  "servers": {
+    "veriko": {
+      "command": "npx",
+      "args": ["-y", "@veriko-mx/mcp"],
+      "env": { "VERIKO_API_KEY": "${input:veriko-api-key}" }
+    }
+  }
+}
+```
+
+### Remota
+
+El servidor remoto usa Streamable HTTP en `https://api.veriko.mx/mcp`. Cada
+petición lleva tu clave de API en el encabezado `Authorization: Bearer`. Es el
+mismo servidor del paquete, con las mismas herramientas, pero no lee archivos de
+tu computadora: para `image_path` y `file_path` usa la instalación local.
+
+En Cursor, con la clave en una variable de entorno:
+
+```json
+{
+  "mcpServers": {
+    "veriko": {
+      "url": "https://api.veriko.mx/mcp",
+      "headers": { "Authorization": "Bearer ${env:VERIKO_API_KEY}" }
+    }
+  }
+}
+```
+
+En VS Code:
+
+```json
+{
+  "inputs": [
+    {
+      "type": "promptString",
+      "id": "veriko-api-key",
+      "description": "Clave de API de Veriko",
+      "password": true
+    }
+  ],
+  "servers": {
+    "veriko": {
+      "type": "http",
+      "url": "https://api.veriko.mx/mcp",
+      "headers": { "Authorization": "Bearer ${input:veriko-api-key}" }
+    }
+  }
+}
+```
+
+Otros editores compatibles con MCP aceptan una URL remota y encabezados
+personalizados: usa la misma URL y el mismo encabezado `Authorization`. La
+clave nunca se escribe en un archivo que subas al repositorio.
 
 ## Probarlo desde el código fuente
 

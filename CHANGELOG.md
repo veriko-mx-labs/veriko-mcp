@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.2.1] - 2026-11-14
+
+### Agregado
+
+- Servidor remoto en `https://api.veriko.mx/mcp`, con Streamable HTTP y tu clave de API en el
+  encabezado `Authorization: Bearer`. El README trae la configuración para Cursor y VS Code.
+- `idempotency_key` opcional en `veriko_send_cep_to_telegram`, como en el resto de las escrituras.
+
+### Cambiado
+
+- Las instrucciones del servidor, los títulos y las descripciones de las herramientas, los
+  mensajes de los esquemas, los prompts, los recursos y los mensajes de error y de progreso están
+  en español. Los nombres de herramientas, parámetros y campos, los valores de enum y los códigos
+  de error no cambian.
+- El servidor se registra en el registro MCP como `mx.veriko/veriko`, y su ficha enlaza la
+  documentación en español. El paquete declara el mismo nombre en `mcpName`.
+- Usa la versión 0.6.1 del SDK de Veriko.
+- Con las descripciones en español, anunciar el perfil `all` cuesta unos 43,100 tokens estimados.
+  La tabla del README tiene el costo de cada perfil.
+
 ## [0.2.0] - 2026-11-13
 
 ### Agregado
