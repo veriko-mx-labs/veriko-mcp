@@ -139,24 +139,24 @@ Estas cifras salen del propio servidor: bytes de la respuesta `tools/list`, con
 no una tokenización real, y sirven para comparar perfiles entre sí. Las cifras
 incluyen el esquema de salida de cada herramienta.
 
-| Profile | Tools | Bytes of `tools/list` | Estimated tokens |
+| Perfil | Herramientas | Bytes de `tools/list` | Tokens estimados |
 |---|---:|---:|---:|
-| `core` | 8 | 25,536 | ~7,093 |
-| `validations` | 15 | 43,152 | ~11,987 |
-| `webhooks` | 10 | 29,012 | ~8,059 |
-| `catalog` | 5 | 6,554 | ~1,821 |
-| `beneficiaries` | 16 | 26,254 | ~7,293 |
-| `usage` | 7 | 8,661 | ~2,406 |
-| `account` | 3 | 4,696 | ~1,304 |
-| `dashboard` | 1 | 1,198 | ~333 |
-| `plans` | 2 | 2,097 | ~583 |
-| `insights` | 4 | 4,834 | ~1,343 |
-| `finance` | 12 | 20,202 | ~5,612 |
-| `billing` | 1 | 1,049 | ~291 |
-| `all` | 76 | 147,699 | ~41,028 |
+| `core` | 8 | 26,952 | ~7,487 |
+| `validations` | 15 | 45,347 | ~12,596 |
+| `webhooks` | 10 | 29,850 | ~8,292 |
+| `catalog` | 5 | 6,898 | ~1,916 |
+| `beneficiaries` | 16 | 27,784 | ~7,718 |
+| `usage` | 7 | 9,055 | ~2,515 |
+| `account` | 3 | 4,957 | ~1,377 |
+| `dashboard` | 1 | 1,253 | ~348 |
+| `plans` | 2 | 2,207 | ~613 |
+| `insights` | 4 | 5,094 | ~1,415 |
+| `finance` | 12 | 21,221 | ~5,895 |
+| `billing` | 1 | 1,087 | ~302 |
+| `all` | 76 | 154,743 | ~42,984 |
 
 Medido con Node 22 y riesgo `destructive`, para no ocultar herramientas. `all`
-cuesta 5.8 veces lo que `core`; por eso el perfil predeterminado es `core` y se
+cuesta 5.7 veces lo que `core`; por eso el perfil predeterminado es `core` y se
 amplía por familia cuando hace falta. `test/tools-list-size.test.ts` falla cuando
 un perfil rebasa su presupuesto.
 

@@ -26,8 +26,8 @@ function validation(status: string) {
   return { data: { type: 'validation', id: ID, attributes: { status } } };
 }
 
-describe('progress and cancellation', () => {
-  it('reports one progress notification per poll when the request has a progress token', async () => {
+describe('avance y cancelación', () => {
+  it('informa una notificación de avance por consulta cuando la petición trae un token de avance', async () => {
     const states = ['processing', 'valid'];
     api.reply = (_request, response) =>
       json(response, 200, validation(states.shift() ?? 'valid'), { 'Retry-After': '1' });
@@ -49,14 +49,14 @@ describe('progress and cancellation', () => {
     assert.match(updates[1]?.message ?? '', /valid/);
   });
 
-  it('sends no progress when the request has no progress token', async () => {
+  it('no envía avance cuando la petición no trae token de avance', async () => {
     api.reply = (_request, response) => json(response, 200, validation('valid'));
     const { client } = await session();
     const result = await client.callTool({ name: 'veriko_wait_for_validation', arguments: { validation_id: ID } });
     assert.equal(result.isError, undefined);
   });
 
-  it('reports the start and the end of a download', async () => {
+  it('informa el inicio y el final de una descarga', async () => {
     api.reply = (_request, response) => {
       response.statusCode = 200;
       response.setHeader('content-type', 'application/pdf');
@@ -82,7 +82,7 @@ describe('progress and cancellation', () => {
     assert.match(updates[1]?.message ?? '', /13 bytes/);
   });
 
-  it('stops a wait and its in-flight API call when the client cancels', async () => {
+  it('detiene una espera y su llamada en curso a la API cuando el cliente cancela', async () => {
     let reachedApi = 0;
     let closedByServer = 0;
     api.reply = (_request, response) => {
@@ -90,7 +90,7 @@ describe('progress and cancellation', () => {
       response.on('close', () => {
         closedByServer += 1;
       });
-      // Never answers: the call stays in flight until it is aborted.
+      // Nunca responde: la llamada queda en curso hasta que se aborta.
     };
     const { client } = await session();
     const controller = new AbortController();
@@ -110,11 +110,11 @@ describe('progress and cancellation', () => {
     for (let waited = 0; closedByServer === 0 && waited < 2000; waited += 10) {
       await new Promise((resolve) => setTimeout(resolve, 10));
     }
-    assert.equal(closedByServer, 1, 'the API connection was closed after the cancellation');
+    assert.equal(closedByServer, 1, 'la conexión con la API se cerró tras la cancelación');
     assert.equal(reachedApi, 1, 'no further request was sent');
   });
 
-  it('stops a long pause between polls when the client cancels', async () => {
+  it('detiene una pausa larga entre consultas cuando el cliente cancela', async () => {
     api.reply = (_request, response) => json(response, 200, validation('processing'), { 'Retry-After': '10' });
     const { client } = await session();
     const controller = new AbortController();

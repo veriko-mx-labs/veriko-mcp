@@ -19,7 +19,7 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '24'
-      - name: Verify the tag and that publishing is enabled
+      - name: Verificar la etiqueta y que la publicación esté habilitada
         shell: bash
         run: |
           version="$(node -p "require('./package.json').version")"
@@ -31,7 +31,7 @@ jobs:
       - run: npm ci
       - run: npm run check
       - run: npm run check:surface
-      - name: Pack
+      - name: Empaquetar
         run: mkdir package && npm pack --pack-destination package
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -59,7 +59,7 @@ jobs:
         with:
           name: npm-package
           path: package/
-      - name: Publish with retries on transient errors
+      - name: Publicar con reintentos ante errores transitorios
         shell: bash
         run: |
           version="${GITHUB_REF_NAME#v}"
@@ -68,7 +68,7 @@ jobs:
           trap 'rm -f "$public_npmrc" "$publish_log"' EXIT
 
           if npm view "@veriko-mx/mcp@$version" version --userconfig "$public_npmrc" >/dev/null 2>&1; then
-            echo "@veriko-mx/mcp@$version is already public."
+            echo "@veriko-mx/mcp@$version ya es público."
             exit 0
           fi
 
@@ -88,20 +88,20 @@ jobs:
             sleep $((15 * 2 ** (attempt - 1)))
           done
 
-          # This check avoids trusting a publish that npm accepted but did not make
-          # visible. A version signed with provenance can take a few minutes to
-          # appear, and npm itself warns that it "may take a few minutes".
+          # Esta comprobación evita confiar en una publicación que npm aceptó pero no
+          # hizo visible. Una versión firmada con procedencia puede tardar unos minutos en
+          # aparecer, y el propio npm advierte que «puede tardar unos minutos».
           attempts=24
           for attempt in $(seq 1 "$attempts"); do
             if npm view "@veriko-mx/mcp@$version" version --userconfig "$public_npmrc" >/dev/null 2>&1; then
-              echo "@veriko-mx/mcp@$version is available in the public registry."
+              echo "@veriko-mx/mcp@$version está disponible en el registro público."
               exit 0
             fi
-            echo "Waiting for npm public propagation ($attempt/$attempts)..."
+            echo "Esperando la propagación pública de npm ($attempt/$attempts)..."
             sleep 15
           done
-          echo "@veriko-mx/mcp@$version did not appear in the public registry after $((attempts * 15))s." >&2
-          echo "If the log says '+ @veriko-mx/mcp@$version', the publish worked and this is propagation: rerun the job." >&2
+          echo "@veriko-mx/mcp@$version no apareció en el registro público después de $((attempts * 15)) s." >&2
+          echo "Si el registro dice '+ @veriko-mx/mcp@$version', la publicación funcionó y esto es propagación: vuelve a ejecutar el job." >&2
           exit 1
 
   release:
@@ -112,7 +112,7 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Create an ephemeral veriko-labs token
+      - name: Crear un token efímero de veriko-labs
         id: app-token
         uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         with:
@@ -122,7 +122,7 @@ jobs:
           repositories: ${{ github.event.repository.name }}
           permission-contents: write
 
-      - name: Create the release
+      - name: Crear el release
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
-        run: gh release create "$GITHUB_REF_NAME" --verify-tag --notes 'No API changes. Updates documentation and metadata.'
+        run: gh release create "$GITHUB_REF_NAME" --verify-tag --notes 'Sin cambios en la API. Actualiza documentación y metadatos.'

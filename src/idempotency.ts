@@ -3,19 +3,20 @@ import { randomUUID } from 'node:crypto';
 export const IDEMPOTENCY_PATTERN = /^[A-Za-z0-9_-]{1,255}$/;
 
 /**
- * The key for one tool call.
+ * La clave de una llamada a una herramienta.
  *
- * Without a caller key the call gets a fresh random key, so repeating the same
- * arguments is always a new attempt: a validation re-run after `not_found`
- * queries Banxico again, and a retry policy set back to an earlier value is
- * applied again. To make a retry safe after a lost response, the caller passes
- * the same `idempotency_key` it used the first time; the API then replays the
- * stored response for 24 hours and returns `Idempotent-Replayed: true`.
+ * Sin clave de quien llama, la llamada recibe una clave aleatoria nueva, así que
+ * repetir los mismos argumentos siempre es un intento nuevo: una validación que
+ * se vuelve a ejecutar después de un `not_found` consulta a Banxico otra vez, y
+ * una política de reintentos que vuelve a un valor anterior se aplica de nuevo.
+ * Para que un reintento sea seguro tras una respuesta perdida, quien llama envía
+ * la misma `idempotency_key` de la primera vez; la API repite entonces la
+ * respuesta guardada durante 24 horas y devuelve `Idempotent-Replayed: true`.
  */
 export function resolveIdempotencyKey(provided: unknown): string {
   if (provided !== undefined) {
     if (typeof provided !== 'string' || !IDEMPOTENCY_PATTERN.test(provided)) {
-      throw new TypeError('idempotency_key may use only A-Z, a-z, 0-9, _ and - (1 to 255 characters).');
+      throw new TypeError('idempotency_key sólo puede usar A-Z, a-z, 0-9, _ y - (de 1 a 255 caracteres).');
     }
     return provided;
   }

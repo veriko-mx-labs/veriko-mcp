@@ -3,11 +3,11 @@ import { WEBHOOK_EVENTS } from '@veriko-mx/sdk-runtime';
 
 import { EXPORT_FORMAT_VALUES, VALIDATION_STATUSES } from './schemas.js';
 
-/** The protocol allows at most 100 values in one completion answer. */
+/** El protocolo permite como máximo 100 valores en una respuesta de autocompletado. */
 const MAX_VALUES = 100;
 const BANKS_TTL_MS = 10 * 60 * 1000;
 
-/** Values that start with what the person typed; all of them when nothing is typed. */
+/** Valores que empiezan con lo que la persona escribió; todos cuando no ha escrito nada. */
 export function startingWith(values: readonly string[], typed: string | undefined): string[] {
   const needle = (typed ?? '').trim().toLowerCase();
   return values.filter((value) => value.toLowerCase().startsWith(needle)).slice(0, MAX_VALUES);
@@ -17,7 +17,7 @@ export const completeStatus = (typed: string | undefined): string[] => startingW
 export const completeEvent = (typed: string | undefined): string[] => startingWith(WEBHOOK_EVENTS, typed);
 export const completeFormat = (typed: string | undefined): string[] => startingWith(EXPORT_FORMAT_VALUES, typed);
 
-/** The years a SPEI calendar can be read for: the previous one, this one and the next. */
+/** Los años de los que se puede leer un calendario SPEI: el anterior, el actual y el siguiente. */
 export function completeYear(typed: string | undefined, now: Date = new Date()): string[] {
   const year = now.getUTCFullYear();
   return startingWith([year - 1, year, year + 1].map(String), typed);
@@ -43,10 +43,10 @@ function entriesOf(banks: unknown): BankEntry[] {
 }
 
 /**
- * Completes SPEI bank codes from the public bank catalog. A code prefix or a
- * part of a name or alias finds the bank; the answer is always the code. The
- * catalog is read at most once every ten minutes, and a failed read gives no
- * suggestions instead of an error.
+ * Completa códigos de banco SPEI desde el catálogo público de bancos. Un prefijo
+ * de código o una parte del nombre o del alias encuentra el banco; la respuesta
+ * siempre es el código. El catálogo se lee como máximo una vez cada diez minutos,
+ * y una lectura fallida no da sugerencias en lugar de un error.
  */
 export function bankCompleter(client: Veriko, now: () => number = () => Date.now()) {
   let cached: { at: number; entries: BankEntry[] } | undefined;

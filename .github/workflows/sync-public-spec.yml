@@ -1,17 +1,17 @@
 name: Sync the public spec
 
-# The MCP depends on two sources that change on their own:
+# El MCP depende de dos fuentes que cambian por su cuenta:
 #
-#   · the public contract, which the organization's reusable workflow brings in:
-#     it downloads the portal export and writes it to `spec/openapi.yaml`;
-#   · the SDK this server consumes, pinned by version and integrity, which the
-#     reusable workflow does not check.
+#   · el contrato público, que trae el workflow reutilizable de la organización:
+#     descarga la exportación del portal y la escribe en `spec/openapi.yaml`;
+#   · el SDK que consume este servidor, fijado por versión e integridad, que el
+#     workflow reutilizable no revisa.
 #
-# When the contract changes, `sync:contract` pins the new SHA-256 in
-# `check:surface`, writes a summary of the change operation by operation and
-# regenerates the cost-per-profile table in the README. The PR is left as a draft,
-# with a reviewer requested and no auto-merge: CI runs in full and is visible
-# before someone reviews it and marks it ready.
+# Cuando el contrato cambia, `sync:contract` fija el nuevo SHA-256 en
+# `check:surface`, escribe un resumen del cambio operación por operación y
+# regenera la tabla de costo por perfil del README. El PR queda como borrador,
+# con revisión solicitada y sin fusión automática: el CI corre completo y se ve
+# antes de que alguien lo revise y lo marque como listo.
 
 on:
   workflow_dispatch:
@@ -46,5 +46,5 @@ jobs:
       - run: npm ci
       - run: npm run check:sdk
         env:
-          # Only to avoid hitting the per-IP limit of the GitHub API.
+          # Sólo para no topar con el límite por IP de la API de GitHub.
           GITHUB_TOKEN: ${{ github.token }}

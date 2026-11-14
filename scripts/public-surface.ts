@@ -20,7 +20,7 @@ interface OpenApiDocument {
   };
 }
 
-function assertNoInternalExtensions(value: unknown, location = 'document'): void {
+function assertNoInternalExtensions(value: unknown, location = 'documento'): void {
   if (Array.isArray(value)) {
     value.forEach((entry, index) => assertNoInternalExtensions(entry, `${location}[${index}]`));
     return;
@@ -29,7 +29,7 @@ function assertNoInternalExtensions(value: unknown, location = 'document'): void
 
   for (const [key, child] of Object.entries(value)) {
     if (FORBIDDEN_EXTENSION_KEYS.has(key)) {
-      throw new Error(`The public OpenAPI contains ${key} at ${location}.`);
+      throw new Error(`El OpenAPI público contiene ${key} en ${location}.`);
     }
     assertNoInternalExtensions(child, `${location}.${key}`);
   }
@@ -37,21 +37,21 @@ function assertNoInternalExtensions(value: unknown, location = 'document'): void
 
 function assertApiKeySecurity(security: unknown, location: string): void {
   if (!Array.isArray(security)) {
-    throw new Error(`${location} does not declare a valid security array.`);
+    throw new Error(`${location} no declara un arreglo de seguridad válido.`);
   }
   if (security.length === 0) return;
 
   for (const requirement of security) {
     if (!requirement || typeof requirement !== 'object' || Array.isArray(requirement)) {
-      throw new Error(`${location} contains an invalid security requirement.`);
+      throw new Error(`${location} contiene un requisito de seguridad no válido.`);
     }
     const entries = Object.entries(requirement);
     if (entries.length !== 1 || entries[0]?.[0] !== 'ApiKeyAuth') {
-      throw new Error(`${location} allows authentication other than ApiKeyAuth.`);
+      throw new Error(`${location} permite una autenticación distinta de ApiKeyAuth.`);
     }
     const scopes = entries[0][1];
     if (!Array.isArray(scopes) || scopes.length !== 0) {
-      throw new Error(`${location} declares unexpected scopes for ApiKeyAuth.`);
+      throw new Error(`${location} declara alcances inesperados para ApiKeyAuth.`);
     }
   }
 }
@@ -59,23 +59,23 @@ function assertApiKeySecurity(security: unknown, location: string): void {
 function assertSecurityScheme(document: OpenApiDocument): void {
   const schemes = document.components?.securitySchemes;
   if (!schemes || Object.keys(schemes).length !== 1 || !('ApiKeyAuth' in schemes)) {
-    throw new Error('The public OpenAPI must declare only ApiKeyAuth.');
+    throw new Error('El OpenAPI público debe declarar sólo ApiKeyAuth.');
   }
 
   const apiKey = schemes.ApiKeyAuth;
   if (!apiKey || typeof apiKey !== 'object' || Array.isArray(apiKey)) {
-    throw new Error('ApiKeyAuth is not a valid security scheme.');
+    throw new Error('ApiKeyAuth no es un esquema de seguridad válido.');
   }
   const fields = apiKey as Record<string, unknown>;
   if (fields.type !== 'apiKey' || fields.in !== 'header' || fields.name !== 'Authorization') {
-    throw new Error('ApiKeyAuth must be an API key in the Authorization header.');
+    throw new Error('ApiKeyAuth debe ser una clave de API en el encabezado Authorization.');
   }
 }
 
 /**
- * Compares the public spec with the catalog. `expectedOperationIds` are the
- * operations with an adapter and `notExposed` those the catalog decides not to
- * announce: together they must be exactly the operations of the spec.
+ * Compara el spec público con el catálogo. `expectedOperationIds` son las
+ * operaciones con adaptador y `notExposed` las que el catálogo decide no
+ * anunciar: juntas deben ser exactamente las operaciones del spec.
  */
 export function assertPublicM2MSurface(
   input: unknown,
@@ -84,12 +84,12 @@ export function assertPublicM2MSurface(
   notExposed: readonly string[] = [],
 ): void {
   if (!input || typeof input !== 'object' || Array.isArray(input)) {
-    throw new Error('The public OpenAPI is not an object.');
+    throw new Error('El OpenAPI público no es un objeto.');
   }
   const document = input as OpenApiDocument;
   assertNoInternalExtensions(document);
   assertSecurityScheme(document);
-  assertApiKeySecurity(document.security, 'The global security');
+  assertApiKeySecurity(document.security, 'La seguridad global');
 
   const actual = new Map<string, string>();
   for (const [path, item] of Object.entries(document.paths ?? {})) {
@@ -99,12 +99,12 @@ export function assertPublicM2MSurface(
 
       const location = `${method.toUpperCase()} ${path}`;
       if (typeof operation.operationId !== 'string' || operation.operationId.length === 0) {
-        throw new Error(`${location} has no operationId.`);
+        throw new Error(`${location} no tiene operationId.`);
       }
       const previous = actual.get(operation.operationId);
       if (previous) {
         throw new Error(
-          `Duplicate operationId ${operation.operationId}: ${previous} and ${location}.`,
+          `operationId repetido ${operation.operationId}: ${previous} y ${location}.`,
         );
       }
       actual.set(operation.operationId, location);
@@ -114,11 +114,11 @@ export function assertPublicM2MSurface(
 
   const exposed = new Set(expectedOperationIds);
   if (exposed.size !== expectedOperationIds.length) {
-    throw new Error('The MCP catalog contains duplicate operationId values.');
+    throw new Error('El catálogo MCP contiene valores operationId repetidos.');
   }
   const withAdapter = notExposed.filter((operationId) => exposed.has(operationId)).sort();
   if (withAdapter.length) {
-    throw new Error(`Operations that are not exposed but have an adapter: ${withAdapter.join(', ')}`);
+    throw new Error(`Operaciones no expuestas que tienen adaptador: ${withAdapter.join(', ')}`);
   }
   const expected = new Set([...exposed, ...notExposed]);
 
@@ -126,15 +126,15 @@ export function assertPublicM2MSurface(
   const obsolete = [...expected].filter((operationId) => !actual.has(operationId)).sort();
   if (missing.length || obsolete.length) {
     const lines = [
-      missing.length ? `Missing MCP adapters: ${missing.join(', ')}` : '',
-      obsolete.length ? `Obsolete MCP adapters: ${obsolete.join(', ')}` : '',
+      missing.length ? `Faltan adaptadores MCP: ${missing.join(', ')}` : '',
+      obsolete.length ? `Adaptadores MCP obsoletos: ${obsolete.join(', ')}` : '',
     ].filter(Boolean);
     throw new Error(lines.join('\n'));
   }
 
   if (actual.size !== expectedCount) {
     throw new Error(
-      `The public surface has ${actual.size} operations; ${expectedCount} were expected.`,
+      `La superficie pública tiene ${actual.size} operaciones; se esperaban ${expectedCount}.`,
     );
   }
 }

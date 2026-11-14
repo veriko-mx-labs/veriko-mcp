@@ -1,5 +1,5 @@
 {
-  "notice": "Fictitious data built for the evaluations. No figure, account, tracking key or name corresponds to a real customer, and none of it comes from a production API response.",
+  "notice": "Datos ficticios armados para las evaluaciones. Ninguna cifra, cuenta, clave de rastreo ni nombre corresponde a un cliente real, y nada de esto viene de una respuesta de la API de producción.",
   "validations": [
     {
       "id": "2f4a7c91-1111-4a11-8a11-000000000001",

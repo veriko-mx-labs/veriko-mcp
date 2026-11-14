@@ -20,7 +20,7 @@ import { json, startFakeApi } from './support.js';
 
 const cleanups: Array<() => Promise<void>> = [];
 
-/** Test keys with the real shape: `veriko_` and 64 hexadecimal characters. */
+/** Claves de prueba con la forma real: `veriko_` y 64 caracteres hexadecimales. */
 const KEY_A = `veriko_${'a'.repeat(64)}`;
 const KEY_B = `veriko_${'b'.repeat(64)}`;
 const KEY_C = `veriko_${'c'.repeat(64)}`;
@@ -37,7 +37,7 @@ const INITIALIZE = JSON.stringify({
 });
 const MCP_HEADERS = { 'content-type': 'application/json', accept: 'application/json, text/event-stream' };
 
-/** Raw request with node:http, to set Host and Content-Length by hand. */
+/** Petición cruda con node:http, para fijar Host y Content-Length a mano. */
 function rawRequest(
   base: string,
   headers: Record<string, string>,
@@ -88,7 +88,7 @@ async function open(base: string, token: string): Promise<Client> {
 }
 
 describe('bearerToken', () => {
-  it('extracts the key and rejects malformed formats', () => {
+  it('extrae la clave y rechaza los formatos mal formados', () => {
     assert.equal(bearerToken('Bearer veriko_abc'), 'veriko_abc');
     assert.equal(bearerToken('bearer   veriko_abc  '), 'veriko_abc');
     assert.equal(bearerToken(null), undefined);
@@ -97,7 +97,7 @@ describe('bearerToken', () => {
     assert.equal(bearerToken(`Bearer ${'x'.repeat(513)}`), undefined);
   });
 
-  it('recognizes only the shape of a Veriko key', () => {
+  it('reconoce sólo la forma de una clave de Veriko', () => {
     assert.equal(isApiKeyShape(KEY_A), true);
     assert.equal(isApiKeyShape('veriko_abc'), false);
     assert.equal(isApiKeyShape(`veriko_${'A'.repeat(64)}`), false);
@@ -106,8 +106,8 @@ describe('bearerToken', () => {
   });
 });
 
-describe('stateless HTTP mode', () => {
-  it('answers 401 without a key and does not open the endpoint', async () => {
+describe('modo HTTP sin estado', () => {
+  it('responde 401 sin clave y no abre el endpoint', async () => {
     const base = await listen();
     const response = await fetch(`${base}/mcp`, {
       method: 'POST',
@@ -118,13 +118,13 @@ describe('stateless HTTP mode', () => {
     assert.match(response.headers.get('www-authenticate') ?? '', /^Bearer/);
   });
 
-  it('serves /healthz unauthenticated and 404 on other paths', async () => {
+  it('sirve /healthz sin autenticación y 404 en las demás rutas', async () => {
     const base = await listen();
     assert.equal((await fetch(`${base}/healthz`)).status, 200);
     assert.equal((await fetch(`${base}/otra`)).status, 404);
   });
 
-  it('rejects a key of another shape before initialize', async () => {
+  it('rechaza una clave de otra forma antes de initialize', async () => {
     const base = await listen();
     const response = await fetch(`${base}/mcp`, {
       method: 'POST',
@@ -134,7 +134,7 @@ describe('stateless HTTP mode', () => {
     assert.equal(response.status, 401);
   });
 
-  it('accepts initialize with a well-formed key', async () => {
+  it('acepta initialize con una clave bien formada', async () => {
     const base = await listen();
     const response = await fetch(`${base}/mcp`, {
       method: 'POST',
@@ -144,7 +144,7 @@ describe('stateless HTTP mode', () => {
     assert.equal(response.status, 200);
   });
 
-  it('rejects any Origin when the origin list is empty', async () => {
+  it('rechaza cualquier Origin cuando la lista de orígenes está vacía', async () => {
     const base = await listen();
     for (const origin of ['https://malo.example', 'null', `http://127.0.0.1`]) {
       const response = await fetch(`${base}/mcp`, {
@@ -157,7 +157,7 @@ describe('stateless HTTP mode', () => {
     }
   });
 
-  it('lets an Origin from the list through, compared as an origin', async () => {
+  it('deja pasar un Origin de la lista, comparado como origen', async () => {
     const base = await listen({ allowedOrigins: ['https://App.Veriko.mx/'] });
     const response = await fetch(`${base}/mcp`, {
       method: 'POST',
@@ -173,11 +173,11 @@ describe('stateless HTTP mode', () => {
     assert.equal(other.status, 403);
   });
 
-  it('rejects a malformed origin at configuration', () => {
-    assert.throws(() => createHttpApp({ allowedOrigins: ['app.veriko.mx'] }), /Invalid origin/);
+  it('rechaza un origen mal formado al configurar', () => {
+    assert.throws(() => createHttpApp({ allowedOrigins: ['app.veriko.mx'] }), /Origen no válido/);
   });
 
-  it('rejects a Host outside the list (DNS rebinding)', async () => {
+  it('rechaza un Host fuera de la lista (DNS rebinding)', async () => {
     const base = await listen();
     const headers = { ...MCP_HEADERS, authorization: `Bearer ${KEY_A}` };
     const rebind = await rawRequest(base, { ...headers, host: 'atacante.example:3000' }, INITIALIZE);
@@ -187,14 +187,14 @@ describe('stateless HTTP mode', () => {
     assert.equal(local.status, 200);
   });
 
-  it('accepts the configured hosts and nothing else', async () => {
+  it('acepta los hosts configurados y nada más', async () => {
     const base = await listen({ allowedHosts: ['mcp.ejemplo.com'] });
     const headers = { ...MCP_HEADERS, authorization: `Bearer ${KEY_A}` };
     assert.equal((await rawRequest(base, { ...headers, host: 'MCP.ejemplo.com' }, INITIALIZE)).status, 200);
     assert.equal((await rawRequest(base, { ...headers, host: '127.0.0.1' }, INITIALIZE)).status, 403);
   });
 
-  it('rejects a body declared larger than the cap without reading it', async () => {
+  it('rechaza un cuerpo declarado mayor que el tope sin leerlo', async () => {
     const base = await listen({ maxBodyBytes: 1024 });
     const result = await rawRequest(
       base,
@@ -205,7 +205,7 @@ describe('stateless HTTP mode', () => {
     assert.deepEqual(JSON.parse(result.body), { error: 'payload_too_large' });
   });
 
-  it('cuts a body without Content-Length that passes the cap', async () => {
+  it('corta un cuerpo sin Content-Length que pasa el tope', async () => {
     const base = await listen({ maxBodyBytes: 1024 });
     const result = await rawRequest(
       base,
@@ -215,7 +215,7 @@ describe('stateless HTTP mode', () => {
     assert.equal(result.status, 413);
   });
 
-  it('rejects an Origin outside the list', async () => {
+  it('rechaza un Origin fuera de la lista', async () => {
     const base = await listen({ allowedOrigins: ['https://app.veriko.mx'] });
     const response = await fetch(`${base}/mcp`, {
       method: 'POST',
@@ -225,7 +225,7 @@ describe('stateless HTTP mode', () => {
     assert.equal(response.status, 403);
   });
 
-  it('advertises tools and uses the key of each request, without mixing them', async () => {
+  it('anuncia herramientas y usa la clave de cada petición, sin mezclarlas', async () => {
     const seen: string[] = [];
     const base = await listen({
       clientFactory: (apiKey) =>
@@ -252,7 +252,7 @@ describe('stateless HTTP mode', () => {
     assert.deepEqual(seen, [KEY_A, KEY_B]);
   });
 
-  it('ignores VERIKO_API_KEY from the environment', async () => {
+  it('ignora VERIKO_API_KEY del entorno', async () => {
     const previous = process.env.VERIKO_API_KEY;
     process.env.VERIKO_API_KEY = 'veriko_del_servidor';
     cleanups.push(async () => {
@@ -274,7 +274,7 @@ describe('stateless HTTP mode', () => {
     assert.ok(seen.every((key) => key === KEY_C));
   });
 
-  it('delivers downloads embedded, with no resources in memory', async () => {
+  it('entrega las descargas incrustadas, sin recursos en memoria', async () => {
     const content = Buffer.from('%PDF-1.4 prueba');
     const base = await listen({
       clientFactory: () =>
@@ -290,7 +290,7 @@ describe('stateless HTTP mode', () => {
     });
     const client = await open(base, KEY_A);
     const name = (await client.listTools()).tools.find((tool) => /download/.test(tool.name));
-    assert.ok(name, 'the validations profile must advertise a download');
+    assert.ok(name, 'el perfil validations debe anunciar una descarga');
 
     const result = await client.callTool({
       name: name.name,
@@ -301,7 +301,7 @@ describe('stateless HTTP mode', () => {
     assert.equal(block?.resource?.mimeType, 'application/pdf');
     assert.equal(Buffer.from(block?.resource?.blob ?? '', 'base64').toString(), content.toString());
 
-    // Stateless: no artifact store to read from, only the reference resources.
+    // Sin estado: no hay almacén de artefactos que leer, sólo los recursos de referencia.
     const resources = await client.listResources().catch(() => ({ resources: [] }));
     assert.deepEqual(
       resources.resources.filter((resource) => resource.uri.startsWith('veriko://artifact/')),
@@ -309,7 +309,7 @@ describe('stateless HTTP mode', () => {
     );
   });
 
-  it('rejects with a clear error a file larger than the embedded cap', async () => {
+  it('rechaza con un error claro un archivo mayor que el tope de incrustación', async () => {
     const base = await listen({
       maxInlineArtifactBytes: 4,
       clientFactory: () =>
@@ -334,10 +334,10 @@ describe('stateless HTTP mode', () => {
     assert.equal(error?.code, 'artifact_too_large');
     assert.equal(error?.size, 8);
     assert.equal(error?.limit, 4);
-    assert.match(error?.hint ?? '', /stdio package/);
+    assert.match(error?.hint ?? '', /paquete local por stdio/);
   });
 
-  it('suggests how to get a smaller export when it exceeds the embedded cap', async () => {
+  it('sugiere cómo obtener una exportación más pequeña cuando supera el tope de incrustación', async () => {
     const base = await listen({
       config: { apiKey: '', profiles: new Set(['validations']), maxRisk: 'read' },
       maxInlineArtifactBytes: 4,
@@ -353,12 +353,12 @@ describe('stateless HTTP mode', () => {
     const result = await client.callTool({ name: 'veriko_export_validations', arguments: {} });
 
     const error = (result.structuredContent as { error?: { hint?: string } }).error;
-    assert.match(error?.hint ?? '', /Lower `limit` to export fewer rows, narrow `from` and `to`, add a `status` or `bank` filter; or download it with the local stdio package/);
+    assert.match(error?.hint ?? '', /Baja `limit` para exportar menos filas, acota `from` y `to`, agrega un filtro `status` o `bank`; o descárgalo con el paquete local por stdio/);
   });
 });
 
 describe('veriko-mcp-http', () => {
-  it('does not start outside 127.0.0.1 without VERIKO_MCP_ALLOWED_HOSTS', () => {
+  it('no arranca fuera de 127.0.0.1 sin VERIKO_MCP_ALLOWED_HOSTS', () => {
     const env: NodeJS.ProcessEnv = { ...process.env, VERIKO_MCP_HTTP_HOST: '0.0.0.0', VERIKO_MCP_HTTP_PORT: '1' };
     delete env.VERIKO_MCP_ALLOWED_HOSTS;
     const result = spawnSync(process.execPath, ['--import', 'tsx', 'src/http-index.ts'], {
@@ -367,18 +367,18 @@ describe('veriko-mcp-http', () => {
       timeout: 20_000,
     });
     assert.notEqual(result.status, 0);
-    assert.match(result.stderr, /VERIKO_MCP_ALLOWED_HOSTS is required/);
+    assert.match(result.stderr, /VERIKO_MCP_ALLOWED_HOSTS es obligatorio/);
   });
 });
 
-describe('version', () => {
-  it('matches package.json', async () => {
+describe('versión', () => {
+  it('coincide con package.json', async () => {
     const { default: manifest } = await import('../package.json', { with: { type: 'json' } });
     assert.equal(MCP_VERSION, manifest.version);
   });
 });
 
-describe('per-request overrides over HTTP', () => {
+describe('ajustes por petición sobre HTTP', () => {
   const ALL_CONFIG = { apiKey: '', profiles: new Set(['all' as const]), maxRisk: 'destructive' as const };
 
   async function call(app: ReturnType<typeof createHttpApp>, method: string, params: unknown, headers: Record<string, string> = {}) {
@@ -402,7 +402,7 @@ describe('per-request overrides over HTTP', () => {
     return [...body.matchAll(/"name":"(veriko_[a-z_]+)"/g)].map((match) => match[1] ?? '');
   }
 
-  it('narrows the risk of one request and refuses to widen it', async () => {
+  it('acota el riesgo de una petición y se niega a ampliarlo', async () => {
     const app = createHttpApp({ config: { ...ALL_CONFIG, maxRisk: 'write' } });
     cleanups.push(() => app.close());
 
@@ -418,7 +418,7 @@ describe('per-request overrides over HTTP', () => {
     assert.equal((await call(app, 'tools/list', {}, { 'X-Veriko-Max-Risk': 'root' })).status, 400);
   });
 
-  it('narrows the profile of one request and refuses profiles the server does not announce', async () => {
+  it('acota el perfil de una petición y rechaza los perfiles que el servidor no anuncia', async () => {
     const all = createHttpApp({ config: ALL_CONFIG });
     const some = createHttpApp({ config: { ...ALL_CONFIG, profiles: new Set(['plans', 'webhooks']) } });
     cleanups.push(() => all.close(), () => some.close());
@@ -434,7 +434,7 @@ describe('per-request overrides over HTTP', () => {
     assert.equal((await call(all, 'tools/list', {}, { 'X-Veriko-Profile': 'nonexistent' })).status, 400);
   });
 
-  it('keeps the authentication, Host and Origin checks ahead of any override', async () => {
+  it('mantiene las comprobaciones de autenticación, Host y Origin antes de cualquier ajuste', async () => {
     const app = createHttpApp({ config: ALL_CONFIG });
     cleanups.push(() => app.close());
 
@@ -456,7 +456,7 @@ describe('per-request overrides over HTTP', () => {
     assert.match(badOrigin.body, /origin_not_allowed/);
   });
 
-  it('sends the language of Accept-Language to the API and defaults to English', async () => {
+  it('envía a la API el idioma de Accept-Language y usa inglés por omisión', async () => {
     const api = await startFakeApi();
     cleanups.push(() => api.close());
     api.reply = (_request, response) => json(response, 200, { data: [] });
@@ -474,7 +474,7 @@ describe('per-request overrides over HTTP', () => {
     );
   });
 
-  it('parses Accept-Language by weight and ignores languages the API does not answer in', () => {
+  it('interpreta Accept-Language por peso e ignora los idiomas en los que la API no responde', () => {
     assert.equal(languageFrom('en;q=0.4, es;q=0.8'), 'es');
     assert.equal(languageFrom('fr, de'), undefined);
     assert.equal(languageFrom('es;q=0, en'), 'en');

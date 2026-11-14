@@ -11,52 +11,53 @@ import {
 import { z } from 'zod';
 
 const answer = z.object({
-  confirm: z.boolean().describe('Check to run the operation.'),
+  confirm: z.boolean().describe('Marca para ejecutar la operación.'),
 });
 
 const FORM = {
   type: 'object' as const,
   properties: {
-    confirm: { type: 'boolean' as const, title: 'Run the operation', description: 'Check to run the operation.' },
+    confirm: { type: 'boolean' as const, title: 'Ejecutar la operación', description: 'Marca para ejecutar la operación.' },
   },
   required: ['confirm'],
 };
 
-/** The key of the answer in a retried request, and the name of the form field. */
+/** La clave de la respuesta en una petición reintentada, y el nombre del campo del formulario. */
 const CONFIRM_KEY = 'confirm';
 
 export type Confirmation =
   | { proceed: true }
   | { proceed: false; result: CallToolResult | InputRequiredResult };
 
-/** Whether the client declared that it can show a form. */
+/** Si el cliente declaró que puede mostrar un formulario. */
 export function canConfirm(server: McpServer, ctx: ServerContext): boolean {
   const envelope = ctx.mcpReq.envelope as Record<string, unknown> | undefined;
   const declared = envelope?.[CLIENT_CAPABILITIES_META_KEY] as ClientCapabilities | undefined;
   const elicitation = (declared ?? server.server.getClientCapabilities())?.elicitation;
   if (!elicitation) return false;
-  // `elicitation: {}` is form support; a client that lists only `url` cannot show the question.
+  // `elicitation: {}` es soporte de formularios; un cliente que sólo lista `url` no puede mostrar la pregunta.
   return elicitation.form !== undefined || elicitation.url === undefined;
 }
 
 function notExecuted(reason: 'declined' | 'cancelled' | 'not_confirmed' | 'unavailable'): CallToolResult {
   const message = {
-    declined: 'The user declined, so the operation did not run. Nothing changed.',
-    cancelled: 'The user dismissed the question, so the operation did not run. Nothing changed.',
-    not_confirmed: 'The user did not check the confirmation, so the operation did not run. Nothing changed.',
-    unavailable: 'The client could not show the confirmation, so the operation did not run. Nothing changed.',
+    declined: 'La persona rechazó la operación, así que no se ejecutó. No cambió nada.',
+    cancelled: 'La persona cerró la pregunta, así que la operación no se ejecutó. No cambió nada.',
+    not_confirmed: 'La persona no marcó la confirmación, así que la operación no se ejecutó. No cambió nada.',
+    unavailable: 'El cliente no pudo mostrar la confirmación, así que la operación no se ejecutó. No cambió nada.',
   }[reason];
   const structuredContent = { executed: false, reason, message };
   return { content: [{ type: 'text', text: JSON.stringify(structuredContent) }], structuredContent };
 }
 
 /**
- * Asks the person to confirm a destructive operation, when the client can ask.
+ * Le pide a la persona que confirme una operación destructiva, cuando el cliente puede preguntar.
  *
- * A client without the `elicitation` capability proceeds as before: the risk
- * level (`VERIKO_MCP_MAX_RISK`) remains the gate. On a legacy connection the
- * question is a server request; on the 2026-07-28 revision the handler returns
- * an input-required result and the client retries with the answer.
+ * Un cliente sin la capacidad `elicitation` sigue como antes: el nivel de
+ * riesgo (`VERIKO_MCP_MAX_RISK`) sigue siendo la compuerta. En una conexión
+ * antigua la pregunta es una petición del servidor; en la revisión 2026-07-28
+ * el manejador devuelve un resultado de entrada requerida y el cliente
+ * reintenta con la respuesta.
  */
 export async function confirmOperation(
   server: McpServer,

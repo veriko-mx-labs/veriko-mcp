@@ -1,25 +1,26 @@
 import { z } from 'zod';
 
 /**
- * The shape of `structuredContent` for each kind of tool.
+ * La forma de `structuredContent` para cada tipo de herramienta.
  *
- * Every schema is open (`looseObject`): the server returns the API resource as
- * the SDK parsed it, and the API can add fields without a new MCP release. The
- * schemas pin down what a client can rely on, not every field of a resource.
+ * Todos los esquemas son abiertos (`looseObject`): el servidor devuelve el
+ * recurso de la API tal como lo interpretó el SDK, y la API puede agregar campos
+ * sin una versión nueva del MCP. Los esquemas fijan en qué puede confiar un
+ * cliente, no cada campo de un recurso.
  */
 /**
- * Declared compactly: the schema is repeated in every tool of `tools/list`, and the
- * object is open. Besides these fields it carries `request_id`, `quota`, `rate_limit`,
- * `deprecation` and `sunset` when the response has them.
+ * Declarado de forma compacta: el esquema se repite en cada herramienta de `tools/list` y el
+ * objeto es abierto. Además de estos campos trae `request_id`, `quota`, `rate_limit`,
+ * `deprecation` y `sunset` cuando la respuesta los tiene.
  */
 export const callInfo = z
   .looseObject({
-    idempotency_key: z.string().optional().describe('Repeat it to retry this call safely.'),
-    idempotent_replayed: z.boolean().optional().describe('`true`: the stored response of an earlier call was returned.'),
+    idempotency_key: z.string().optional().describe('Repítela para reintentar esta llamada sin riesgo.'),
+    idempotent_replayed: z.boolean().optional().describe('`true`: se devolvió la respuesta guardada de una llamada anterior.'),
     quota_warning: z.string().optional(),
     retry_after_seconds: z.number().optional(),
   })
-  .describe('Facts about the call, from the response metadata.');
+  .describe('Datos de la llamada, tomados de los metadatos de la respuesta.');
 
 const base = { _call: callInfo.optional() };
 
@@ -29,7 +30,7 @@ const resource = z.looseObject({
   type: z.string().optional(),
   attributes: z.record(z.string(), z.unknown()).optional(),
   etag: z.string().optional(),
-  not_modified: z.boolean().optional().describe('`true` when `if_none_match` matched: the resource did not change.'),
+  not_modified: z.boolean().optional().describe('`true` cuando `if_none_match` coincidió: el recurso no cambió.'),
 });
 
 const page = z.looseObject({
@@ -52,15 +53,15 @@ const file = z.looseObject({
       size: z.number(),
       sha256: z.string(),
     })
-    .describe('The downloaded file. Its content is in the result when small, or readable at `uri` through resources/read.'),
-  embedded: z.boolean().describe('`true` when the content is included in this result.'),
+    .describe('El archivo descargado. Su contenido viene en el resultado cuando es pequeño, o se lee en `uri` con resources/read.'),
+  embedded: z.boolean().describe('`true` cuando el contenido viene incluido en este resultado.'),
 });
 
 const wait = z.looseObject({
   ...base,
-  resource: z.unknown().describe('The last state read.'),
-  terminal: z.boolean().describe('`true` when the state no longer changes.'),
-  waiting: z.boolean().describe('`true` when the time limit ended first: call the tool again.'),
+  resource: z.unknown().describe('El último estado leído.'),
+  terminal: z.boolean().describe('`true` cuando el estado ya no cambia.'),
+  waiting: z.boolean().describe('`true` cuando se acabó primero el tiempo límite: vuelve a llamar a la herramienta.'),
   status: z.string().optional(),
   next_poll_after_seconds: z.number().optional(),
   polls: z.number(),

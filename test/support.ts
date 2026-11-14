@@ -24,7 +24,7 @@ export interface FakeApi {
   close(): Promise<void>;
 }
 
-/** A local HTTP server that stands in for the Veriko API. Set `reply` per test. */
+/** Un servidor HTTP local que hace las veces de la API de Veriko. Fija `reply` en cada prueba. */
 export async function startFakeApi(): Promise<FakeApi> {
   const api: FakeApi = {
     baseUrl: '',
@@ -66,7 +66,7 @@ export function json(response: ServerResponse, status: number, body: unknown, he
   response.end(JSON.stringify(body));
 }
 
-/** An SDK client over the recording transport, aimed at the fake API. */
+/** Un cliente del SDK sobre el transporte que registra, apuntado a la API falsa. */
 export function clientFor(api: FakeApi, overrides: { maxRetries?: number } = {}) {
   return createClient({
     apiKey: TEST_KEY,

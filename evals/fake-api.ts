@@ -1,12 +1,12 @@
 /**
- * Fake SDK client fed by `data.json`.
+ * Cliente de SDK falso alimentado con `data.json`.
  *
- * The evaluations touch neither the real API nor customer data: the data set is
- * fictitious and versioned next to the scenarios, so a run today and a run six
- * months from now start from the same place.
+ * Las evaluaciones no tocan ni la API real ni datos de clientes: el conjunto de
+ * datos es ficticio y está versionado junto a los escenarios, así que una corrida
+ * de hoy y una de dentro de seis meses parten del mismo lugar.
  *
- * It also records every call. An evaluation does not only check that the final
- * answer is right: it checks that the model took the tool it should have.
+ * También registra cada llamada. Una evaluación no sólo comprueba que la
+ * respuesta final sea correcta: comprueba que el modelo tomó la herramienta que debía.
  */
 import { readFileSync } from 'node:fs';
 
@@ -42,7 +42,7 @@ export function loadData(): Data {
   return JSON.parse(readFileSync(path, 'utf8')) as Data;
 }
 
-/** Ids the write scenarios use; they are not in `data.json` because the fake creates them. */
+/** Ids que usan los escenarios de escritura; no están en `data.json` porque el falso los crea. */
 export const NEW_VALIDATION_ID = 'aaaaaaaa-0000-4000-8000-000000000001';
 export const QUEUED_VALIDATION_ID = 'aaaaaaaa-0000-4000-8000-000000000002';
 export const CEP_EXPORT_ID = 'bbbbbbbb-0000-4000-8000-000000000001';
@@ -73,24 +73,24 @@ export function createFakeApi(data: Data): { client: Veriko; calls: Call[] } {
 
   const validated = (args: { trackingKey?: string }) => {
     if (args.trackingKey === QUOTA_TRACKING_KEY) {
-      throw new RateLimitError('Quota spent.', {
+      throw new RateLimitError('Cuota agotada.', {
         status: 429,
         code: 'quota_exceeded',
         retryAfter: 864_000,
-        errors: [{ code: 'quota_exceeded', detail: 'The monthly quota is spent.' }],
+        errors: [{ code: 'quota_exceeded', detail: 'La cuota mensual se agotó.' }],
         headers: { 'x-quota-limit': '1300', 'x-quota-used': '1300', 'x-quota-remaining': '0' },
       });
     }
     if (args.trackingKey === INVALID_TRACKING_KEY) {
-      throw new InvalidRequestError('Invalid.', {
+      throw new InvalidRequestError('No válida.', {
         status: 422,
         code: 'validation_error',
         errors: [
-          { code: 'validation_error', detail: 'The request is invalid.' },
+          { code: 'validation_error', detail: 'La petición no es válida.' },
           {
             code: 'candidate_accounts_too_many',
-            detail: 'The list has more accounts than the service allows.',
-            hint: 'Send at most 3 candidate accounts.',
+            detail: 'La lista tiene más cuentas de las que permite el servicio.',
+            hint: 'Envía como máximo 3 cuentas candidatas.',
             source: { pointer: '/candidate_accounts' },
             meta: { max: 3 },
           } as never,
@@ -182,7 +182,7 @@ export function createFakeApi(data: Data): { client: Veriko; calls: Call[] } {
       downloadCepExport: record('finance.downloadCepExport', () => ({
         filename: 'ceps-2026-09.zip',
         contentType: 'application/zip',
-        content: Buffer.from('PK fictitious zip'),
+        content: Buffer.from('PK zip ficticio'),
       })),
     },
     insights: {

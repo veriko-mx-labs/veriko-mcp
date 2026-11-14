@@ -23,27 +23,27 @@ function asTool(inputSchema: z.ZodType): ToolDefinition {
   return { inputSchema } as unknown as ToolDefinition;
 }
 
-describe('the spec constraints are reflected in the MCP schemas', () => {
-  it('no catalog operation leaves a spec limit unreflected', () => {
+describe('las restricciones del spec se reflejan en los esquemas MCP', () => {
+  it('ninguna operación del catálogo deja sin reflejar un límite del spec', () => {
     const document = loadSpecDocument(specPath);
     const findings = checkCatalogAgainstSpec(document, OPERATION_TOOLS);
     assert.deepEqual(findings, [], `\n${formatFindings(findings)}`);
   });
 
-  it('every cataloged operation exists in the public spec', () => {
+  it('toda operación del catálogo existe en el spec público', () => {
     const document = loadSpecDocument(specPath);
     for (const tool of OPERATION_TOOLS) {
       assert.notEqual(
         specOperationFields(document, tool.operationId),
         null,
-        `${tool.operationId} does not appear in the public spec`,
+        `${tool.operationId} no aparece en el spec público`,
       );
     }
   });
 
-  it('bites when the MCP schema stops reflecting the maxLength of a spec field', () => {
-    // Real case: the description of a webhook. The public spec requires
-    // maxLength 255; the current schema covers it with `.max(255)`.
+  it('detecta cuando el esquema MCP deja de reflejar el maxLength de un campo del spec', () => {
+    // Caso real: la descripción de un webhook. El spec público exige
+    // maxLength 255; el esquema actual lo cubre con `.max(255)`.
     const document = loadSpecDocument(specPath);
     const specFields = specOperationFields(document, 'createWebhook')!;
     const zodFields = toolOperationFields(asTool(createWebhookSchema));
@@ -51,10 +51,10 @@ describe('the spec constraints are reflected in the MCP schemas', () => {
     const withLimit = compareOperation('createWebhook', specFields, zodFields).filter(
       (finding) => finding.field === 'description',
     );
-    assert.deepEqual(withLimit, [], 'with .max(255) there should be no findings on description');
+    assert.deepEqual(withLimit, [], 'con .max(255) no debe haber hallazgos en description');
 
-    // Simulates the drift this lock exists for: the schema loses its
-    // `.max(255)` (as if someone removed it from schemas.ts).
+    // Simula la desviación para la que existe este candado: el esquema pierde su
+    // `.max(255)` (como si alguien lo quitara de schemas.ts).
     const weakened = new Map(zodFields);
     weakened.set('description', { ...zodFields.get('description')!, maxLength: undefined });
 
@@ -67,7 +67,7 @@ describe('the spec constraints are reflected in the MCP schemas', () => {
     assert.match(findings[0]?.detail ?? '', /maxLength 255/);
   });
 
-  it('bites when the MCP schema does not require a field the spec requires', () => {
+  it('detecta cuando el esquema MCP no exige un campo que el spec exige', () => {
     const document = loadSpecDocument(specPath);
     const specFields = specOperationFields(document, 'createWebhook')!;
     const zodFields = toolOperationFields(asTool(createWebhookSchema));
@@ -80,10 +80,10 @@ describe('the spec constraints are reflected in the MCP schemas', () => {
     );
     assert.equal(findings.length, 1);
     assert.equal(findings[0]?.kind, 'missing');
-    assert.match(findings[0]?.detail ?? '', /the spec requires it/);
+    assert.match(findings[0]?.detail ?? '', /el spec lo exige/);
   });
 
-  it('bites when the MCP schema accepts an enum value the spec does not declare', () => {
+  it('detecta cuando el esquema MCP acepta un valor de enum que el spec no declara', () => {
     const document = loadSpecDocument(specPath);
     const specFields = specOperationFields(document, 'createWebhook')!;
     const zodFields = toolOperationFields(asTool(createWebhookSchema));
@@ -103,17 +103,17 @@ describe('the spec constraints are reflected in the MCP schemas', () => {
     assert.match(findings[0]?.detail ?? '', /invented\.event/);
   });
 
-  it('does not report an optional spec filter the catalog decides not to expose', () => {
-    // A missing optional field is a catalog decision, not contract drift (see
-    // the scope note at the top of scripts/schema-limits.ts).
+  it('no reporta un filtro opcional del spec que el catálogo decide no exponer', () => {
+    // Un campo opcional que falta es una decisión del catálogo, no una desviación del contrato (ver
+    // la nota de alcance al inicio de scripts/schema-limits.ts).
     const document = loadSpecDocument(specPath);
     const specFields = specOperationFields(document, 'listAllDeliveries')!;
     assert.equal(specFields.get('endpoint_id')?.required, false);
   });
 
-  it('lists the optional spec fields the MCP leaves out, and only the accepted ones', () => {
-    // Each entry is a deliberate decision: `user_id` is administrator-only and
-    // not part of the integrator surface; `image` is exposed as `image_base64`.
+  it('lista los campos opcionales del spec que el MCP deja fuera, y sólo los aceptados', () => {
+    // Cada entrada es una decisión deliberada: `user_id` es sólo de administradores y
+    // no forma parte de la superficie del integrador; `image` se expone como `image_base64`.
     const document = loadSpecDocument(specPath);
     const gaps = optionalFieldGaps(document, OPERATION_TOOLS);
     const accepted = [
@@ -130,7 +130,7 @@ describe('the spec constraints are reflected in the MCP schemas', () => {
     assert.deepEqual(
       gaps.filter((gap) => !accepted.includes(gap)),
       [],
-      'a new optional field of the spec is not exposed: expose it or accept the gap here',
+      'un campo opcional nuevo del spec no se expone: exponlo o acepta aquí la diferencia',
     );
   });
 });

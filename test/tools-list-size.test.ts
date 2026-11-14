@@ -5,46 +5,46 @@ import { connect } from './support.js';
 import { FAMILIES, type Profile } from '../src/config.js';
 
 /**
- * Ceilings, in bytes, for `tools/list` of each profile at risk `destructive`:
- * what a client injects into the model context. A change that raises one goes
- * through this file, so growth is a decision and not a side effect. Measure
- * with `npm run measure:catalog`; tokens are about bytes / 3.6.
+ * Techos, en bytes, de `tools/list` de cada perfil con riesgo `destructive`:
+ * lo que un cliente inyecta en el contexto del modelo. Un cambio que sube uno
+ * pasa por este archivo, así que el crecimiento es una decisión y no un efecto
+ * colateral. Mide con `npm run measure:catalog`; los tokens son cerca de bytes / 3.6.
  */
 const BUDGET_BYTES: Readonly<Record<string, { tools: number; bytes: number }>> = {
-  core: { tools: 8, bytes: 26_000 },
-  validations: { tools: 15, bytes: 44_000 },
-  webhooks: { tools: 10, bytes: 29_500 },
-  catalog: { tools: 5, bytes: 6_700 },
-  beneficiaries: { tools: 16, bytes: 26_800 },
-  usage: { tools: 7, bytes: 8_900 },
-  account: { tools: 3, bytes: 4_800 },
+  core: { tools: 8, bytes: 27_300 },
+  validations: { tools: 15, bytes: 45_900 },
+  webhooks: { tools: 10, bytes: 30_300 },
+  catalog: { tools: 5, bytes: 7_000 },
+  beneficiaries: { tools: 16, bytes: 28_100 },
+  usage: { tools: 7, bytes: 9_200 },
+  account: { tools: 3, bytes: 5_000 },
   dashboard: { tools: 1, bytes: 1_300 },
-  plans: { tools: 2, bytes: 2_200 },
-  insights: { tools: 4, bytes: 5_000 },
-  finance: { tools: 12, bytes: 20_600 },
+  plans: { tools: 2, bytes: 2_250 },
+  insights: { tools: 4, bytes: 5_150 },
+  finance: { tools: 12, bytes: 21_500 },
   billing: { tools: 1, bytes: 1_100 },
-  all: { tools: 76, bytes: 150_500 },
+  all: { tools: 76, bytes: 156_500 },
 };
 
-/** A ceiling more than this far above the real size stops guarding anything. */
+/** Un techo más alejado que esto del tamaño real ya no protege nada. */
 const MAX_SLACK = 0.08;
 
-describe('tools/list size', () => {
+describe('tamaño de tools/list', () => {
   for (const profile of ['core', ...FAMILIES, 'all']) {
-    it(`keeps the ${profile} profile within its budget`, async () => {
+    it(`mantiene el perfil ${profile} dentro de su presupuesto`, async () => {
       const budget = BUDGET_BYTES[profile];
-      assert.ok(budget, `no budget for ${profile}`);
+      assert.ok(budget, `no hay presupuesto para ${profile}`);
       const { client, close } = await connect({
         config: { apiKey: '', profiles: new Set<Profile>([profile as Profile]), maxRisk: 'destructive' },
       });
       try {
         const { tools } = await client.listTools();
         const bytes = Buffer.byteLength(JSON.stringify(tools), 'utf8');
-        assert.equal(tools.length, budget.tools, `the ${profile} profile announces ${tools.length} tools`);
-        assert.ok(bytes <= budget.bytes, `${profile}: ${bytes} bytes exceed the ${budget.bytes} budget`);
+        assert.equal(tools.length, budget.tools, `el perfil ${profile} anuncia ${tools.length} herramientas`);
+        assert.ok(bytes <= budget.bytes, `${profile}: ${bytes} bytes superan el presupuesto de ${budget.bytes}`);
         assert.ok(
           bytes >= budget.bytes * (1 - MAX_SLACK),
-          `${profile}: ${bytes} bytes are far below the ${budget.bytes} budget; lower the budget`,
+          `${profile}: ${bytes} bytes están muy por debajo del presupuesto de ${budget.bytes}; bájalo`,
         );
       } finally {
         await close();

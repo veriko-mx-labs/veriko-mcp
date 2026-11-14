@@ -8,20 +8,20 @@ import { parse } from 'yaml';
 const EXPECTED_PUBLIC_SPEC_SHA256 =
   '608ba99f7697773cf1251ddbd727facd6e37b0e617c3bfb02772d0bf88396105';
 /**
- * The contract is read from the versioned copy, as in the other repositories of
- * the organization.
+ * El contrato se lee de la copia versionada, como en los demás repositorios de
+ * la organización.
  *
- * The sync workflow brings it from the portal: it calls the organization's
- * reusable workflow, writes the public export here and opens a PR when it
- * changed. That PR is red on purpose, because this check compares against a
- * SHA-256 pinned by hand, and it is not auto-merged: a new contract is reviewed
- * operation by operation before it is accepted.
+ * El workflow de sincronización lo trae del portal: llama al workflow
+ * reutilizable de la organización, escribe aquí la exportación pública y abre un
+ * PR cuando cambió. Ese PR queda en rojo a propósito, porque esta comprobación
+ * compara contra un SHA-256 fijado a mano, y no se fusiona solo: un contrato
+ * nuevo se revisa operación por operación antes de aceptarlo.
  *
- * Reading the portal on every run would make the result depend on whatever was
- * deployed at that moment, with nothing recorded in the repository.
+ * Leer el portal en cada corrida haría que el resultado dependiera de lo que
+ * estuviera desplegado en ese momento, sin nada registrado en el repositorio.
  *
- * `VERIKO_OPENAPI_URL` still lets you point at a URL (the portal, a test
- * environment) to check by hand what is being served.
+ * `VERIKO_OPENAPI_URL` aún permite apuntar a una URL (el portal, un entorno de
+ * pruebas) para revisar a mano lo que se está sirviendo.
  */
 const override = process.env.VERIKO_OPENAPI_URL;
 const versionedCopy = new URL('../spec/openapi.yaml', import.meta.url);
@@ -33,7 +33,7 @@ if (override) {
     headers: { accept: 'application/yaml, text/yaml' },
   });
   if (!response.ok) {
-    throw new Error(`Could not read ${override}: HTTP ${response.status}.`);
+    throw new Error(`No se pudo leer ${override}: HTTP ${response.status}.`);
   }
   body = await response.text();
 } else {
@@ -43,10 +43,10 @@ if (override) {
 const sha256 = createHash('sha256').update(body).digest('hex');
 if (sha256 !== EXPECTED_PUBLIC_SPEC_SHA256) {
   throw new Error(
-    `The public contract changed (${sha256}); review parameters, bodies, responses and security before updating EXPECTED_PUBLIC_SPEC_SHA256.`,
+    `El contrato público cambió (${sha256}); revisa parámetros, cuerpos, respuestas y seguridad antes de actualizar EXPECTED_PUBLIC_SPEC_SHA256.`,
   );
 }
-/** Operations of the public M2M surface: 73 tools plus the two purge operations that are not exposed. */
+/** Operaciones de la superficie pública M2M: 73 herramientas más las dos operaciones de purga que no se exponen. */
 const PUBLIC_OPERATIONS = 75;
 assertPublicM2MSurface(
   parse(body),
@@ -56,5 +56,5 @@ assertPublicM2MSurface(
 );
 
 process.stdout.write(
-  `MCP surface aligned: ${PUBLIC_OPERATIONS} operations, ${OPERATION_TOOLS.length} with a tool.\n`,
+  `Superficie MCP alineada: ${PUBLIC_OPERATIONS} operaciones, ${OPERATION_TOOLS.length} con herramienta.\n`,
 );

@@ -1,21 +1,20 @@
 /**
- * Evaluation harness for the catalog.
+ * Arnés de evaluación del catálogo.
  *
- * It has two modes, and the difference matters:
+ * Tiene dos modos, y la diferencia importa:
  *
- * - `oracle` (the one that runs today, and the one that runs in CI): checks
- *   that every scenario is actually measurable. It runs the reference steps
- *   against the MCP server with the fake SDK and verifies that the server's
- *   response satisfies `check`. If this fails, the scenario is badly written or
- *   the data set no longer answers the question; measuring a model with it
- *   would give a meaningless number. It uses no models, costs nothing and needs
- *   no keys.
+ * - `oracle` (el que corre hoy y el que corre en CI): comprueba que cada
+ *   escenario sea realmente medible. Ejecuta los pasos de referencia contra el
+ *   servidor MCP con el SDK falso y verifica que la respuesta del servidor
+ *   cumpla `check`. Si falla, el escenario está mal escrito o el conjunto de
+ *   datos ya no responde la pregunta; medir un modelo con él daría un número
+ *   sin sentido. No usa modelos, no cuesta nada y no necesita claves.
  *
- * - `model` (deliberately not implemented): the real comparison between
- *   profiles. It needs a client and a provider key, and costs money per run, so
- *   it does not run without Veriko's authorization. The interface is declared
- *   below: it receives the question and returns the final text and the tools it
- *   called.
+ * - `model` (no implementado a propósito): la comparación real entre
+ *   perfiles. Necesita un cliente y una clave de un proveedor, y cuesta dinero
+ *   por corrida, así que no corre sin la autorización de Veriko. La interfaz
+ *   se declara abajo: recibe la pregunta y devuelve el texto final y las
+ *   herramientas que llamó.
  */
 import { pathToFileURL } from 'node:url';
 
@@ -36,11 +35,11 @@ export interface Result {
 
 function toolNameOf(operationId: string): string {
   const tool = TOOL_CATALOG.find((item) => item.operationId === operationId);
-  if (!tool) throw new Error(`the catalog has no operation ${operationId}`);
+  if (!tool) throw new Error(`el catálogo no tiene la operación ${operationId}`);
   return tool.name;
 }
 
-/** Plain text of what the server returned, which is what a model would read. */
+/** Texto plano de lo que devolvió el servidor, que es lo que leería un modelo. */
 function textOfResult(result: unknown): string {
   const { content, structuredContent } = result as {
     content?: Array<{ type: string; text?: string }>;
@@ -93,7 +92,7 @@ async function runScenario(scenario: Scenario): Promise<Result> {
           scenario: scenario.id,
           correct: false,
           viaExpectedPath: false,
-          detail: `the ${scenario.profile} profile does not advertise ${name}`,
+          detail: `el perfil ${scenario.profile} no anuncia ${name}`,
         };
       }
       const result = await client.callTool({ name, arguments: step.arguments });
@@ -117,15 +116,15 @@ async function runScenario(scenario: Scenario): Promise<Result> {
 }
 
 /**
- * The interface of the `model` mode.
+ * La interfaz del modo `model`.
  *
- * A real client receives the question and the catalog a profile advertises, and
- * returns its final answer together with the tools it called to get there.
- * That scores what the comparison between `core`, the families and `all` needs:
- * hits, wrong calls, catalog tokens and retries.
+ * Un cliente real recibe la pregunta y el catálogo que anuncia un perfil, y
+ * devuelve su respuesta final junto con las herramientas que llamó para llegar a ella.
+ * Eso puntúa lo que necesita la comparación entre `core`, las familias y `all`:
+ * aciertos, llamadas equivocadas, tokens del catálogo y reintentos.
  *
- * There is no implementation here on purpose. Running it costs money and needs
- * a provider key; Veriko decides when and with which clients.
+ * Aquí no hay implementación a propósito. Correrla cuesta dinero y necesita
+ * una clave de un proveedor; Veriko decide cuándo y con qué clientes.
  */
 export interface ModelClient {
   answer(question: string, profile: string): Promise<{ text: string; tools: string[] }>;
@@ -146,6 +145,6 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     process.stdout.write(`${mark} ${result.scenario}: ${result.detail}\n`);
   }
   const failing = results.filter((item) => !item.correct || !item.viaExpectedPath);
-  process.stdout.write(`\n${results.length - failing.length}/${results.length} measurable scenarios\n`);
+  process.stdout.write(`\n${results.length - failing.length}/${results.length} escenarios medibles\n`);
   if (failing.length > 0) process.exitCode = 1;
 }

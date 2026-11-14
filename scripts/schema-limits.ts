@@ -38,17 +38,17 @@ function isRecord(value: unknown): value is Json {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-/** Resolves an internal `$ref` (`#/components/...`) against the root document. */
+/** Resuelve un `$ref` interno (`#/components/...`) contra el documento raíz. */
 function resolveRef(root: Json, ref: string): Json {
   if (!ref.startsWith('#/')) {
-    throw new Error(`External $ref is not supported: ${ref}`);
+    throw new Error(`No se admite un $ref externo: ${ref}`);
   }
   let node: unknown = root;
   for (const part of ref.slice(2).split('/')) {
-    if (!isRecord(node)) throw new Error(`$ref has no target: ${ref}`);
+    if (!isRecord(node)) throw new Error(`El $ref no tiene destino: ${ref}`);
     node = node[part];
   }
-  if (!isRecord(node)) throw new Error(`$ref has no target: ${ref}`);
+  if (!isRecord(node)) throw new Error(`El $ref no tiene destino: ${ref}`);
   return node;
 }
 
@@ -73,7 +73,7 @@ function resolve(root: Json, node: Json): Json {
   return node;
 }
 
-/** Reduces a two-branch `anyOf`/`oneOf` where one branch is `{"type":"null"}` to the useful branch, marked `nullable`. */
+/** Reduce un `anyOf`/`oneOf` de dos ramas, una de ellas `{"type":"null"}`, a la rama útil, marcada `nullable`. */
 function stripNullable(root: Json, node: Json): { node: Json; nullable: boolean; isUnion: boolean } {
   const resolved = resolve(root, node);
   const branches = (resolved.anyOf ?? resolved.oneOf) as unknown[] | undefined;
@@ -106,20 +106,20 @@ function typeOf(node: Json): string | undefined {
   return undefined;
 }
 
-/** Turns a JSON Schema node (from the spec or from `z.toJSONSchema`) into a comparable constraint. */
+/** Convierte un nodo de JSON Schema (del spec o de `z.toJSONSchema`) en una restricción comparable. */
 export function toConstraint(root: Json, rawNode: Json, required: boolean): FieldConstraint {
   const { node, nullable, isUnion } = stripNullable(root, rawNode);
   const type = typeOf(node);
-  // Only a nested object is treated as opaque (see the scope note at the top
-  // of the file); an array is compared, including the type of its items, in
+  // Sólo un objeto anidado se trata como opaco (ver la nota de alcance al inicio
+  // del archivo); un arreglo se compara, incluido el tipo de sus elementos, en
   // compareScalar.
   const isContainer = type === 'object';
 
-  // `exclusiveMinimum`/`exclusiveMaximum` (what `z.number().positive()` produces,
-  // for example) are normalized to inclusive `minimum`/`maximum`. For integers
-  // the exclusive bound N equals the inclusive N±1; for floating point numbers
-  // there is no exact inclusive bound, so the same value is kept (a conservative
-  // approximation: it can report one `missing` too many, never one too few).
+  // `exclusiveMinimum`/`exclusiveMaximum` (lo que produce `z.number().positive()`,
+  // por ejemplo) se normalizan a `minimum`/`maximum` inclusivos. En enteros
+  // el límite exclusivo N equivale al inclusivo N±1; en números de punto flotante
+  // no hay un límite inclusivo exacto, así que se conserva el mismo valor (una
+  // aproximación conservadora: puede reportar un `missing` de más, nunca de menos).
   let minimum = typeof node.minimum === 'number' ? node.minimum : undefined;
   let maximum = typeof node.maximum === 'number' ? node.maximum : undefined;
   if (minimum === undefined && typeof node.exclusiveMinimum === 'number') {
@@ -157,14 +157,14 @@ function normalizeName(name: string): string {
 }
 
 /**
- * Fields whose name in the MCP catalog is not a mechanical variant
- * (snake_case/camelCase) of the spec name. None today: tool inputs use the API
- * field names.
+ * Campos cuyo nombre en el catálogo MCP no es una variante mecánica
+ * (snake_case/camelCase) del nombre del spec. Hoy ninguno: las entradas de las
+ * herramientas usan los nombres de campo de la API.
  */
 const NAME_ALIASES: Record<string, string> = {
 };
 
-/** Joins parameters (path/query/header) and body properties into one flat map, as each tool does. */
+/** Une parámetros (ruta/consulta/encabezado) y propiedades del cuerpo en un solo mapa plano, como hace cada herramienta. */
 export function specOperationFields(
   document: Json,
   operationId: string,
@@ -208,7 +208,7 @@ export function specOperationFields(
   return null;
 }
 
-/** The flat JSON Schema of a Zod `inputSchema`, in the same shape as `specOperationFields`. */
+/** El JSON Schema plano de un `inputSchema` de Zod, con la misma forma que `specOperationFields`. */
 export function toolOperationFields(tool: ToolDefinition): Map<string, FieldConstraint> {
   const schemaDocument = z.toJSONSchema(tool.inputSchema, { target: 'draft-2020-12' }) as Json;
   const fields = new Map<string, FieldConstraint>();
@@ -216,16 +216,16 @@ export function toolOperationFields(tool: ToolDefinition): Map<string, FieldCons
   const required = new Set((schemaDocument.required as string[] | undefined) ?? []);
   for (const [name, rawProperty] of Object.entries(properties)) {
     if (!isRecord(rawProperty)) continue;
-    // `z.foo().default(x)` (without `.optional()`) lands in the `required` list
-    // of the JSON Schema Zod produces, although the caller can omit it: the
-    // default covers it. For this comparison it counts as optional.
+    // `z.foo().default(x)` (sin `.optional()`) cae en la lista `required`
+    // del JSON Schema que produce Zod, aunque quien llama pueda omitirlo: el
+    // valor por omisión lo cubre. Para esta comparación cuenta como opcional.
     const hasDefault = rawProperty.default !== undefined;
     fields.set(name, toConstraint(schemaDocument, rawProperty, required.has(name) && !hasDefault));
   }
   return fields;
 }
 
-/** First pass: the exact name (alias or mechanical) of a spec field in the Zod schema. */
+/** Primera pasada: el nombre exacto (alias o mecánico) de un campo del spec en el esquema de Zod. */
 function matchByName(
   specName: string,
   zodFields: Map<string, FieldConstraint>,
@@ -242,13 +242,13 @@ function matchByName(
 }
 
 /**
- * Second pass, only for what the first left unpaired.
+ * Segunda pasada, sólo para lo que la primera dejó sin pareja.
  *
- * The resource identifier of a path (`id`, `row_id`...) is almost always
- * generic in the spec and explicit in the MCP catalog (`webhook_id`,
- * `validation_id`...). If, after the first pass, exactly one required Zod field
- * of the same base type (`string`/`object`) is left unclaimed, it is paired
- * with it.
+ * El identificador del recurso de una ruta (`id`, `row_id`...) casi siempre es
+ * genérico en el spec y explícito en el catálogo MCP (`webhook_id`,
+ * `validation_id`...). Si, tras la primera pasada, queda sin reclamar exactamente
+ * un campo obligatorio de Zod del mismo tipo base (`string`/`object`), se
+ * empareja con él.
  */
 function matchByUniqueRemainingField(
   spec: FieldConstraint,
@@ -290,15 +290,15 @@ function compareScalar(
       operationId,
       field,
       kind: 'mismatch',
-      detail: `the spec declares «${spec.type}» and the MCP schema «${zod.type}»`,
+      detail: `el spec declara «${spec.type}» y el esquema MCP «${zod.type}»`,
     });
     return;
   }
 
   if (spec.required && !zod.required) {
-    findings.push({ operationId, field, kind: 'missing', detail: 'the spec requires it and the MCP schema does not' });
+    findings.push({ operationId, field, kind: 'missing', detail: 'el spec lo exige y el esquema MCP no' });
   } else if (!spec.required && zod.required) {
-    findings.push({ operationId, field, kind: 'extra', detail: 'the MCP schema requires it and the spec does not' });
+    findings.push({ operationId, field, kind: 'extra', detail: 'el esquema MCP lo exige y el spec no' });
   }
 
   if (spec.enum) {
@@ -307,16 +307,16 @@ function compareScalar(
     const missing = [...specSet].filter((value) => !zodSet.has(value));
     const extra = [...zodSet].filter((value) => !specSet.has(value));
     if (missing.length) {
-      findings.push({ operationId, field, kind: 'missing', detail: `missing enum values: ${missing.join(', ')}` });
+      findings.push({ operationId, field, kind: 'missing', detail: `faltan valores del enum: ${missing.join(', ')}` });
     }
     if (extra.length) {
-      findings.push({ operationId, field, kind: 'extra', detail: `extra enum values: ${extra.join(', ')}` });
+      findings.push({ operationId, field, kind: 'extra', detail: `sobran valores del enum: ${extra.join(', ')}` });
     }
   }
 
-  // A `pattern` of its own in the Zod schema is the authoritative validation for
-  // that field (see the scope note at the top of the file): it is compared
-  // neither with the spec `pattern` nor with its minLength/maxLength.
+  // Un `pattern` propio en el esquema de Zod es la validación que manda para
+  // ese campo (ver la nota de alcance al inicio del archivo): no se compara
+  // ni con el `pattern` del spec ni con su minLength/maxLength.
   if (zod.pattern !== undefined) {
     return;
   }
@@ -334,7 +334,7 @@ function compareScalar(
         operationId,
         field,
         kind: 'extra',
-        detail: `maxLength ${zod.maxLength} is stricter than the spec (${spec.maxLength})`,
+        detail: `maxLength ${zod.maxLength} es más estricto que el spec (${spec.maxLength})`,
       });
     }
   }
@@ -352,7 +352,7 @@ function compareScalar(
         operationId,
         field,
         kind: 'extra',
-        detail: `minLength ${zod.minLength} is stricter than the spec (${spec.minLength})`,
+        detail: `minLength ${zod.minLength} es más estricto que el spec (${spec.minLength})`,
       });
     }
   }
@@ -370,7 +370,7 @@ function compareScalar(
         operationId,
         field,
         kind: 'extra',
-        detail: `maximum ${zod.maximum} is stricter than the spec (${spec.maximum})`,
+        detail: `maximum ${zod.maximum} es más estricto que el spec (${spec.maximum})`,
       });
     }
   }
@@ -388,7 +388,7 @@ function compareScalar(
         operationId,
         field,
         kind: 'extra',
-        detail: `minimum ${zod.minimum} is stricter than the spec (${spec.minimum})`,
+        detail: `minimum ${zod.minimum} es más estricto que el spec (${spec.minimum})`,
       });
     }
   }
@@ -398,7 +398,7 @@ function compareScalar(
       operationId,
       field,
       kind: zod.pattern === undefined ? 'missing' : 'mismatch',
-      detail: `spec pattern: ${spec.pattern}; MCP: ${zod.pattern ?? 'none'}`,
+      detail: `pattern del spec: ${spec.pattern}; MCP: ${zod.pattern ?? 'ninguno'}`,
     });
   }
 
@@ -434,9 +434,9 @@ export function compareOperation(
   const claimed = new Set<string>();
   const matches = new Map<string, string>();
 
-  // First pass: exact name (alias or mechanical) for every field. It keeps what
-  // already matches by name out of the race of the "id" heuristic, whatever
-  // order the fields appear in.
+  // Primera pasada: nombre exacto (alias o mecánico) para cada campo. Deja lo que
+  // ya coincide por nombre fuera de la carrera de la heurística del "id", sea cual
+  // sea el orden en que aparezcan los campos.
   for (const [specName] of specFields) {
     const zodName = matchByName(specName, zodFields, claimed);
     if (zodName) {
@@ -445,7 +445,7 @@ export function compareOperation(
     }
   }
 
-  // Second pass: what is left unpaired, by the resource-identifier heuristic.
+  // Segunda pasada: lo que queda sin pareja, por la heurística del identificador de recurso.
   for (const [specName, spec] of specFields) {
     if (matches.has(specName)) continue;
     const zodName = matchByUniqueRemainingField(spec, zodFields, claimed);
@@ -463,7 +463,7 @@ export function compareOperation(
           operationId,
           field: specName,
           kind: 'missing',
-          detail: 'field required by the spec, absent from the MCP schema',
+          detail: 'campo que exige el spec, ausente del esquema MCP',
         });
       }
       continue;
@@ -475,9 +475,9 @@ export function compareOperation(
     }
     if (spec.isContainer || zod.isContainer) {
       if (spec.required && !zod.required) {
-        findings.push({ operationId, field: specName, kind: 'missing', detail: 'the spec requires it and the MCP schema does not' });
+        findings.push({ operationId, field: specName, kind: 'missing', detail: 'el spec lo exige y el esquema MCP no' });
       } else if (!spec.required && zod.required) {
-        findings.push({ operationId, field: specName, kind: 'extra', detail: 'the MCP schema requires it and the spec does not' });
+        findings.push({ operationId, field: specName, kind: 'extra', detail: 'el esquema MCP lo exige y el spec no' });
       }
       continue;
     }
@@ -488,7 +488,7 @@ export function compareOperation(
   return findings;
 }
 
-/** Spanish names the API still accepts as deprecated aliases; the English name is the one to expose. */
+/** Nombres anteriores que la API aún acepta como alias obsoletos; se expone el nombre en inglés. */
 const DEPRECATED_ALIASES = new Set([
   'fecha',
   'monto',
@@ -504,9 +504,9 @@ const DEPRECATED_ALIASES = new Set([
 ]);
 
 /**
- * Optional spec fields the MCP schema does not expose. Not drift, since the
- * catalog may leave a filter out, but each one is a decision someone should be
- * able to see; the test pins the accepted list.
+ * Campos opcionales del spec que el esquema MCP no expone. No son una desviación, porque el
+ * catálogo puede dejar fuera un filtro, pero cada uno es una decisión que alguien debe
+ * poder ver; la prueba fija la lista aceptada.
  */
 export function missingOptionalFields(
   operationId: string,
@@ -539,7 +539,7 @@ export function checkCatalogAgainstSpec(document: Json, catalog: readonly ToolDe
         operationId: tool.operationId,
         field: '(operation)',
         kind: 'unmapped',
-        detail: 'not found in the public spec',
+        detail: 'no está en el spec público',
       });
       continue;
     }

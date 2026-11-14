@@ -60,8 +60,8 @@ function errorOf(result: { structuredContent?: unknown }) {
   return (result.structuredContent as { error?: { code: string; message: string } }).error;
 }
 
-describe('local files (stdio)', () => {
-  it('reads a receipt from an allowed directory and sends its bytes', async () => {
+describe('archivos locales (stdio)', () => {
+  it('lee un comprobante de un directorio permitido y envía sus bytes', async () => {
     const file = join(root, 'receipt.png');
     writeFileSync(file, PNG);
     const client = await session([root]);
@@ -73,7 +73,7 @@ describe('local files (stdio)', () => {
     assert.equal(received[0]?.image_path, undefined);
   });
 
-  it('reads an import file and defaults the file name to the one on disk', async () => {
+  it('lee un archivo de importación y toma por omisión el nombre que tiene en disco', async () => {
     const file = join(root, 'people.csv');
     writeFileSync(file, 'alias,account\nAna,012180004412345678\n');
     const client = await session([root]);
@@ -86,20 +86,20 @@ describe('local files (stdio)', () => {
     assert.equal(received[0]?.parseMode, 'template');
   });
 
-  it('refuses paths outside the roots, relative paths, links that leave the roots and wrong types', async () => {
+  it('rechaza rutas fuera de las raíces, rutas relativas, enlaces que salen de las raíces y tipos incorrectos', async () => {
     writeFileSync(join(outside, 'secret.png'), PNG);
     symlinkSync(join(outside, 'secret.png'), join(root, 'link.png'));
-    writeFileSync(join(root, 'notes.png'), 'not an image');
+    writeFileSync(join(root, 'notes.png'), 'no es una imagen');
     const client = await session([root]);
 
     for (const [path, expected] of [
-      [join(outside, 'secret.png'), /outside the directories/],
-      [join(root, 'link.png'), /outside the directories/],
-      [join(root, '..', 'outside', 'secret.png'), /outside the directories/],
-      ['receipt.png', /absolute/],
-      [join(root, 'missing.png'), /readable file/],
-      [root, /regular file|outside the directories/],
-      [join(root, 'notes.png'), /not a JPEG/],
+      [join(outside, 'secret.png'), /fuera de los directorios/],
+      [join(root, 'link.png'), /fuera de los directorios/],
+      [join(root, '..', 'outside', 'secret.png'), /fuera de los directorios/],
+      ['receipt.png', /absoluta/],
+      [join(root, 'missing.png'), /archivo legible/],
+      [root, /archivo regular|fuera de los directorios/],
+      [join(root, 'notes.png'), /no es un JPEG/],
     ] as const) {
       const result = await client.callTool({ name: 'veriko_validate_ocr', arguments: { image_path: path } });
       assert.equal(result.isError, true, path);
@@ -109,7 +109,7 @@ describe('local files (stdio)', () => {
     assert.equal(received.length, 0);
   });
 
-  it('applies the size limits of the spec before sending anything', async () => {
+  it('aplica los límites de tamaño del spec antes de enviar nada', async () => {
     const big = join(root, 'big.png');
     writeFileSync(big, Buffer.concat([PNG, Buffer.alloc(MAX_RECEIPT_BYTES)]));
     const bigImport = join(root, 'big.csv');
@@ -126,11 +126,11 @@ describe('local files (stdio)', () => {
       name: 'veriko_create_beneficiary_import',
       arguments: { file_path: wrongExtension },
     });
-    assert.match(errorOf(extension)?.message ?? '', /extension/);
+    assert.match(errorOf(extension)?.message ?? '', /extensión/);
     assert.equal(received.length, 0);
   });
 
-  it('asks for exactly one source', async () => {
+  it('pide exactamente una fuente', async () => {
     const file = join(root, 'receipt.png');
     writeFileSync(file, PNG);
     const client = await session([root]);
@@ -152,7 +152,7 @@ describe('local files (stdio)', () => {
     assert.equal(noName.isError, true);
   });
 
-  it('does not advertise or accept paths without VERIKO_MCP_FILE_ROOTS', async () => {
+  it('no anuncia ni acepta rutas sin VERIKO_MCP_FILE_ROOTS', async () => {
     const file = join(root, 'receipt.png');
     writeFileSync(file, PNG);
     const client = await session(undefined);
@@ -167,7 +167,7 @@ describe('local files (stdio)', () => {
     assert.equal(received.length, 0);
   });
 
-  it('advertises the path arguments when roots are set', async () => {
+  it('anuncia los argumentos de ruta cuando hay raíces', async () => {
     const client = await session([root]);
     const { tools } = await client.listTools();
     const ocr = tools.find((tool) => tool.name === 'veriko_validate_ocr');
@@ -176,16 +176,16 @@ describe('local files (stdio)', () => {
     assert.ok(Object.keys(importTool?.inputSchema.properties ?? {}).includes('file_path'));
   });
 
-  it('reads the roots from the environment and rejects relative ones', () => {
+  it('lee las raíces del entorno y rechaza las relativas', () => {
     assert.deepEqual(loadConfig({ VERIKO_MCP_FILE_ROOTS: root }).fileRoots, [root]);
     assert.equal(loadConfig({}).fileRoots, undefined);
     assert.deepEqual(parseFileRoots(undefined), []);
-    assert.throws(() => parseFileRoots('relative/dir'), /absolute/);
+    assert.throws(() => parseFileRoots('relative/dir'), /directorios absolutos/);
   });
 });
 
-describe('local files (HTTP)', () => {
-  it('never advertises or reads paths over HTTP, even with roots configured', async () => {
+describe('archivos locales (HTTP)', () => {
+  it('nunca anuncia ni lee rutas por HTTP, aun con raíces configuradas', async () => {
     const file = join(root, 'receipt.png');
     writeFileSync(file, PNG);
     const app = createHttpApp({

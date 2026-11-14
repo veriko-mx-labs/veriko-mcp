@@ -33,7 +33,7 @@ it('negocia el protocolo MCP vigente sobre stdio real', async () => {
 });
 
 it(
-  'accepts a valid 20 MB import over stdio',
+  'acepta una importación válida de 20 MB por stdio',
   { timeout: 30_000 },
   async () => {
     const root = fileURLToPath(new URL('..', import.meta.url));

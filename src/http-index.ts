@@ -7,7 +7,7 @@ function integerFromEnv(name: string, fallback: number, min: number, max: number
   if (!raw) return fallback;
   const value = Number(raw);
   if (!Number.isInteger(value) || value < min || value > max) {
-    throw new Error(`${name} must be an integer between ${min} and ${max}.`);
+    throw new Error(`${name} debe ser un entero entre ${min} y ${max}.`);
   }
   return value;
 }
@@ -27,8 +27,8 @@ const allowedOrigins = listFromEnv('VERIKO_MCP_ALLOWED_ORIGINS');
 const allowedHosts = listFromEnv('VERIKO_MCP_ALLOWED_HOSTS');
 if (allowedHosts.length === 0 && !LOOPBACK.has(host)) {
   throw new Error(
-    'VERIKO_MCP_ALLOWED_HOSTS is required when the server listens outside 127.0.0.1: ' +
-      'set the public host names, separated by commas.',
+    'VERIKO_MCP_ALLOWED_HOSTS es obligatorio cuando el servidor escucha fuera de 127.0.0.1: ' +
+      'indica los nombres de host públicos, separados por comas.',
   );
 }
 
@@ -50,12 +50,12 @@ const app = createHttpApp({
       }
     : {}),
   onerror(error) {
-    process.stderr.write(`HTTP error in veriko-mcp: ${error.message}\n`);
+    process.stderr.write(`Error HTTP en veriko-mcp: ${error.message}\n`);
   },
 });
 
 const server = await startHttpServer(app, { port, host });
-process.stderr.write(`veriko-mcp listening on http://${host}:${port}\n`);
+process.stderr.write(`veriko-mcp escuchando en http://${host}:${port}\n`);
 
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {
   process.once(signal, () => {

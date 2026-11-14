@@ -11,33 +11,33 @@ import {
   type ResponseMeta,
 } from '@veriko-mx/sdk-runtime';
 
-/** The headers of the most recent API response seen during one tool call. */
+/** Los encabezados de la respuesta más reciente de la API durante una llamada a una herramienta. */
 export interface CallCapture {
   headers?: Record<string, string>;
-  /** The SDK metadata of the last successful response: replay, quota, rate limit, retry delay. */
+  /** Los metadatos del SDK de la última respuesta exitosa: repetición, cuota, límite de frecuencia, espera para reintentar. */
   meta?: ResponseMeta;
   responses: number;
-  /** Aborted when the MCP client cancels the request; every SDK call of the tool call obeys it. */
+  /** Se cancela cuando el cliente MCP cancela la petición; cada llamada al SDK de la herramienta la respeta. */
   signal?: AbortSignal;
 }
 
 const capture = new AsyncLocalStorage<CallCapture>();
 
 /**
- * Runs `work` while recording the headers of every API response it triggers.
- * The SDK returns resource bodies only, so this is how the server reads
- * `Idempotent-Replayed`, `X-Quota-*` and `Retry-After`.
+ * Ejecuta `work` y registra los encabezados de cada respuesta de la API que provoca.
+ * El SDK devuelve sólo el cuerpo de los recursos, así que así lee el servidor
+ * `Idempotent-Replayed`, `X-Quota-*` y `Retry-After`.
  */
 export function withCapture<T>(store: CallCapture, work: () => Promise<T>): Promise<T> {
   return capture.run(store, work);
 }
 
-/** The cancellation signal of the running tool call, if any. */
+/** La señal de cancelación de la llamada en curso, si hay. */
 export function currentSignal(): AbortSignal | undefined {
   return capture.getStore()?.signal;
 }
 
-/** The headers of the last API response of the running tool call, if any. */
+/** Los encabezados de la última respuesta de la API de la llamada en curso, si hay. */
 export function currentHeaders(): Record<string, string> | undefined {
   return capture.getStore()?.headers;
 }
@@ -77,12 +77,12 @@ function integerFromEnv(
   if (!raw) return undefined;
   const value = Number(raw);
   if (!Number.isInteger(value) || value < range.min || value > range.max) {
-    throw new Error(`${name} must be an integer between ${range.min} and ${range.max}.`);
+    throw new Error(`${name} debe ser un entero entre ${range.min} y ${range.max}.`);
   }
   return value;
 }
 
-/** Optional client tuning from the environment, kept apart from `config.ts`. */
+/** Ajustes opcionales del cliente tomados del entorno, separados de `config.ts`. */
 export function clientTuningFromEnv(
   env: NodeJS.ProcessEnv = process.env,
 ): Pick<ClientSettings, 'timeoutMs' | 'maxRetries' | 'acceptLanguage'> {
@@ -90,7 +90,7 @@ export function clientTuningFromEnv(
   const maxRetries = integerFromEnv(env, 'VERIKO_MAX_RETRIES', { min: 0, max: 5 });
   const language = env.VERIKO_ACCEPT_LANGUAGE?.trim();
   if (language && language !== 'en' && language !== 'es') {
-    throw new Error('VERIKO_ACCEPT_LANGUAGE must be en or es.');
+    throw new Error('VERIKO_ACCEPT_LANGUAGE debe ser en o es.');
   }
   return {
     ...(timeoutMs !== undefined ? { timeoutMs } : {}),
@@ -99,17 +99,17 @@ export function clientTuningFromEnv(
   };
 }
 
-/** The `User-Agent` prefix: `veriko-mcp/<version> (<transport>)`. The SDK appends its own token. */
+/** El prefijo del `User-Agent`: `veriko-mcp/<versión> (<transporte>)`. El SDK agrega su propio token. */
 export function userAgentPrefix(version: string, transportName: TransportName): string {
   return `veriko-mcp/${version} (${transportName})`;
 }
 
 /**
- * Builds the SDK client over a transport that records response headers.
+ * Construye el cliente del SDK sobre un transporte que registra los encabezados de las respuestas.
  *
- * Retries stay short on purpose: a tool call must answer inside the host's
- * timeout, and a `429` carries its own `Retry-After` for the model to act on.
- * The SDK never retries `quota_exceeded`.
+ * Los reintentos se mantienen cortos a propósito: una llamada a una herramienta
+ * debe responder dentro del tiempo límite del host, y un `429` trae su propio
+ * `Retry-After` para que el modelo actúe. El SDK nunca reintenta `quota_exceeded`.
  */
 export function createClient(settings: ClientSettings): Veriko {
   const transport = new Transport({
@@ -135,11 +135,12 @@ export function createClient(settings: ClientSettings): Veriko {
 }
 
 /**
- * Makes every SDK call of a tool call obey the cancellation of its MCP request.
+ * Hace que cada llamada al SDK de una llamada a una herramienta obedezca la
+ * cancelación de su petición MCP.
  *
- * `Transport.call` is the one place every operation goes through, and it takes
- * `signal` in its options: the SDK then also stops the retries and the pauses
- * between them. A signal a tool passes itself wins.
+ * `Transport.call` es el único punto por donde pasa cada operación y recibe
+ * `signal` en sus opciones: así el SDK también detiene los reintentos y las
+ * pausas entre ellos. Una señal que la herramienta pase por su cuenta tiene prioridad.
  */
 function bindCancellation(transport: Transport): void {
   const call = transport.call.bind(transport) as (options: CallOptions | undefined, run: unknown) => unknown;
@@ -149,9 +150,9 @@ function bindCancellation(transport: Transport): void {
   }) as unknown as typeof transport.call;
 }
 
-/** The transport behind a client, for the few operations the SDK does not wrap. */
+/** El transporte detrás de un cliente, para las pocas operaciones que el SDK no envuelve. */
 export function transportOf(client: Veriko): Transport {
   const transport = (client as unknown as { transport?: Transport }).transport;
-  if (!transport) throw new Error('The client does not expose its transport.');
+  if (!transport) throw new Error('El cliente no expone su transporte.');
   return transport;
 }

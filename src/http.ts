@@ -8,31 +8,31 @@ import { loadConfig, type ServerConfig } from './config.js';
 import { resolveOverrides } from './request-overrides.js';
 import { createVerikoServer, DEFAULT_MAX_INLINE_ARTIFACT_BYTES } from './server.js';
 
-/** Same as the stdio buffer: a maximum 20 MB import fits in base64. */
+/** Igual que el búfer de stdio: una importación de 20 MB como máximo cabe en base64. */
 const DEFAULT_MAX_BODY_BYTES = 32 * 1024 * 1024;
 const MAX_TOKEN_LENGTH = 512;
-/** The same shape the SDK requires: `veriko_` and 64 lowercase hexadecimal characters. */
+/** La misma forma que exige el SDK: `veriko_` y 64 caracteres hexadecimales en minúscula. */
 const API_KEY_PATTERN = /^veriko_[0-9a-f]{64}$/;
 
 export interface HttpOptions {
-  /** Profile, risk and base URL. The API key in this object is ignored. */
+  /** Perfil, riesgo y URL base. La clave de API de este objeto se ignora. */
   config?: ServerConfig;
-  /** Path of the MCP endpoint. */
+  /** Ruta del endpoint MCP. */
   path?: string;
   maxBodyBytes?: number;
   maxInlineArtifactBytes?: number;
   /**
-   * Allowed browser origins (`https://app.example.com`). A request without
-   * `Origin` (a non-browser client) passes; one with `Origin` passes only if it
-   * is in the list. With an empty list every `Origin` is rejected.
+   * Orígenes de navegador permitidos (`https://app.example.com`). Una petición sin
+   * `Origin` (un cliente que no es navegador) pasa; una con `Origin` pasa sólo si
+   * está en la lista. Con la lista vacía se rechaza todo `Origin`.
    */
   allowedOrigins?: readonly string[];
   /**
-   * Host names accepted in the `Host` header, without port (`mcp.example.com`,
-   * `[::1]`). By default, only `localhost`, `127.0.0.1` and `[::1]`.
+   * Nombres de host aceptados en el encabezado `Host`, sin puerto (`mcp.example.com`,
+   * `[::1]`). Por omisión, sólo `localhost`, `127.0.0.1` y `[::1]`.
    */
   allowedHosts?: readonly string[];
-  /** Replaces the Veriko SDK; for tests only. */
+  /** Reemplaza al SDK de Veriko; sólo para pruebas. */
   clientFactory?: (apiKey: string) => Veriko;
   onerror?: (error: Error) => void;
 }
@@ -50,8 +50,8 @@ function json(status: number, body: unknown, headers: Record<string, string> = {
 }
 
 /**
- * Extracts the key from the `Authorization: Bearer ...` header. Returns
- * `undefined` if it is missing or malformed.
+ * Extrae la clave del encabezado `Authorization: Bearer ...`. Devuelve
+ * `undefined` si falta o está mal formado.
  */
 export function bearerToken(header: string | null): string | undefined {
   const match = /^Bearer[ \t]+(\S+)[ \t]*$/i.exec(header ?? '');
@@ -59,7 +59,7 @@ export function bearerToken(header: string | null): string | undefined {
   return token && token.length <= MAX_TOKEN_LENGTH ? token : undefined;
 }
 
-/** Whether the value has the shape of a Veriko API key. It does not check that the key exists. */
+/** Si el valor tiene la forma de una clave de API de Veriko. No comprueba que la clave exista. */
 export function isApiKeyShape(token: string): boolean {
   return API_KEY_PATTERN.test(token);
 }
@@ -79,8 +79,8 @@ function normalizeHostname(value: string): string {
 }
 
 /**
- * Declared size of the body. `undefined` if there is no `Content-Length`;
- * `NaN` if the value is not a valid integer.
+ * Tamaño declarado del cuerpo. `undefined` si no hay `Content-Length`;
+ * `NaN` si el valor no es un entero válido.
  */
 function declaredLength(request: Request): number | undefined {
   const raw = request.headers.get('content-length');
@@ -89,15 +89,15 @@ function declaredLength(request: Request): number | undefined {
 }
 
 /**
- * Stateless HTTP application.
+ * Aplicación HTTP sin estado.
  *
- * Every request authenticates with the integrator API key as a Bearer token and
- * builds its own MCP server and its own SDK client.
+ * Cada petición se autentica con la clave de API del integrador como token Bearer
+ * y construye su propio servidor MCP y su propio cliente del SDK.
  *
- * Nothing stays in memory afterwards: the key is neither stored nor logged.
+ * Después no queda nada en memoria: la clave no se guarda ni se registra.
  */
 export function createHttpApp(options: HttpOptions = {}): HttpApp {
-  // VERIKO_API_KEY is never inherited from the environment: over HTTP the key belongs to the caller.
+  // VERIKO_API_KEY nunca se hereda del entorno: por HTTP la clave es de quien llama.
   const baseConfig: ServerConfig = {
     ...(options.config ?? loadConfig({ ...process.env, VERIKO_API_KEY: '' })),
     apiKey: '',
@@ -107,11 +107,11 @@ export function createHttpApp(options: HttpOptions = {}): HttpApp {
   const allowedOrigins = new Set<string>();
   for (const value of options.allowedOrigins ?? []) {
     const origin = normalizeOrigin(value);
-    if (!origin) throw new Error(`Invalid origin in the allowed list: ${value}`);
+    if (!origin) throw new Error(`Origen no válido en la lista de permitidos: ${value}`);
     allowedOrigins.add(origin);
   }
   const allowedHosts = (options.allowedHosts ?? localhostAllowedHostnames()).map(normalizeHostname);
-  if (allowedHosts.length === 0) throw new Error('The list of allowed hosts cannot be empty.');
+  if (allowedHosts.length === 0) throw new Error('La lista de hosts permitidos no puede estar vacía.');
 
   const handler = createMcpHandler(
     (ctx) => {
@@ -137,12 +137,12 @@ export function createHttpApp(options: HttpOptions = {}): HttpApp {
       if (url.pathname === '/healthz') return json(200, { status: 'ok' });
       if (url.pathname !== path) return json(404, { error: 'not_found' });
 
-      // DNS rebinding protection: the Host must be one of ours.
+      // Protección contra DNS rebinding: el Host debe ser uno de los nuestros.
       if (!validateHostHeader(request.headers.get('host'), allowedHosts).ok) {
         return json(403, { error: 'host_not_allowed' });
       }
 
-      // A browser always sends Origin; only those in the list pass.
+      // Un navegador siempre envía Origin; sólo pasan los que están en la lista.
       const origin = request.headers.get('origin');
       if (origin !== null) {
         const normalized = normalizeOrigin(origin);
@@ -151,23 +151,23 @@ export function createHttpApp(options: HttpOptions = {}): HttpApp {
         }
       }
 
-      // The shape of the key is checked before reading the body and before
-      // initialize or tools/list, which never reach the API.
+      // La forma de la clave se revisa antes de leer el cuerpo y antes de
+      // initialize o tools/list, que nunca llegan a la API.
       const token = bearerToken(request.headers.get('authorization'));
       if (!token || !isApiKeyShape(token)) {
         return json(
           401,
-          { error: 'unauthorized', message: 'Send your API key as Authorization: Bearer <key>.' },
+          { error: 'unauthorized', message: 'Envía tu clave de API como Authorization: Bearer <clave>.' },
           { 'www-authenticate': 'Bearer realm="veriko-mcp"' },
         );
       }
 
-      // Per-request profile, risk and language; a header can only narrow the server's settings.
+      // Perfil, riesgo e idioma por petición; un encabezado sólo puede acotar lo que el servidor ya permite.
       const overrides = resolveOverrides(request.headers, baseConfig);
       if (!overrides.ok) return json(overrides.status, { error: overrides.error });
 
-      // A body declared larger than the cap is rejected without reading it.
-      // Without Content-Length (chunked), the handler cuts it at the cap.
+      // Un cuerpo declarado mayor que el tope se rechaza sin leerlo.
+      // Sin Content-Length (chunked), el manejador lo corta en el tope.
       const length = declaredLength(request);
       if (length !== undefined && !(length <= maxBodyBytes)) {
         return json(Number.isNaN(length) ? 400 : 413, {
@@ -191,7 +191,7 @@ async function toWebRequest(req: IncomingMessage): Promise<Request> {
   }
   const method = req.method ?? 'GET';
   const hasBody = method !== 'GET' && method !== 'HEAD';
-  // The base URL is fixed: the client's Host is only validated, never interpreted here.
+  // La URL base es fija: el Host del cliente sólo se valida, aquí nunca se interpreta.
   return new Request(new URL(req.url ?? '/', 'http://localhost'), {
     method,
     headers,
@@ -229,7 +229,7 @@ export function startHttpServer(
       }
     })();
   });
-  // Cuts slow clients: headers within 30 s and the whole request within 2 min.
+  // Corta a los clientes lentos: encabezados en 30 s y la petición completa en 2 min.
   server.headersTimeout = 30_000;
   server.requestTimeout = 120_000;
   return new Promise((resolve, reject) => {

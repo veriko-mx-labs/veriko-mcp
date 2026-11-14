@@ -9,7 +9,7 @@ serveStdio(() => createVerikoServer(), {
     maxBufferSize: 32 * 1024 * 1024,
   }),
   onerror(error) {
-    process.stderr.write(`Transport error in veriko-mcp: ${error.message}\n`);
+    process.stderr.write(`Error de transporte en veriko-mcp: ${error.message}\n`);
   },
 });
 

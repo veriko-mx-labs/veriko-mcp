@@ -4,27 +4,27 @@ import { ApiError, type Veriko } from '@veriko-mx/sdk-runtime';
 import { bankCompleter, completeYear } from './completions.js';
 
 const JSON_TYPE = 'application/json';
-const DOCS = 'https://docs.veriko.mx/en';
+const DOCS = 'https://docs.veriko.mx/es';
 
-/** Pages of the public documentation the model can point a person to. */
+/** Páginas de la documentación pública a las que el modelo puede remitir a una persona. */
 export const DOC_LINKS: ReadonlyArray<{ title: string; url: string; about: string }> = [
-  { title: 'Validation flow', url: `${DOCS}/concepts/validation-flow`, about: 'Verdicts and what each one means.' },
-  { title: 'Asynchronous validations', url: `${DOCS}/concepts/async-validations`, about: 'The async parameter, the 202 response and polling.' },
-  { title: 'Idempotency', url: `${DOCS}/concepts/idempotency`, about: 'The Idempotency-Key header and its 24-hour window.' },
-  { title: 'Errors', url: `${DOCS}/concepts/errors`, about: 'The errors array, codes, hints and field pointers.' },
-  { title: 'Errors taxonomy', url: `${DOCS}/concepts/errors-taxonomy`, about: 'Every error code.' },
-  { title: 'Quotas and plans', url: `${DOCS}/concepts/quotas-and-plans`, about: 'Monthly quota, quota headers and quota_exceeded.' },
-  { title: 'Rate limits', url: `${DOCS}/concepts/rate-limits`, about: 'Requests per minute and Retry-After.' },
-  { title: 'Retry policy', url: `${DOCS}/concepts/retry-policy`, about: 'Automatic retries of validations.' },
-  { title: 'Webhooks architecture', url: `${DOCS}/concepts/webhooks-architecture`, about: 'Events, signatures and deliveries.' },
-  { title: 'Beneficiaries', url: `${DOCS}/concepts/beneficiaries`, about: 'Saved accounts and bulk imports.' },
-  { title: 'Exports and formats', url: `${DOCS}/concepts/exports-and-formats`, about: 'CSV and XLSX exports.' },
-  { title: 'Veriko MCP server', url: `${DOCS}/mcp`, about: 'Install and configure this server.' },
+  { title: 'Flujo de validación', url: `${DOCS}/concepts/validation-flow`, about: 'Los veredictos y qué significa cada uno.' },
+  { title: 'Validaciones asíncronas', url: `${DOCS}/concepts/async-validations`, about: 'El parámetro async, la respuesta 202 y la consulta periódica.' },
+  { title: 'Idempotencia', url: `${DOCS}/concepts/idempotency`, about: 'El encabezado Idempotency-Key y su ventana de 24 horas.' },
+  { title: 'Errores', url: `${DOCS}/concepts/errors`, about: 'El arreglo errors, los códigos, las pistas y los punteros de campo.' },
+  { title: 'Taxonomía de errores', url: `${DOCS}/concepts/errors-taxonomy`, about: 'Todos los códigos de error.' },
+  { title: 'Cuotas y planes', url: `${DOCS}/concepts/quotas-and-plans`, about: 'Cuota mensual, encabezados de cuota y quota_exceeded.' },
+  { title: 'Límites de frecuencia', url: `${DOCS}/concepts/rate-limits`, about: 'Peticiones por minuto y Retry-After.' },
+  { title: 'Política de reintentos', url: `${DOCS}/concepts/retry-policy`, about: 'Reintentos automáticos de validaciones.' },
+  { title: 'Arquitectura de webhooks', url: `${DOCS}/concepts/webhooks-architecture`, about: 'Eventos, firmas y entregas.' },
+  { title: 'Beneficiarios', url: `${DOCS}/concepts/beneficiaries`, about: 'Cuentas guardadas e importaciones masivas.' },
+  { title: 'Exportaciones y formatos', url: `${DOCS}/concepts/exports-and-formats`, about: 'Exportaciones CSV y XLSX.' },
+  { title: 'Servidor MCP de Veriko', url: `${DOCS}/mcp`, about: 'Instala y configura este servidor.' },
 ];
 
 function docsMarkdown(): string {
   return [
-    '# Veriko documentation',
+    '# Documentación de Veriko',
     '',
     ...DOC_LINKS.map((link) => `- [${link.title}](${link.url}): ${link.about}`),
     '',
@@ -38,22 +38,22 @@ async function readJson(uri: URL, load: () => Promise<unknown>) {
   } catch (error) {
     if (error instanceof ApiError) {
       throw new Error(
-        `Veriko answered ${error.status}${error.code ? ` ${error.code}` : ''} while reading ${uri.href}.`,
+        `Veriko respondió ${error.status}${error.code ? ` ${error.code}` : ''} al leer ${uri.href}.`,
       );
     }
     throw error;
   }
 }
 
-/** Read-only reference data that needs no tool call. */
+/** Datos de referencia de sólo lectura que no necesitan llamar a una herramienta. */
 export function registerReferenceResources(server: McpServer, client: Veriko): void {
   const bankCode = bankCompleter(client);
   server.registerResource(
     'banks',
     'veriko://catalog/banks',
     {
-      title: 'SPEI banks',
-      description: 'Catalog of SPEI participants with their codes. Public data.',
+      title: 'Bancos SPEI',
+      description: 'Catálogo de participantes SPEI con sus códigos. Datos públicos.',
       mimeType: JSON_TYPE,
     },
     (uri) => readJson(uri, () => client.catalog.banks()),
@@ -65,19 +65,19 @@ export function registerReferenceResources(server: McpServer, client: Veriko): v
       complete: { code: bankCode },
     }),
     {
-      title: 'SPEI bank',
-      description: 'One participant of the SPEI catalog by its 5-digit code. Public data.',
+      title: 'Banco SPEI',
+      description: 'Un participante del catálogo SPEI por su código de 5 dígitos. Datos públicos.',
       mimeType: JSON_TYPE,
     },
     (uri, variables) => {
       const code = String(variables.code);
       if (!/^\d{5}$/.test(code)) {
-        throw new Error('The bank code has 5 digits, for example veriko://catalog/banks/40012.');
+        throw new Error('El código de banco tiene 5 dígitos, por ejemplo veriko://catalog/banks/40012.');
       }
       return readJson(uri, async () => {
         const banks = (await client.catalog.banks()) as unknown as Array<{ id?: string; attributes?: { code?: string } }>;
         const bank = banks.find((entry) => entry.attributes?.code === code || entry.id === code);
-        if (!bank) throw new Error(`The SPEI catalog has no bank ${code}.`);
+        if (!bank) throw new Error(`El catálogo SPEI no tiene el banco ${code}.`);
         return bank;
       });
     },
@@ -89,14 +89,14 @@ export function registerReferenceResources(server: McpServer, client: Veriko): v
       complete: { year: (typed) => completeYear(typed) },
     }),
     {
-      title: 'SPEI calendar',
-      description: 'Non-business SPEI days of a four-digit year, with the official provision they come from.',
+      title: 'Calendario SPEI',
+      description: 'Días inhábiles SPEI de un año de cuatro dígitos, con la disposición oficial de la que salen.',
       mimeType: JSON_TYPE,
     },
     (uri, variables) => {
       const year = Number(variables.year);
       if (!Number.isInteger(year) || year < 1000 || year > 9999) {
-        throw new Error('The year must be four digits, for example veriko://catalog/spei-calendar/2026.');
+        throw new Error('El año debe tener cuatro dígitos, por ejemplo veriko://catalog/spei-calendar/2026.');
       }
       return readJson(uri, () => client.catalog.speiCalendar(year));
     },
@@ -105,8 +105,8 @@ export function registerReferenceResources(server: McpServer, client: Veriko): v
     'plans',
     'veriko://plans',
     {
-      title: 'Public plans',
-      description: 'The public plans of Veriko and their prices. Public data.',
+      title: 'Planes públicos',
+      description: 'Los planes públicos de Veriko y sus precios. Datos públicos.',
       mimeType: JSON_TYPE,
     },
     (uri) => readJson(uri, () => client.plans.listPublic()),
@@ -115,8 +115,8 @@ export function registerReferenceResources(server: McpServer, client: Veriko): v
     'banxico_status',
     'veriko://status/banxico',
     {
-      title: 'Banxico status',
-      description: 'Public status of the Banxico CEP service. Needs an API key.',
+      title: 'Estado de Banxico',
+      description: 'Estado público del servicio CEP de Banxico. Requiere clave de API.',
       mimeType: JSON_TYPE,
     },
     (uri) => readJson(uri, () => client.catalog.banxicoStatus()),
@@ -125,8 +125,8 @@ export function registerReferenceResources(server: McpServer, client: Veriko): v
     'documentation',
     'veriko://docs',
     {
-      title: 'Documentation links',
-      description: 'Links to the public Veriko documentation on validation, errors, idempotency and quotas.',
+      title: 'Enlaces a la documentación',
+      description: 'Enlaces a la documentación pública de Veriko sobre validación, errores, idempotencia y cuotas.',
       mimeType: 'text/markdown',
     },
     (uri) => ({ contents: [{ uri: uri.href, mimeType: 'text/markdown', text: docsMarkdown() }] }),

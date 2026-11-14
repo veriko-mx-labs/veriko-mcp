@@ -27,8 +27,8 @@ function encodedBytes(size: number): string {
   return Buffer.alloc(size).toString('base64');
 }
 
-describe('limits of binary inputs and URLs', () => {
-  it('accepts a 12 MB OCR image and rejects one more byte', () => {
+describe('límites de las entradas binarias y de las URL', () => {
+  it('acepta una imagen OCR de 12 MB y rechaza un byte más', () => {
     assert.equal(
       validateOcrSchema.safeParse({ image_base64: encodedBytes(12 * 1024 * 1024) }).success,
       true,
@@ -39,7 +39,7 @@ describe('limits of binary inputs and URLs', () => {
     );
   });
 
-  it('accepts a 20 MB import and rejects one more byte', () => {
+  it('acepta una importación de 20 MB y rechaza un byte más', () => {
     assert.equal(
       createImportSchema.safeParse({ file_base64: encodedBytes(20 * 1024 * 1024), filename: 'a.csv' }).success,
       true,
@@ -50,12 +50,12 @@ describe('limits of binary inputs and URLs', () => {
     );
   });
 
-  it('rejects truncated base64 even if Buffer could decode it', () => {
+  it('rechaza base64 truncado aunque Buffer pueda decodificarlo', () => {
     assert.equal(validateOcrSchema.safeParse({ image_base64: 'YQ=' }).success, false);
     assert.equal(createImportSchema.safeParse({ file_base64: 'YQ===', filename: 'a.csv' }).success, false);
   });
 
-  it('requires HTTPS for remote images and webhooks', () => {
+  it('exige HTTPS para imágenes y webhooks remotos', () => {
     assert.equal(validateOcrSchema.safeParse({ image_url: 'http://example.com/a.png' }).success, false);
     assert.equal(
       createWebhookSchema.safeParse({
@@ -73,7 +73,7 @@ describe('limits of binary inputs and URLs', () => {
     );
   });
 
-  it('accepts a null description when creating a webhook', () => {
+  it('acepta una descripción null al crear un webhook', () => {
     assert.equal(
       createWebhookSchema.safeParse({
         url: 'https://example.com/hook',
@@ -84,7 +84,7 @@ describe('limits of binary inputs and URLs', () => {
     );
   });
 
-  it('accepts a 255-character description and rejects one more', () => {
+  it('acepta una descripción de 255 caracteres y rechaza una más', () => {
     assert.equal(
       createWebhookSchema.safeParse({
         url: 'https://example.com/hook',
@@ -111,7 +111,7 @@ describe('limits of binary inputs and URLs', () => {
   });
 });
 
-describe('beneficiary account of the field validation', () => {
+describe('cuenta beneficiaria de la validación por campos', () => {
   const base = {
     send_date: '2026-09-19',
     amount: 100,
@@ -119,21 +119,21 @@ describe('beneficiary account of the field validation', () => {
     beneficiary_account: '012180004412345678',
   };
 
-  it('requires it unless candidate accounts are sent', () => {
+  it('la exige, salvo que se envíen cuentas candidatas', () => {
     assert.equal(validateDirectSchema.safeParse(base).success, true);
 
     const { beneficiary_account: _omitted, ...withoutAccount } = base;
     assert.equal(validateDirectSchema.safeParse(withoutAccount).success, false);
   });
 
-  it('accepts CLABE, card and phone, and rejects any other length', () => {
+  it('acepta CLABE, tarjeta y teléfono, y rechaza cualquier otra longitud', () => {
     for (const account of ['012180004412345678', '4152313100001234', '5512345678']) {
       assert.equal(validateDirectSchema.safeParse({ ...base, beneficiary_account: account }).success, true);
     }
     assert.equal(validateDirectSchema.safeParse({ ...base, beneficiary_account: '12345' }).success, false);
   });
 
-  it('accepts up to 13 integer digits in the amount', () => {
+  it('acepta hasta 13 dígitos enteros en el monto', () => {
     for (const amount of [9_999_999_999_999.99, '9999999999999.99']) {
       assert.equal(validateDirectSchema.safeParse({ ...base, amount }).success, true);
     }
@@ -142,7 +142,7 @@ describe('beneficiary account of the field validation', () => {
     }
   });
 
-  it('stays optional on the receipt', () => {
+  it('sigue siendo opcional en el comprobante', () => {
     assert.equal(
       validateOcrSchema.safeParse({ image_url: 'https://example.com/a.png' }).success,
       true,
@@ -150,7 +150,7 @@ describe('beneficiary account of the field validation', () => {
   });
 });
 
-describe('own reference', () => {
+describe('referencia propia', () => {
   const base = {
     send_date: '2026-09-19',
     amount: 100,
@@ -158,7 +158,7 @@ describe('own reference', () => {
     beneficiary_account: '012180004412345678',
   };
 
-  it('accepts a client_ref of 1 to 64 characters in the validation and in the filters', () => {
+  it('acepta un client_ref de 1 a 64 caracteres en la validación y en los filtros', () => {
     for (const length of [1, 64]) {
       const value = 'a'.repeat(length);
       assert.equal(validateDirectSchema.safeParse({ ...base, client_ref: value }).success, true);
@@ -169,7 +169,7 @@ describe('own reference', () => {
     }
   });
 
-  it('rejects an empty client_ref or one longer than 64 characters', () => {
+  it('rechaza un client_ref vacío o de más de 64 caracteres', () => {
     for (const value of ['', 'a'.repeat(65)]) {
       assert.equal(validateDirectSchema.safeParse({ ...base, client_ref: value }).success, false);
       assert.equal(validateOcrSchema.safeParse({ image_url: 'https://example.com/a.png', client_ref: value }).success, false);
@@ -177,7 +177,7 @@ describe('own reference', () => {
     }
   });
 
-  it('rejects line breaks and control characters in the validation client_ref', () => {
+  it('rechaza saltos de línea y caracteres de control en el client_ref de la validación', () => {
     assert.equal(validateDirectSchema.safeParse({ ...base, client_ref: 'orden\n4812' }).success, false);
     assert.equal(
       validateOcrSchema.safeParse({ image_url: 'https://example.com/a.png', client_ref: 'orden\t4812' }).success,
@@ -187,11 +187,11 @@ describe('own reference', () => {
   });
 });
 
-describe('accounts candidates', () => {
+describe('cuentas candidatas', () => {
   const base = { send_date: '2026-09-19', amount: 100, tracking_key: 'ABC-123' };
   const candidates = ['012180004412345678', '002010077777777771'];
 
-  it('acepta de 2 a 10 accounts en lugar de the account beneficiaria', () => {
+  it('acepta de 2 a 10 cuentas en lugar de la cuenta beneficiaria', () => {
     for (const count of [2, 3, 10]) {
       const list = Array.from({ length: count }, (_, index) => `00201007777777${String(7000 + index)}`);
       assert.equal(validateDirectSchema.safeParse({ ...base, candidate_accounts: list }).success, true);
@@ -202,7 +202,7 @@ describe('accounts candidates', () => {
     }
   });
 
-  it('rejects a list of fewer than 2 or more than 10 accounts', () => {
+  it('rechaza una lista de menos de 2 o de más de 10 cuentas', () => {
     for (const list of [[], ['012180004412345678'], Array.from({ length: 11 }, (_, i) => `00201007777777${String(7000 + i)}`)]) {
       assert.equal(validateDirectSchema.safeParse({ ...base, candidate_accounts: list }).success, false);
       assert.equal(
@@ -212,7 +212,7 @@ describe('accounts candidates', () => {
     }
   });
 
-  it('rechaza accounts repetidas y accounts con otra longitud', () => {
+  it('rechaza cuentas repetidas y cuentas con otra longitud', () => {
     for (const list of [
       ['012180004412345678', '012180004412345678'],
       ['012180004412345678', '12345'],
@@ -221,7 +221,7 @@ describe('accounts candidates', () => {
     }
   });
 
-  it('does not allow the account and the candidates together', () => {
+  it('no permite la cuenta y las candidatas juntas', () => {
     assert.equal(
       validateDirectSchema.safeParse({
         ...base,
@@ -240,16 +240,16 @@ describe('accounts candidates', () => {
     );
   });
 
-  it('the field validation requires one of the two forms', () => {
+  it('la validación por campos exige una de las dos formas', () => {
     assert.equal(validateDirectSchema.safeParse(base).success, false);
     assert.equal(validateDirectSchema.safeParse({ ...base, candidate_accounts: candidates }).success, true);
   });
 });
 
-describe('keeping the receipt', () => {
+describe('conservar el comprobante', () => {
   const base = { image_url: 'https://example.com/a.png' };
 
-  it('accepts a boolean retain_image and rejects any other value', () => {
+  it('acepta un retain_image booleano y rechaza cualquier otro valor', () => {
     assert.equal(validateOcrSchema.safeParse({ ...base, retain_image: false }).success, true);
     assert.equal(validateOcrSchema.safeParse({ ...base, retain_image: true }).success, true);
     assert.equal(validateOcrSchema.safeParse(base).success, true);
@@ -257,15 +257,15 @@ describe('keeping the receipt', () => {
   });
 });
 
-describe('optional send date', () => {
-  it('accepts a validation without a date and still rejects a malformed date', () => {
+describe('fecha de envío opcional', () => {
+  it('acepta una validación sin fecha y sigue rechazando una fecha mal formada', () => {
     const base = { amount: 100, tracking_key: 'ABC-123', beneficiary_account: '012180004412345678' };
     assert.equal(validateDirectSchema.safeParse(base).success, true);
     assert.equal(validateDirectSchema.safeParse({ ...base, send_date: '19/09/2026' }).success, false);
   });
 });
 
-describe('descriptions and semantics', () => {
+describe('descripciones y semántica', () => {
   function fieldsOf(schema: z.ZodType): Record<string, { description?: string }> {
     const json = z.toJSONSchema(schema, { target: 'draft-2020-12', io: 'input' }) as {
       properties?: Record<string, { description?: string }>;
@@ -273,7 +273,7 @@ describe('descriptions and semantics', () => {
     return json.properties ?? {};
   }
 
-  it('every input field of every tool has a description', () => {
+  it('cada campo de entrada de cada herramienta tiene descripción', () => {
     const missing: string[] = [];
     for (const tool of TOOL_CATALOG) {
       for (const [name, property] of Object.entries(fieldsOf(tool.inputSchema))) {
@@ -283,17 +283,17 @@ describe('descriptions and semantics', () => {
     assert.deepEqual(missing, []);
   });
 
-  it('with_deleted and with_archived take 0 or 1 and say what each means', () => {
+  it('with_deleted y with_archived toman 0 o 1 y dicen qué significa cada uno', () => {
     assert.equal(listValidationsSchema.safeParse({ with_deleted: 1 }).success, true);
     assert.equal(listValidationsSchema.safeParse({ with_deleted: 0 }).success, true);
     assert.equal(listValidationsSchema.safeParse({ with_deleted: true }).success, false);
     assert.equal(listBeneficiariesSchema.safeParse({ with_archived: 1 }).success, true);
     assert.equal(listBeneficiariesSchema.safeParse({ with_archived: false }).success, false);
-    assert.match(fieldsOf(listValidationsSchema).with_deleted?.description ?? '', /`1` returns only withdrawn/);
-    assert.match(fieldsOf(listBeneficiariesSchema).with_archived?.description ?? '', /`1` returns only archived/);
+    assert.match(fieldsOf(listValidationsSchema).with_deleted?.description ?? '', /`1` devuelve sólo las retiradas/);
+    assert.match(fieldsOf(listBeneficiariesSchema).with_archived?.description ?? '', /`1` devuelve sólo las archivadas/);
   });
 
-  it('recipient_is_bank is a boolean on both validation inputs', () => {
+  it('recipient_is_bank es un booleano en las dos entradas de validación', () => {
     const base = { amount: 100, tracking_key: 'ABC', beneficiary_account: '012180004412345678' };
     assert.equal(validateDirectSchema.safeParse({ ...base, recipient_is_bank: true }).success, true);
     assert.equal(validateDirectSchema.safeParse({ ...base, recipient_is_bank: 1 }).success, false);
@@ -303,14 +303,14 @@ describe('descriptions and semantics', () => {
     );
   });
 
-  it('retry policy requires at least one retry and unique outcomes', () => {
+  it('la política de reintentos exige al menos un reintento y resultados únicos', () => {
     assert.equal(retryPolicySchema.safeParse({ max_retries: 0 }).success, false);
     assert.equal(retryPolicySchema.safeParse({ max_retries: 1 }).success, true);
     assert.equal(retryPolicySchema.safeParse({ outcomes: ['error', 'error'] }).success, false);
     assert.equal(retryPolicySchema.safeParse({ interval_seconds: 299 }).success, false);
   });
 
-  it('a phone number needs bank_code and separators are accepted', () => {
+  it('un teléfono necesita bank_code y se aceptan separadores', () => {
     assert.equal(createBeneficiarySchema.safeParse({ account_number: '5512345678' }).success, false);
     assert.equal(
       createBeneficiarySchema.safeParse({ account_number: '5512345678', bank_code: '40012' }).success,
@@ -323,7 +323,7 @@ describe('descriptions and semantics', () => {
     assert.equal(createBeneficiarySchema.safeParse({ account_number: '12345' }).success, false);
   });
 
-  it('status, usage period and webhook events are closed sets', () => {
+  it('status, el periodo de consumo y los eventos de webhook son conjuntos cerrados', () => {
     assert.equal(listValidationsSchema.safeParse({ status: 'valdi' }).success, false);
     assert.equal(listValidationsSchema.safeParse({ status: ['valid', 'returned'] }).success, true);
     assert.equal(usageBreakdownSchema.safeParse({ period: 'current' }).success, true);
@@ -332,14 +332,14 @@ describe('descriptions and semantics', () => {
     assert.equal(createWebhookSchema.safeParse({ url: 'https://example.com/h', events: ['nope'] }).success, false);
   });
 
-  it('finance tools do not take the administrator-only user_id', () => {
+  it('las herramientas de finanzas no aceptan el user_id exclusivo de administradores', () => {
     for (const schema of [financeSummarySchema, financePreviewSchema, financeCepsSchema]) {
       assert.equal('user_id' in fieldsOf(schema), false);
     }
     assert.equal(financeSummarySchema.safeParse({ month: '2026-09', user_id: 'x' }).success, false);
   });
 
-  it('regenerate secret takes immediate', () => {
+  it('regenerar el secreto acepta immediate', () => {
     assert.equal(
       regenerateWebhookSecretSchema.safeParse({
         webhook_id: '247af42e-1fd9-4d31-a330-a45d9d6ddbe5',
@@ -349,7 +349,7 @@ describe('descriptions and semantics', () => {
     );
   });
 
-  it('the idempotency key follows the API pattern', () => {
+  it('la clave de idempotencia sigue el patrón de la API', () => {
     const base = { amount: 100, tracking_key: 'ABC', beneficiary_account: '012180004412345678' };
     assert.equal(validateDirectSchema.safeParse({ ...base, idempotency_key: 'order_4812-a' }).success, true);
     assert.equal(validateDirectSchema.safeParse({ ...base, idempotency_key: 'order 4812' }).success, false);

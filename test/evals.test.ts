@@ -5,13 +5,13 @@ import { runOracle } from '../evals/runner.js';
 import { SCENARIOS } from '../evals/scenarios.js';
 
 describe('evals', () => {
-  it('every scenario is still measurable', { timeout: 60_000 }, async () => {
+  it('cada escenario sigue siendo medible', { timeout: 60_000 }, async () => {
     assert.equal(SCENARIOS.length, 18);
     assert.equal(new Set(SCENARIOS.map((item) => item.id)).size, 18);
 
-    // A scenario stops measuring when the data set no longer answers its
-    // question or the operation changes shape. Without this, a comparison
-    // between profiles would produce a number that means nothing.
+    // Un escenario deja de medir cuando el conjunto de datos ya no responde a su
+    // pregunta o la operación cambia de forma. Sin esto, una comparación entre
+    // perfiles daría un número que no significa nada.
     const results = await runOracle();
     const broken = results.filter((item) => !item.correct || !item.viaExpectedPath);
     assert.deepEqual(

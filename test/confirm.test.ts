@@ -24,7 +24,7 @@ afterEach(async () => {
 
 const WEBHOOK = '7c9e6679-7425-40de-944b-e07fc1f90ae7';
 
-/** A client that declares elicitation and answers the questions with `answer`. */
+/** Un cliente que declara elicitation y responde las preguntas con `answer`. */
 async function legacySession(answer: Answer | undefined, asked: string[]) {
   const server = createVerikoServer({ config: ALL, client: clientFor(api) });
   const client = new Client(
@@ -47,8 +47,8 @@ async function legacySession(answer: Answer | undefined, asked: string[]) {
   return client;
 }
 
-describe('confirmation before destructive tools', () => {
-  it('asks, and runs the operation once the person confirms', async () => {
+describe('confirmación antes de las herramientas destructivas', () => {
+  it('pregunta y ejecuta la operación cuando la persona confirma', async () => {
     const asked: string[] = [];
     const client = await legacySession({ action: 'accept', content: { confirm: true } }, asked);
 
@@ -62,11 +62,11 @@ describe('confirmation before destructive tools', () => {
   });
 
   for (const [label, answer, reason] of [
-    ['declines', { action: 'decline' }, 'declined'],
-    ['dismisses the question', { action: 'cancel' }, 'cancelled'],
-    ['accepts without checking the box', { action: 'accept', content: { confirm: false } }, 'not_confirmed'],
+    ['rechaza la operación', { action: 'decline' }, 'declined'],
+    ['cierra la pregunta', { action: 'cancel' }, 'cancelled'],
+    ['acepta sin marcar la casilla', { action: 'accept', content: { confirm: false } }, 'not_confirmed'],
   ] as const) {
-    it(`does not call the API when the person ${label}`, async () => {
+    it(`no llama a la API cuando la persona ${label}`, async () => {
       const client = await legacySession(answer, []);
 
       const result = await client.callTool({ name: 'veriko_delete_webhook', arguments: { webhook_id: WEBHOOK } });
@@ -80,7 +80,7 @@ describe('confirmation before destructive tools', () => {
     });
   }
 
-  it('behaves as before when the client does not declare elicitation', async () => {
+  it('se comporta como antes cuando el cliente no declara elicitation', async () => {
     const client = await legacySession(undefined, []);
 
     const result = await client.callTool({ name: 'veriko_delete_webhook', arguments: { webhook_id: WEBHOOK } });
@@ -89,7 +89,7 @@ describe('confirmation before destructive tools', () => {
     assert.equal(api.seen.length, 1);
   });
 
-  it('does not ask before a read or a plain write', async () => {
+  it('no pregunta antes de una lectura ni de una escritura común', async () => {
     const asked: string[] = [];
     const client = await legacySession({ action: 'accept', content: { confirm: true } }, asked);
 
@@ -99,7 +99,7 @@ describe('confirmation before destructive tools', () => {
     assert.deepEqual(asked, []);
   });
 
-  it('asks before each destructive operation', async () => {
+  it('pregunta antes de cada operación destructiva', async () => {
     const asked: string[] = [];
     const client = await legacySession({ action: 'decline' }, asked);
     const calls: Array<[string, Record<string, unknown>]> = [
@@ -125,11 +125,11 @@ describe('confirmation before destructive tools', () => {
 
     assert.equal(asked.length, calls.length);
     assert.equal(api.seen.length, 0);
-    assert.match(asked[3] ?? '', /revoke the previous one at once/);
-    assert.match(asked[2] ?? '', /24 hours/);
+    assert.match(asked[3] ?? '', /revocar el anterior de inmediato/);
+    assert.match(asked[2] ?? '', /24 horas/);
   });
 
-  it('asks through the input-required flow on the 2026-07-28 revision', async () => {
+  it('pregunta con el flujo de entrada requerida en la revisión 2026-07-28', async () => {
     const app = createHttpApp({
       config: { apiKey: '', profiles: new Set(['all']), maxRisk: 'destructive' },
       clientFactory: () => clientFor(api),

@@ -3,14 +3,14 @@ import { describe, it } from 'node:test';
 
 import { loadConfig } from '../src/config.js';
 
-describe('server configuration', () => {
-  it('applies core and write to empty variables too', () => {
+describe('configuración del servidor', () => {
+  it('aplica core y write también a las variables vacías', () => {
     const config = loadConfig({ VERIKO_MCP_PROFILE: ' ', VERIKO_MCP_MAX_RISK: '' });
     assert.deepEqual([...config.profiles], ['core']);
     assert.equal(config.maxRisk, 'write');
   });
 
-  it('normalizes profile lists and keeps the key outside the catalog', () => {
+  it('normaliza las listas de perfiles y mantiene la clave fuera del catálogo', () => {
     const config = loadConfig({
       VERIKO_API_KEY: '  veriko_test  ',
       VERIKO_MCP_PROFILE: ' plans, catalog,plans ',
@@ -21,12 +21,12 @@ describe('server configuration', () => {
     assert.equal(config.maxRisk, 'read');
   });
 
-  it('rejects unknown profiles and risks', () => {
-    assert.throws(() => loadConfig({ VERIKO_MCP_PROFILE: 'nonexistent' }), /unknown profiles/);
-    assert.throws(() => loadConfig({ VERIKO_MCP_MAX_RISK: 'dangerous' }), /must be read/);
+  it('rechaza perfiles y riesgos desconocidos', () => {
+    assert.throws(() => loadConfig({ VERIKO_MCP_PROFILE: 'nonexistent' }), /perfiles desconocidos/);
+    assert.throws(() => loadConfig({ VERIKO_MCP_MAX_RISK: 'dangerous' }), /debe ser read/);
   });
 
-  it('requires HTTPS for remote hosts and rejects credentials in the URL', () => {
+  it('exige HTTPS para hosts remotos y rechaza credenciales en la URL', () => {
     assert.equal(
       loadConfig({ VERIKO_BASE_URL: 'https://sandbox.veriko.mx/v1' }).baseUrl,
       'https://sandbox.veriko.mx/v1',
@@ -37,11 +37,11 @@ describe('server configuration', () => {
     );
     assert.throws(
       () => loadConfig({ VERIKO_BASE_URL: 'http://example.test/v1' }),
-      /must use HTTPS/,
+      /debe usar HTTPS/,
     );
     assert.throws(
       () => loadConfig({ VERIKO_BASE_URL: 'https://user:secret@example.test/v1' }),
-      /embedded credentials/,
+      /credenciales incrustadas/,
     );
   });
 });

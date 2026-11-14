@@ -1,17 +1,17 @@
 /**
- * Warns when the SDK the MCP consumes has fallen behind.
+ * Avisa cuando el SDK que consume el MCP se quedó atrás.
  *
- * The sync chain is spec, then SDK, then MCP: the organization's reusable
- * workflow regenerates the SDK when the portal publishes a new contract. The MCP
- * pins the SDK by version and integrity, so a new SDK version does not arrive on
- * its own: someone has to move it.
+ * La cadena de sincronización es spec, luego SDK, luego MCP: el workflow
+ * reutilizable de la organización regenera el SDK cuando el portal publica un
+ * contrato nuevo. El MCP fija el SDK por versión e integridad, así que una
+ * versión nueva del SDK no llega sola: alguien tiene que moverla.
  *
- * `check:surface` does not cover that step. It detects that the contract
- * changed, not that the SDK that implements it arrived. A whole version can pass
- * between the two with nothing saying so.
+ * `check:surface` no cubre ese paso. Detecta que el contrato cambió, no que
+ * llegó el SDK que lo implementa. Puede pasar una versión completa entre los
+ * dos sin que nada lo diga.
  *
- * This updates nothing by itself: it reports. Raising the SDK changes the
- * lockfile and the publishable artifact, and that is reviewed in a PR.
+ * Esto no actualiza nada por sí mismo: informa. Subir el SDK cambia el
+ * lockfile y el artefacto que se publica, y eso se revisa en un PR.
  */
 import { readFileSync } from 'node:fs';
 
@@ -23,42 +23,42 @@ const packageJson = JSON.parse(
 
 const pinnedSpec = packageJson.dependencies?.['@veriko-mx/sdk-runtime'];
 if (!pinnedSpec) {
-  throw new Error('package.json has no `@veriko-mx/sdk-runtime` dependency.');
+  throw new Error('package.json no tiene la dependencia `@veriko-mx/sdk-runtime`.');
 }
 
 const pinned = /^npm:@veriko-mx\/sdk@(\d+\.\d+\.\d+)$/.exec(pinnedSpec)?.[1];
 if (!pinned) {
   throw new Error(
-    `The SDK source is no longer an exact npm version (${pinnedSpec}); ` +
-      'check by hand that it is still immutable before changing this lock.',
+    `El origen del SDK ya no es una versión exacta de npm (${pinnedSpec}); ` +
+      'comprueba a mano que siga siendo inmutable antes de cambiar este candado.',
   );
 }
 
-// The registry is public and needs no credential, so this no longer depends on
-// a token or on the GitHub API quota.
+// El registro es público y no necesita credencial, así que esto ya no depende de
+// un token ni de la cuota de la API de GitHub.
 const response = await fetch(REGISTRY, {
   cache: 'no-store',
   headers: { accept: 'application/json' },
 });
 if (!response.ok) {
-  throw new Error(`Could not read @veriko-mx/sdk on npm: HTTP ${response.status}.`);
+  throw new Error(`No se pudo leer @veriko-mx/sdk en npm: HTTP ${response.status}.`);
 }
 
 const document = (await response.json()) as { 'dist-tags'?: Record<string, string> };
 const published = document['dist-tags']?.latest ?? '';
 if (!/^\d+\.\d+\.\d+$/.test(published)) {
-  throw new Error(`@veriko-mx/sdk has no readable \`latest\` (${published}).`);
+  throw new Error(`@veriko-mx/sdk no tiene un \`latest\` legible (${published}).`);
 }
 
 if (published !== pinned) {
   throw new Error(
-    `The SDK moved to ${published} and the MCP is still on ${pinned}.\n` +
-      'To catch up:\n' +
-      `  1. set \`@veriko-mx/sdk-runtime\` to \`npm:@veriko-mx/sdk@${published}\` in package.json;\n` +
-      '  2. run `npm install` to pin the integrity in the lockfile again;\n' +
-      '  3. run `npm run check` and `npm run check:surface`, which says whether the surface changed;\n' +
-      '  4. open the PR: raising the SDK changes the publishable artifact.',
+    `El SDK avanzó a ${published} y el MCP sigue en ${pinned}.\n` +
+      'Para ponerte al día:\n' +
+      `  1. cambia \`@veriko-mx/sdk-runtime\` a \`npm:@veriko-mx/sdk@${published}\` en package.json;\n` +
+      '  2. ejecuta `npm install` para fijar de nuevo la integridad en el lockfile;\n' +
+      '  3. ejecuta `npm run check` y `npm run check:surface`, que dice si cambió la superficie;\n' +
+      '  4. abre el PR: subir el SDK cambia el artefacto que se publica.',
   );
 }
 
-process.stdout.write(`SDK up to date: the MCP consumes ${pinned}, the latest published on npm.\n`);
+process.stdout.write(`SDK al día: el MCP usa ${pinned}, la última versión publicada en npm.\n`);

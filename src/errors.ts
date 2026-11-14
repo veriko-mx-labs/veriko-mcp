@@ -11,7 +11,7 @@ import {
 import { ArtifactLimitError } from './artifacts.js';
 import { FileInputError } from './local-files.js';
 
-/** One entry of the API `errors[]` array, as the model sees it. */
+/** Una entrada del arreglo `errors[]` de la API, tal como la ve el modelo. */
 export interface ErrorEntry {
   code?: string;
   title?: string;
@@ -24,24 +24,24 @@ export interface ErrorEntry {
 
 export interface SafeError {
   type: string;
-  /** Machine-readable code. Branch on this, never on `message` or `detail`. */
+  /** Código legible por máquina. Decide según éste, nunca según `message` ni `detail`. */
   code: string;
-  /** Human text; free-form and not a contract. */
+  /** Texto para personas; libre y sin garantía de contrato. */
   message: string;
   status?: number;
-  /** `quota` when the plan allowance is spent, `rate_limit` when requests are too frequent. */
+  /** `quota` cuando se agotó la cuota del plan, `rate_limit` cuando las peticiones son demasiado frecuentes. */
   kind?: 'quota' | 'rate_limit';
-  /** Whether repeating the same call can succeed without changing it. */
+  /** Si repetir la misma llamada puede funcionar sin cambiarla. */
   retryable: boolean;
   retry_after_seconds?: number;
   request_id?: string;
-  /** Every API error entry: summary first, then one per invalid field with its `pointer`. */
+  /** Cada entrada de error de la API: primero el resumen y luego una por campo inválido con su `pointer`. */
   errors?: ErrorEntry[];
   meta?: Record<string, unknown>;
   docs_url?: string;
   quota?: { limit?: number; used?: number; remaining?: number; reset?: string };
   quota_warning?: string;
-  /** The `Idempotency-Key` this call used. Repeat it to retry safely. */
+  /** El `Idempotency-Key` que usó esta llamada. Repítelo para reintentar sin riesgo. */
   idempotency_key?: string;
   resource_id?: string;
   timeout_ms?: number;
@@ -111,7 +111,7 @@ export function safeError(error: unknown): SafeError {
     return {
       type: error.name,
       code,
-      message: text(error.detail) ?? `Veriko rejected the operation with ${code} (HTTP ${error.status}).`,
+      message: text(error.detail) ?? `Veriko rechazó la operación con ${code} (HTTP ${error.status}).`,
       status: error.status,
       ...(kind ? { kind } : {}),
       retryable,
@@ -125,7 +125,7 @@ export function safeError(error: unknown): SafeError {
     return {
       type: error.name,
       code: 'timeout',
-      message: 'The wait ended before the resource reached a final state.',
+      message: 'La espera terminó antes de que el recurso llegara a un estado final.',
       retryable: true,
       resource_id: error.resourceId,
       timeout_ms: error.timeoutMs,
@@ -135,7 +135,7 @@ export function safeError(error: unknown): SafeError {
     return {
       type: error.name,
       code: 'configuration_error',
-      message: 'The operation needs a valid configuration; check VERIKO_API_KEY and the arguments.',
+      message: 'La operación necesita una configuración válida; revisa VERIKO_API_KEY y los argumentos.',
       retryable: false,
     };
   }
@@ -144,7 +144,7 @@ export function safeError(error: unknown): SafeError {
       type: error.name,
       code: 'connection_error',
       message:
-        'Could not reach Veriko after the configured retries. If the call was a write, repeat it with the same idempotency_key.',
+        'No se pudo contactar a Veriko tras los reintentos configurados. Si la llamada era una escritura, repítela con la misma idempotency_key.',
       retryable: true,
       attempts: error.attempts,
     };
@@ -156,7 +156,7 @@ export function safeError(error: unknown): SafeError {
     return {
       type: error.name,
       code: 'artifact_too_large',
-      message: 'The file exceeds the ephemeral resource limit of the MCP server.',
+      message: 'El archivo supera el límite de recursos efímeros del servidor MCP.',
       retryable: false,
       size: error.size,
       limit: error.limit,
@@ -166,7 +166,7 @@ export function safeError(error: unknown): SafeError {
     return {
       type: error.name,
       code: 'cancelled',
-      message: 'The request was cancelled before it finished. Nothing more will be sent.',
+      message: 'La petición se canceló antes de terminar. No se enviará nada más.',
       retryable: false,
     };
   }
@@ -174,7 +174,7 @@ export function safeError(error: unknown): SafeError {
     return {
       type: error.name,
       code: 'veriko_error',
-      message: 'The Veriko SDK rejected the operation before the API answered.',
+      message: 'El SDK de Veriko rechazó la operación antes de que la API respondiera.',
       retryable: false,
     };
   }
@@ -185,9 +185,9 @@ export function safeError(error: unknown): SafeError {
     return {
       type: error.name,
       code: 'mcp_internal_error',
-      message: 'The MCP server failed.',
+      message: 'El servidor MCP falló.',
       retryable: false,
     };
   }
-  return { type: 'Error', code: 'mcp_internal_error', message: 'Unknown error.', retryable: false };
+  return { type: 'Error', code: 'mcp_internal_error', message: 'Error desconocido.', retryable: false };
 }

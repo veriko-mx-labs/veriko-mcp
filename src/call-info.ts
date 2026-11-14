@@ -17,7 +17,7 @@ export interface CallInfo {
   quota_warning?: string;
   rate_limit?: RateLimit;
   retry_after_seconds?: number;
-  /** `Deprecation` and `Sunset` of the operation, verbatim, when the API announces its retirement. */
+  /** `Deprecation` y `Sunset` de la operación, tal cual, cuando la API anuncia su retiro. */
   deprecation?: string;
   sunset?: string;
 }
@@ -25,7 +25,7 @@ export interface CallInfo {
 export interface RateLimit {
   limit?: number;
   remaining?: number;
-  /** ISO 8601 time the window resets. */
+  /** Momento ISO 8601 en que se reinicia la ventana. */
   reset?: string;
 }
 
@@ -50,14 +50,14 @@ export function quotaFrom(headers: Record<string, string> | undefined): QuotaInf
   return Object.keys(quota).length > 0 ? quota : undefined;
 }
 
-/** A plain-English warning when the allowance is low or spent. */
+/** Una advertencia en lenguaje claro cuando el saldo es bajo o se agotó. */
 export function quotaWarning(quota: QuotaInfo | undefined): string | undefined {
   if (!quota || quota.remaining === undefined) return undefined;
   if (quota.remaining <= 0) {
-    return `The quota is spent${quota.reset ? ` until ${quota.reset}` : ''}. Further validations answer 429 \`quota_exceeded\`; changing plan or waiting for the next cycle clears it.`;
+    return `La cuota se agotó${quota.reset ? ` hasta ${quota.reset}` : ''}. Las validaciones siguientes responden 429 \`quota_exceeded\`; cambiar de plan o esperar al siguiente ciclo lo resuelve.`;
   }
   if (quota.limit && quota.remaining / quota.limit <= 0.1) {
-    return `Only ${quota.remaining} of ${quota.limit} validations remain in this cycle${quota.reset ? ` (resets ${quota.reset})` : ''}. Confirm before validating in bulk.`;
+    return `Sólo quedan ${quota.remaining} de ${quota.limit} validaciones en este ciclo${quota.reset ? ` (se reinicia ${quota.reset})` : ''}. Confirma antes de validar en lote.`;
   }
   return undefined;
 }
@@ -67,9 +67,9 @@ function defined<T extends object>(value: T): T | undefined {
 }
 
 /**
- * What the model learns from the response of one call, read from the SDK
- * response metadata: replay, quota, rate limit, request id, retry delay and the
- * deprecation of the operation.
+ * Lo que el modelo aprende de la respuesta de una llamada, leído de los
+ * metadatos de la respuesta del SDK: repetición, cuota, límite de frecuencia,
+ * id de la petición, espera para reintentar y obsolescencia de la operación.
  */
 export function callInfoFrom(
   meta: ResponseMeta | undefined,
@@ -106,7 +106,7 @@ export function callInfoFrom(
   return Object.keys(info).length > 0 ? info : undefined;
 }
 
-/** Adds the quota facts of an API error response to a safe error. */
+/** Agrega a un error seguro los datos de cuota de la respuesta de error de la API. */
 export function withErrorHeaders(
   error: SafeError,
   headers: Record<string, string> | undefined,

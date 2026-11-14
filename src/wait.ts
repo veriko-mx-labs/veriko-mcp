@@ -12,18 +12,18 @@ import { abortedError } from './cancel.js';
 import { currentHeaders } from './client.js';
 import { CEP_EXPORT_TERMINAL_STATUSES } from './schemas.js';
 
-/** Shortest and longest pause between two polls. The API suggests 2 seconds. */
+/** La pausa más corta y la más larga entre dos consultas. La API sugiere 2 segundos. */
 const MIN_POLL_SECONDS = 1;
 const MAX_POLL_SECONDS = 10;
 const DEFAULT_POLL_SECONDS = 2;
 export const DEFAULT_WAIT_SECONDS = 25;
 
 export interface WaitResult {
-  /** The last state read, as the API returned it. */
+  /** El último estado leído, tal como lo devolvió la API. */
   resource: unknown;
-  /** The resource reached a state that no longer changes. */
+  /** El recurso llegó a un estado que ya no cambia. */
   terminal: boolean;
-  /** The time limit ended first: call the tool again. */
+  /** Se acabó primero el tiempo límite: vuelve a llamar a la herramienta. */
   waiting: boolean;
   status?: string;
   next_poll_after_seconds?: number;
@@ -31,10 +31,10 @@ export interface WaitResult {
   waited_seconds: number;
 }
 
-/** One read of the resource, with the pause the API asked for in that same response. */
+/** Una lectura del recurso, con la pausa que la API pidió en esa misma respuesta. */
 interface Reading<T> {
   value: T | 'not_modified';
-  /** `meta.next_poll_after_seconds` or `Retry-After` of the response. */
+  /** `meta.next_poll_after_seconds` o `Retry-After` de la respuesta. */
   hintSeconds?: number | undefined;
 }
 
@@ -44,7 +44,7 @@ interface Poll<T> {
   statusOf(value: T): string | undefined;
 }
 
-/** What the SDK reports about the response of a call, as far as polling needs it. */
+/** Lo que informa el SDK sobre la respuesta de una llamada, en lo que necesita la consulta periódica. */
 function hintOf(response: ResponseMeta): number | undefined {
   const advised = Number(response.meta.next_poll_after_seconds);
   if (Number.isFinite(advised) && advised > 0) return advised;
@@ -52,7 +52,7 @@ function hintOf(response: ResponseMeta): number | undefined {
 }
 
 async function readWith<T>(call: ApiPromise<T>): Promise<Reading<T>> {
-  // A stand-in client (the evals' fake API) returns a plain promise: no metadata then.
+  // Un cliente de reemplazo (la API falsa de las evals) devuelve una promesa simple: entonces no hay metadatos.
   if (typeof call.withResponse !== 'function') return { value: await call };
   const { data, response } = await call.withResponse();
   return { value: data, hintSeconds: hintOf(response) };
@@ -86,10 +86,10 @@ async function poll<T>(
     if (reading.value !== 'not_modified') latest = reading.value;
     const status = latest !== undefined ? spec.statusOf(latest) : undefined;
     const waited = Math.round((now() - startedAt) / 1000);
-    // One notification per read: the client can show that the wait is alive.
+    // Una notificación por lectura: el cliente puede mostrar que la espera sigue viva.
     await runtime?.progress?.({
       progress: polls,
-      message: `${status ?? 'pending'}; waited ${waited} of ${budgetSeconds} seconds`,
+      message: `${status ?? 'pendiente'}; van ${waited} de ${budgetSeconds} segundos`,
     });
     if (latest !== undefined && spec.settled(latest)) {
       return {
@@ -118,7 +118,7 @@ async function poll<T>(
   };
 }
 
-/** A pause that ends at once, with an error, when the request is cancelled. */
+/** Una pausa que termina de inmediato, con un error, cuando se cancela la petición. */
 function abortableSleep(milliseconds: number, signal: AbortSignal | undefined): Promise<void> {
   if (signal?.aborted) return Promise.reject(abortedError(signal));
   return new Promise<void>((resolve, reject) => {
@@ -134,7 +134,7 @@ function abortableSleep(milliseconds: number, signal: AbortSignal | undefined): 
   });
 }
 
-/** `Retry-After` of the last API response, read from the call capture. */
+/** `Retry-After` de la última respuesta de la API, leído de la captura de la llamada. */
 function retryAfterHeader(): number | undefined {
   const value = Number(currentHeaders()?.['retry-after']);
   return Number.isFinite(value) && value > 0 ? value : undefined;

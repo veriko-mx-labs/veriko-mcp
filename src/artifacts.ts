@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto';
 import { ResourceTemplate, type McpServer } from '@modelcontextprotocol/server';
 import type { DownloadedFile as SdkDownloadedFile } from '@veriko-mx/sdk-runtime';
 
-/** The parts of a download the server reads. The response headers are not needed here. */
+/** Las partes de una descarga que lee el servidor. Aquí no hacen falta los encabezados de la respuesta. */
 export type DownloadedFile = Pick<SdkDownloadedFile, 'filename' | 'contentType' | 'content'>;
 
 export interface ArtifactReference {
@@ -18,7 +18,7 @@ interface StoredArtifact extends ArtifactReference {
   content: Uint8Array;
 }
 
-/** Metadata of a downloaded file, without storing it. The URI comes from the hash. */
+/** Metadatos de un archivo descargado, sin guardarlo. El URI sale del hash. */
 export function describeArtifact(file: DownloadedFile): ArtifactReference {
   const sha256 = createHash('sha256').update(file.content).digest('hex');
   return {
@@ -35,7 +35,7 @@ export class ArtifactLimitError extends Error {
   readonly limit: number;
 
   constructor(size: number, limit: number) {
-    super(`The ${size}-byte file exceeds the resource limit of ${limit} bytes.`);
+    super(`El archivo de ${size} bytes supera el límite de recursos de ${limit} bytes.`);
     this.name = 'ArtifactLimitError';
     this.size = size;
     this.limit = limit;
@@ -108,17 +108,17 @@ export function registerArtifactResources(server: McpServer, store: ArtifactStor
           uri: artifact.uri,
           name: artifact.name,
           mimeType: artifact.mimeType,
-          description: `Veriko file (${artifact.size} bytes, sha256 ${artifact.sha256})`,
+          description: `Archivo de Veriko (${artifact.size} bytes, sha256 ${artifact.sha256})`,
         })),
       }),
     }),
-    { description: 'Files downloaded from Veriko during this session.' },
+    { description: 'Archivos descargados de Veriko durante esta sesión.' },
     async (uri, variables) => {
       const id = variables.id;
       const artifact = typeof id === 'string' ? store.get(id) : undefined;
       if (!artifact) {
         throw new Error(
-          `Artifact ${String(id)} is not available: the server keeps the last ${store.maxEntries} files of this session and drops the oldest. Download it again.`,
+          `El artefacto ${String(id)} ya no está disponible: el servidor conserva los últimos ${store.maxEntries} archivos de esta sesión y descarta los más antiguos. Descárgalo de nuevo.`,
         );
       }
       return { contents: [resourceContents(artifact.uri, artifact.mimeType, artifact.content)] };
@@ -157,9 +157,9 @@ function startsWith(bytes: Uint8Array, signature: readonly number[]): boolean {
 }
 
 /**
- * The media type of a download. The API sometimes answers `application/octet-stream`
- * for files whose type is known (an XLSX export, an import template); the file
- * name and the leading bytes say what they are.
+ * El tipo de medio de una descarga. La API a veces responde `application/octet-stream`
+ * para archivos cuyo tipo se conoce (una exportación XLSX, una plantilla de importación);
+ * el nombre del archivo y los primeros bytes dicen qué son.
  */
 export function resolveMimeType(file: DownloadedFile): string {
   const declared = file.contentType.split(';')[0]?.trim().toLowerCase() ?? '';
@@ -177,7 +177,7 @@ export function resolveMimeType(file: DownloadedFile): string {
   return 'application/octet-stream';
 }
 
-/** Whether a media type is text a model can read directly. */
+/** Si un tipo de medio es texto que un modelo puede leer directamente. */
 export function isTextMimeType(mimeType: string): boolean {
   return (
     mimeType.startsWith('text/') ||
@@ -188,7 +188,7 @@ export function isTextMimeType(mimeType: string): boolean {
   );
 }
 
-/** Resource contents: `text` for text media types, `blob` (base64) for the rest. */
+/** Contenido del recurso: `text` para tipos de texto, `blob` (base64) para los demás. */
 export function resourceContents(
   uri: string,
   mimeType: string,

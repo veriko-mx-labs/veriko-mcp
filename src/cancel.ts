@@ -1,6 +1,6 @@
 import { RequestAbortedError } from '@veriko-mx/sdk-runtime';
 
-/** The error a call ends with when the MCP client cancels the request it belongs to. */
+/** El error con el que termina una llamada cuando el cliente MCP cancela la petición a la que pertenece. */
 export function abortedError(signal: AbortSignal): RequestAbortedError {
-  return new RequestAbortedError('The request was cancelled by the client.', { cause: signal.reason });
+  return new RequestAbortedError('El cliente canceló la petición.', { cause: signal.reason });
 }

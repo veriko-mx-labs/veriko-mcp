@@ -35,8 +35,8 @@ function text(result: { content: unknown }): string {
   return first?.text ?? '';
 }
 
-describe('MCP server', () => {
-  it('announces only the requested profile and runs a public operation', async () => {
+describe('servidor MCP', () => {
+  it('anuncia sólo el perfil pedido y ejecuta una operación pública', async () => {
     const fake = {
       plans: {
         listPublic: async () => ({ data: [{ id: 'integrator' }] }),
@@ -59,7 +59,7 @@ describe('MCP server', () => {
     assert.deepEqual(result.structuredContent, { data: [{ id: 'integrator' }] });
   });
 
-  it('declares an outputSchema and annotations on every tool, and identity with instructions', async () => {
+  it('declara un outputSchema y anotaciones en cada herramienta, e identidad con instrucciones', async () => {
     const { client } = await session();
     const { tools } = await client.listTools();
 
@@ -81,10 +81,10 @@ describe('MCP server', () => {
     const instructions = client.getInstructions() ?? '';
     assert.match(instructions, /veriko_wait_for_validation/);
     assert.match(instructions, /idempotency_key/);
-    assert.doesNotMatch(instructions, /[áéíóúñ]/);
+    assert.match(instructions, /Veriko verifica/);
   });
 
-  it('returns structured content that satisfies the output schema', async () => {
+  it('devuelve contenido estructurado que cumple el esquema de salida', async () => {
     api.reply = (_request, response) =>
       json(response, 200, {
         data: { type: 'validation', id: VALIDATION_ID, attributes: { status: 'valid', account_cross_checked: true } },
@@ -99,7 +99,7 @@ describe('MCP server', () => {
     assert.equal(body.attributes?.status, 'valid');
   });
 
-  it('sends a fresh Idempotency-Key per call and surfaces the key and the replay', async () => {
+  it('envía un Idempotency-Key nuevo por llamada e informa la clave y la repetición', async () => {
     let calls = 0;
     api.reply = (_request, response) => {
       calls += 1;
@@ -127,7 +127,7 @@ describe('MCP server', () => {
     assert.equal(call?.idempotency_key, 'order-4812');
   });
 
-  it('surfaces quota headers and a warning when the allowance is nearly spent', async () => {
+  it('informa los encabezados de cuota y una advertencia cuando el saldo está por agotarse', async () => {
     api.reply = (_request, response) =>
       json(response, 200, { data: { type: 'validation', id: VALIDATION_ID, attributes: { status: 'valid' } } }, {
         'X-Quota-Limit': '100',
@@ -141,10 +141,10 @@ describe('MCP server', () => {
 
     const call = (result.structuredContent as { _call?: { quota?: Record<string, unknown>; quota_warning?: string } })._call;
     assert.deepEqual(call?.quota, { limit: 100, used: 95, remaining: 5, reset: '2026-12-01T00:00:00Z' });
-    assert.match(call?.quota_warning ?? '', /Only 5 of 100 validations remain/);
+    assert.match(call?.quota_warning ?? '', /Sólo quedan 5 de 100 validaciones/);
   });
 
-  it('surfaces the rate-limit window and the deprecation of an operation from the response metadata', async () => {
+  it('informa la ventana de límite de frecuencia y la obsolescencia de una operación desde los metadatos de la respuesta', async () => {
     api.reply = (_request, response) =>
       json(
         response,
@@ -169,7 +169,7 @@ describe('MCP server', () => {
     assert.equal(call?.request_id, 'req_meta');
   });
 
-  it('returns the full errors list of a 422 as an error result the model can act on', async () => {
+  it('devuelve la lista completa de errores de un 422 como un resultado de error con el que el modelo puede actuar', async () => {
     api.reply = (_request, response) =>
       json(response, 422, {
         errors: [
@@ -202,7 +202,7 @@ describe('MCP server', () => {
     assert.deepEqual(JSON.parse(text(result)), { error });
   });
 
-  it('returns a quota 429 at once, with retry_after_seconds and the quota facts', async () => {
+  it('devuelve de inmediato un 429 de cuota, con retry_after_seconds y los datos de cuota', async () => {
     api.reply = (_request, response) =>
       json(
         response,
@@ -221,10 +221,10 @@ describe('MCP server', () => {
     assert.equal(error.kind, 'quota');
     assert.equal(error.retryable, false);
     assert.equal(error.retry_after_seconds, 86_400);
-    assert.match(String(error.quota_warning), /quota is spent/);
+    assert.match(String(error.quota_warning), /cuota se agotó/);
   });
 
-  it('treats a 304 as a success', async () => {
+  it('trata un 304 como un éxito', async () => {
     api.reply = (_request, response) => {
       response.statusCode = 304;
       response.end();
@@ -240,7 +240,7 @@ describe('MCP server', () => {
     assert.deepEqual(result.structuredContent, { not_modified: true, etag: 'W/"3-processing"' });
   });
 
-  it('sends the User-Agent with the MCP, its transport and the SDK', async () => {
+  it('envía el User-Agent con el MCP, su transporte y el SDK', async () => {
     const { client } = await session();
     await client.callTool({ name: 'veriko_list_webhooks', arguments: {} });
     assert.match(
@@ -249,7 +249,7 @@ describe('MCP server', () => {
     );
   });
 
-  it('rotates a webhook secret immediately with the immediate body', async () => {
+  it('rota de inmediato el secreto de un webhook con el cuerpo immediate', async () => {
     api.reply = (_request, response) =>
       json(response, 200, { data: { type: 'webhook_endpoint', id: 'w1', attributes: { secret: 'whsec_x' } } });
     const { client } = await session();
@@ -267,7 +267,7 @@ describe('MCP server', () => {
     assert.equal((immediate.structuredContent as { id?: string }).id, 'w1');
   });
 
-  it('embeds a small CEP XML as text and stores it for resources/read', async () => {
+  it('incrusta como texto un XML de CEP pequeño y lo guarda para resources/read', async () => {
     api.reply = (_request, response) => {
       response.setHeader('content-type', 'application/xml');
       response.setHeader('content-disposition', 'attachment; filename="CEP.xml"');
@@ -290,7 +290,7 @@ describe('MCP server', () => {
     assert.equal((read.contents[0] as { text?: string }).text, '<cep>ok</cep>');
   });
 
-  it('returns a resource link for a file over the embedding limit', async () => {
+  it('devuelve un enlace a un recurso para un archivo que pasa el límite de incrustación', async () => {
     api.reply = (_request, response) => {
       response.setHeader('content-type', 'application/pdf');
       response.end(Buffer.alloc(2_000, 1));
@@ -308,7 +308,7 @@ describe('MCP server', () => {
     assert.equal((result.structuredContent as { embedded: boolean }).embedded, false);
   });
 
-  it('gives an octet-stream export the right type from its file name', async () => {
+  it('da a una exportación octet-stream el tipo correcto según el nombre del archivo', async () => {
     api.reply = (_request, response) => {
       response.setHeader('content-type', 'application/octet-stream');
       response.setHeader('content-disposition', 'attachment; filename="validations.csv"');
@@ -321,20 +321,20 @@ describe('MCP server', () => {
     assert.equal((result.structuredContent as { artifact: { mimeType: string } }).artifact.mimeType, 'text/csv');
   });
 
-  it('cuts only the text block of a very large result, never the structured content', async () => {
+  it('recorta sólo el bloque de texto de un resultado muy grande, nunca el contenido estructurado', async () => {
     api.reply = (_request, response) =>
       json(response, 200, { data: Array.from({ length: 200 }, (_, index) => ({ id: index, note: 'x'.repeat(50) })) });
     const { client } = await session({ maxTextChars: 500 });
 
     const result = await client.callTool({ name: 'veriko_list_validations', arguments: {} });
 
-    assert.match(text(result), /\[truncated at 500 characters/);
+    assert.match(text(result), /\[recortado a 500 caracteres/);
     assert.equal((result.structuredContent as { items: unknown[] }).items.length, 200);
   });
 });
 
-describe('resources and prompts', () => {
-  it('lists the reference resources, including documentation links in English', async () => {
+describe('recursos y prompts', () => {
+  it('lista los recursos de referencia, con enlaces a la documentación en español', async () => {
     const { client } = await session();
 
     const resources = await client.listResources();
@@ -346,10 +346,10 @@ describe('resources and prompts', () => {
     assert.ok(templates.resourceTemplates.some((item) => item.uriTemplate === 'veriko://catalog/spei-calendar/{year}'));
 
     const docs = await client.readResource({ uri: 'veriko://docs' });
-    assert.match((docs.contents[0] as { text: string }).text, /https:\/\/docs\.veriko\.mx\/en\/concepts\/idempotency/);
+    assert.match((docs.contents[0] as { text: string }).text, /https:\/\/docs\.veriko\.mx\/es\/concepts\/idempotency/);
   });
 
-  it('reads the bank catalog through the API', async () => {
+  it('lee el catálogo de bancos a través de la API', async () => {
     api.reply = (_request, response) => json(response, 200, { data: [{ code: '40012', name: 'BBVA MEXICO' }] });
     const { client } = await session();
 
@@ -360,7 +360,7 @@ describe('resources and prompts', () => {
     assert.match((read.contents[0] as { text: string }).text, /BBVA MEXICO/);
   });
 
-  it('reads a SPEI calendar year from the template', async () => {
+  it('lee un año del calendario SPEI desde la plantilla', async () => {
     api.reply = (_request, response) => json(response, 200, { data: { attributes: { year: 2026 } } });
     const { client } = await session();
 
@@ -369,7 +369,7 @@ describe('resources and prompts', () => {
     assert.equal(api.seen[0]?.url, '/v1/public/spei-calendar/2026');
   });
 
-  it('offers reusable prompts that name real tools', async () => {
+  it('ofrece prompts reutilizables que nombran herramientas reales', async () => {
     const { client } = await session();
 
     const prompts = await client.listPrompts();

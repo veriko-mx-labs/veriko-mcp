@@ -35,8 +35,8 @@ async function session() {
   return connected.client;
 }
 
-describe('argument completion', () => {
-  it('completes prompt arguments from the spec enums', async () => {
+describe('autocompletado de argumentos', () => {
+  it('completa los argumentos de los prompts desde los enums del spec', async () => {
     const client = await session();
 
     const status = await client.complete({
@@ -62,7 +62,7 @@ describe('argument completion', () => {
     assert.deepEqual(formats.completion.values, ['csv', 'xlsx']);
   });
 
-  it('completes bank codes from the bank catalog, by code or by name', async () => {
+  it('completa códigos de banco desde el catálogo de bancos, por código o por nombre', async () => {
     const client = await session();
 
     const byCode = await client.complete({
@@ -90,7 +90,7 @@ describe('argument completion', () => {
     assert.deepEqual(template.completion.values, ['40014']);
   });
 
-  it('completes the year of the SPEI calendar', async () => {
+  it('completa el año del calendario SPEI', async () => {
     const client = await session();
     const year = new Date().getUTCFullYear();
 
@@ -102,7 +102,7 @@ describe('argument completion', () => {
     assert.deepEqual(result.completion.values, [String(year)]);
   });
 
-  it('reads one bank by code', async () => {
+  it('lee un banco por su código', async () => {
     const client = await session();
 
     const read = await client.readResource({ uri: 'veriko://catalog/banks/40014' });
@@ -112,7 +112,7 @@ describe('argument completion', () => {
     await assert.rejects(client.readResource({ uri: 'veriko://catalog/banks/99999' }));
   });
 
-  it('reads the bank catalog once for several completions and gives no suggestions when it fails', async () => {
+  it('lee el catálogo de bancos una sola vez para varios autocompletados y no da sugerencias cuando falla', async () => {
     const complete = bankCompleter(clientFor(api));
     await complete('4');
     await complete('40');
@@ -122,7 +122,7 @@ describe('argument completion', () => {
     assert.deepEqual(await bankCompleter(clientFor(api))('4'), []);
   });
 
-  it('keeps the helpers within the protocol limit and case-insensitive', () => {
+  it('mantiene los auxiliares dentro del límite del protocolo y sin distinguir mayúsculas', () => {
     assert.deepEqual(startingWith(['Alpha', 'beta'], 'AL'), ['Alpha']);
     assert.equal(startingWith(WEBHOOK_EVENTS, '').length, WEBHOOK_EVENTS.length);
     assert.deepEqual(completeYear('2', new Date('2026-06-01T00:00:00Z')), ['2025', '2026', '2027']);

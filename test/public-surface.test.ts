@@ -37,54 +37,54 @@ function validate(
   );
 }
 
-describe('public surface', () => {
-  it('accepts only an API key and allows explicit public operations', () => {
+describe('superficie pública', () => {
+  it('acepta sólo una clave de API y permite operaciones públicas explícitas', () => {
     const document = validDocument();
     const paths = document.paths as Record<string, { get: Record<string, unknown> }>;
     paths['/operation-0']!.get.security = [];
     assert.doesNotThrow(() => validate(document));
   });
 
-  it('rejects paths without an operationId', () => {
+  it('rechaza rutas sin operationId', () => {
     const document = validDocument();
     const paths = document.paths as Record<string, { get: Record<string, unknown> }>;
     delete paths['/operation-0']!.get.operationId;
-    assert.throws(() => validate(document), /GET \/operation-0 has no operationId/);
+    assert.throws(() => validate(document), /GET \/operation-0 no tiene operationId/);
   });
 
-  it('rejects duplicate operationId values', () => {
+  it('rechaza valores operationId repetidos', () => {
     const document = validDocument();
     const paths = document.paths as Record<string, { get: Record<string, unknown> }>;
     paths['/operation-1']!.get.operationId = OPERATION_TOOLS[0]!.operationId;
-    assert.throws(() => validate(document), /Duplicate operationId/);
+    assert.throws(() => validate(document), /operationId repetido/);
   });
 
-  it('rejects cookies and any scheme other than ApiKeyAuth', () => {
+  it('rechaza cookies y cualquier esquema distinto de ApiKeyAuth', () => {
     const document = validDocument();
     const components = document.components as {
       securitySchemes: Record<string, unknown>;
     };
     components.securitySchemes.CookieAuth = { type: 'apiKey', in: 'cookie', name: 'session' };
-    assert.throws(() => validate(document), /only ApiKeyAuth/);
+    assert.throws(() => validate(document), /sólo ApiKeyAuth/);
   });
 
-  it('rejects internal extensions even when nested', () => {
+  it('rechaza extensiones internas aunque estén anidadas', () => {
     const document = validDocument();
     const paths = document.paths as Record<string, { get: Record<string, unknown> }>;
     paths['/operation-0']!.get['x-integration'] = 'hidden';
-    assert.throws(() => validate(document), /contains x-integration/);
+    assert.throws(() => validate(document), /contiene x-integration/);
   });
 
-  it('counts the operations the catalog decides not to expose', () => {
+  it('cuenta las operaciones que el catálogo decide no exponer', () => {
     assert.doesNotThrow(() => validate(validDocument()));
     assert.equal(OPERATION_TOOLS.length + NOT_EXPOSED_OPERATIONS.length, 75);
   });
 
-  it('rejects a spec operation with no adapter that is not declared as not exposed', () => {
-    assert.throws(() => validate(validDocument(), []), /Missing MCP adapters: /);
+  it('rechaza una operación del spec sin adaptador que no esté declarada como no expuesta', () => {
+    assert.throws(() => validate(validDocument(), []), /Faltan adaptadores MCP: /);
   });
 
-  it('rejects a not-exposed operation the spec no longer declares', () => {
+  it('rechaza una operación no expuesta que el spec ya no declara', () => {
     const document = validDocument();
     const paths = document.paths as Record<string, { get: Record<string, unknown> }>;
     const hidden = Object.entries(paths).find(
@@ -94,15 +94,15 @@ describe('public surface', () => {
     delete paths[hidden[0]];
     assert.throws(
       () => assertPublicM2MSurface(document, OPERATION_TOOLS.map((tool) => tool.operationId), 72, NOT_EXPOSED_OPERATIONS),
-      /Obsolete MCP adapters: /,
+      /Adaptadores MCP obsoletos: /,
     );
   });
 
-  it('rejects an operation declared as not exposed that has an adapter', () => {
+  it('rechaza una operación declarada como no expuesta que tiene adaptador', () => {
     const exposed = OPERATION_TOOLS[0]!.operationId;
     assert.throws(
       () => validate(validDocument(), [...NOT_EXPOSED_OPERATIONS, exposed] as never),
-      /not exposed but have an adapter/,
+      /no expuestas que tienen adaptador/,
     );
   });
 });

@@ -2,47 +2,47 @@ import { TERMINAL_STATUSES, WEBHOOK_EVENTS } from '@veriko-mx/sdk-runtime';
 import { z } from 'zod';
 
 /*
- * Tool inputs use the English field names of the public API, in snake_case, as
- * the API names them on the wire. The adapters in `catalog.ts` map them to the
- * SDK parameters.
+ * Las entradas de las herramientas usan los nombres de campo en inglés de la
+ * API pública, en snake_case, tal como la API los nombra en la red. Los
+ * adaptadores de `catalog.ts` los pasan a los parámetros del SDK.
  */
 
-const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD.');
-const month = z.string().regex(/^\d{4}-\d{2}$/, 'Use YYYY-MM.');
+const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Usa el formato AAAA-MM-DD.');
+const month = z.string().regex(/^\d{4}-\d{2}$/, 'Usa el formato AAAA-MM.');
 const uuid = z.string().uuid();
-const speiBankCode = z.string().regex(/^\d{4,5}$/, 'Use a 4 or 5 digit SPEI code.');
+const speiBankCode = z.string().regex(/^\d{4,5}$/, 'Usa un código SPEI de 4 o 5 dígitos.');
 const entityId = z.union([z.string().min(1), z.number().int().positive()]);
 const httpsUrl = z
   .string()
   .url()
   .refine((value) => new URL(value).protocol === 'https:', 'The URL must use HTTPS.');
-/** The formats of the validation and webhook-delivery exports. */
+/** Los formatos de las exportaciones de validaciones y de entregas de webhook. */
 export const EXPORT_FORMAT_VALUES = ['csv', 'xlsx'] as const;
 const format = z.enum(EXPORT_FORMAT_VALUES);
-/** CLABE (18 digits), card (16) or DiMo phone (10). Same pattern as the API. */
-const account = z.string().regex(/^(?:\d{10}|\d{16}|\d{18})$/, 'Use 10, 16 or 18 digits, with no separators.');
+/** CLABE (18 dígitos), tarjeta (16) o teléfono DiMo (10). Mismo patrón que la API. */
+const account = z.string().regex(/^(?:\d{10}|\d{16}|\d{18})$/, 'Usa 10, 16 o 18 dígitos, sin separadores.');
 const candidateAccounts = z
   .array(account)
   .min(2)
   .max(10)
   .refine((accounts) => new Set(accounts).size === accounts.length, {
-    message: 'Candidate accounts must not repeat.',
+    message: 'Las cuentas candidatas no deben repetirse.',
   });
 const clientRefFilter = z.string().min(1).max(64);
 const clientRef = clientRefFilter.regex(
   /^[^\x00-\x1f\x7f]+$/,
-  'Do not use line breaks or control characters.',
+  'No uses saltos de línea ni caracteres de control.',
 );
 
 const sensitiveAccountNote =
-  'Digits only: the server strips spaces and hyphens, but send them clean.';
+  'Sólo dígitos: el servidor quita espacios y guiones, pero envíalos limpios.';
 
 export const idempotencyKeyField = z
   .string()
-  .regex(/^[A-Za-z0-9_-]{1,255}$/, 'Use only A-Z, a-z, 0-9, _ or -.')
+  .regex(/^[A-Za-z0-9_-]{1,255}$/, 'Usa sólo A-Z, a-z, 0-9, _ o -.')
   .optional()
   .describe(
-    'Optional. Without it each call is a new attempt with a fresh random key. To retry safely after a lost response, send the same key you used the first time: within 24 hours the API replays the stored response (`idempotent_replayed: true`) and does not run the operation again. Reusing a key with a different body returns 422 `idempotency_key_reused`.',
+    'Opcional. Sin ella, cada llamada es un intento nuevo con una clave aleatoria distinta. Para reintentar sin riesgo tras una respuesta perdida, envía la misma clave de la primera vez: dentro de 24 horas la API repite la respuesta guardada (`idempotent_replayed: true`) y no ejecuta la operación otra vez. Reutilizar una clave con un cuerpo distinto devuelve 422 `idempotency_key_reused`.',
   );
 
 function base64Bytes(maxBytes: number, label: string) {
@@ -52,25 +52,25 @@ function base64Bytes(maxBytes: number, label: string) {
     .min(1)
     .superRefine((value, context) => {
       if (value.length % 4 !== 0) {
-        context.addIssue({ code: 'custom', message: 'Invalid base64.' });
+        context.addIssue({ code: 'custom', message: 'Base64 no válido.' });
         return;
       }
       if (value.length > maxEncodedLength) {
         context.addIssue({
           code: 'custom',
-          message: `${label} exceeds the ${maxBytes / (1024 * 1024)} MB limit.`,
+          message: `${label} supera el límite de ${maxBytes / (1024 * 1024)} MB.`,
         });
         return;
       }
       const decoded = Buffer.from(value, 'base64');
       if (decoded.toString('base64') !== value) {
-        context.addIssue({ code: 'custom', message: 'Invalid base64.' });
+        context.addIssue({ code: 'custom', message: 'Base64 no válido.' });
         return;
       }
       if (decoded.byteLength > maxBytes) {
         context.addIssue({
           code: 'custom',
-          message: `${label} exceeds the ${maxBytes / (1024 * 1024)} MB limit.`,
+          message: `${label} supera el límite de ${maxBytes / (1024 * 1024)} MB.`,
         });
       }
     });
@@ -86,14 +86,14 @@ export const retryPolicySchema = z
     enabled: z
       .boolean()
       .optional()
-      .describe('`true` turns automatic retries on. With `false` the other fields are ignored.'),
+      .describe('`true` activa los reintentos automáticos. Con `false` se ignoran los demás campos.'),
     max_retries: z
       .number()
       .int()
       .min(1)
       .optional()
       .describe(
-        'Maximum retries, at least 1. The plan caps it (free 1, personal 3, business 5, enterprise 10, volume 20); above the cap the API answers 422 `retry_policy_invalid`. `veriko_get_my_retry_policy` returns the cap in `meta.caps`.',
+        'Máximo de reintentos, al menos 1. El plan lo limita (free 1, personal 3, business 5, enterprise 10, volume 20); por encima del tope la API responde 422 `retry_policy_invalid`. `veriko_get_my_retry_policy` devuelve el tope en `meta.caps`.',
       ),
     interval_seconds: z
       .number()
@@ -101,26 +101,26 @@ export const retryPolicySchema = z
       .min(300)
       .max(86_400)
       .optional()
-      .describe('Seconds between retries, from 300 (5 minutes) to 86400 (24 hours).'),
+      .describe('Segundos entre reintentos, de 300 (5 minutos) a 86400 (24 horas).'),
     outcomes: z
       .array(z.enum(['not_found', 'cep_unavailable', 'error']))
       .min(1)
       .refine((values) => new Set(values).size === values.length, {
-        message: 'Outcomes must not repeat.',
+        message: 'Los resultados no deben repetirse.',
       })
       .optional()
-      .describe('Outcomes that trigger a retry. Retries consume no quota.'),
+      .describe('Resultados que provocan un reintento. Los reintentos no consumen cuota.'),
   })
   .strict()
   .describe(
-    'Automatic retry policy. Omit it to use the account policy (`veriko_get_my_retry_policy`).',
+    'Política de reintentos automáticos. Omítela para usar la de la cuenta (`veriko_get_my_retry_policy`).',
   );
 
 const asyncField = z
   .boolean()
   .default(false)
   .describe(
-    '`true` enqueues the validation and answers at once with `status: queued` and the `id`; then call `veriko_wait_for_validation`. With `false` the call waits up to 45 seconds for Banxico and, past that, answers `processing` with `meta.async_reason: sync_deadline`. Either way the validation consumes quota.',
+    '`true` encola la validación y responde de inmediato con `status: queued` y el `id`; después llama a `veriko_wait_for_validation`. Con `false` la llamada espera hasta 45 segundos a Banxico y, pasado ese tiempo, responde `processing` con `meta.async_reason: sync_deadline`. En ambos casos la validación consume cuota.',
   );
 
 const accountPairRules = {
@@ -132,7 +132,7 @@ export const validateDirectSchema = z
     send_date: date
       .optional()
       .describe(
-        'Date the transfer was sent, `YYYY-MM-DD`. Banxico uses it to locate the CEP; it can differ from the operation day the CEP prints. Optional: without it the API tries candidate dates, and answers 422 only when it has nothing to infer from.',
+        'Fecha en que se envió la transferencia, `AAAA-MM-DD`. Banxico la usa para localizar el CEP; puede ser distinta del día de operación que imprime el CEP. Opcional: sin ella la API prueba fechas candidatas y responde 422 sólo cuando no tiene de dónde inferirla.',
       ),
     amount: z
       .union([
@@ -140,7 +140,7 @@ export const validateDirectSchema = z
         z.string().regex(/^\d{1,13}(?:\.\d{1,2})?$/),
       ])
       .describe(
-        'Amount in Mexican pesos (MXN), greater than zero, up to two decimals and 13 integer digits. A string such as `"1500.50"` is accepted; do not use scientific notation.',
+        'Monto en pesos mexicanos (MXN), mayor que cero, con hasta dos decimales y 13 dígitos enteros. Se acepta una cadena como `"1500.50"`; no uses notación científica.',
       ),
     tracking_key: z
       .string()
@@ -148,107 +148,107 @@ export const validateDirectSchema = z
       .max(30)
       .optional()
       .describe(
-        'SPEI tracking key (1 to 30 characters). Send `tracking_key` or `numeric_reference`. With both, the query goes by tracking key only.',
+        'Clave de rastreo SPEI (1 a 30 caracteres). Envía `tracking_key` o `numeric_reference`. Si envías las dos, la consulta va sólo por clave de rastreo.',
       ),
     numeric_reference: z
       .string()
       .regex(/^\d{1,7}$/)
       .optional()
-      .describe('Numeric reference, 1 to 7 digits. Required when `tracking_key` is missing.'),
+      .describe('Referencia numérica, de 1 a 7 dígitos. Obligatoria cuando falta `tracking_key`.'),
     beneficiary_account: account
       .optional()
       .describe(
-        `Receiving account: CLABE (18 digits), card (16) or DiMo phone (10). ${accountPairRules.both} ${sensitiveAccountNote}`,
+        `Cuenta receptora: CLABE (18 dígitos), tarjeta (16) o teléfono DiMo (10). ${accountPairRules.both} ${sensitiveAccountNote}`,
       ),
     candidate_accounts: candidateAccounts
       .optional()
       .describe(
-        'Two or more accounts, one of which received the transfer, when it is not known which. The service allows 3 by default (a larger list answers 422 with `meta.max`), never more than 10. One quota unit regardless of the count; `attributes.candidate_match` reports which matched. Replaces `beneficiary_account`.',
+        'Dos o más cuentas, una de las cuales recibió la transferencia, cuando no se sabe cuál. El servicio permite 3 por omisión (una lista mayor responde 422 con `meta.max`) y nunca más de 10. Una unidad de cuota sin importar cuántas sean; `attributes.candidate_match` indica cuál coincidió. Reemplaza a `beneficiary_account`.',
       ),
     sender_bank: z
       .string()
       .max(255)
       .optional()
       .describe(
-        'Sender bank, SPEI name or code. When missing or wrong, the tracking key can supply it.',
+        'Banco emisor, nombre o código SPEI. Si falta o es incorrecto, la clave de rastreo puede aportarlo.',
       ),
     receiver_bank: z
       .string()
       .max(255)
       .optional()
       .describe(
-        'Receiver bank, SPEI name or code. Optional when it can be derived from `beneficiary_account`.',
+        'Banco receptor, nombre o código SPEI. Opcional cuando se puede derivar de `beneficiary_account`.',
       ),
     recipient_is_bank: z
       .boolean()
       .optional()
       .describe(
-        '`true` when the payee is the receiving institution itself ("Pago a Banco" on the Banxico CEP): credit card, loan or service payments. `false` for a transfer to an account holder (default).',
+        '`true` cuando el destinatario es la propia institución receptora («Pago a Banco» en el CEP de Banxico): pagos de tarjeta de crédito, de préstamo o de servicios. `false` para una transferencia a un titular de cuenta (valor por omisión).',
       ),
     retry_policy: retryPolicySchema.optional(),
     client_ref: clientRef
       .optional()
       .describe(
-        'Your own reference, 1 to 64 characters, no line breaks. It comes back on the validation and in webhooks, and filters `veriko_list_validations`.',
+        'Tu propia referencia, de 1 a 64 caracteres, sin saltos de línea. Regresa en la validación y en los webhooks, y filtra `veriko_list_validations`.',
       ),
     idempotency_key: idempotencyKeyField,
     async: asyncField,
   })
   .strict()
   .refine((value) => value.tracking_key || value.numeric_reference, {
-    message: 'Send tracking_key or numeric_reference.',
+    message: 'Envía tracking_key o numeric_reference.',
   })
   .refine(
     (value) => (value.beneficiary_account === undefined) !== (value.candidate_accounts === undefined),
-    { message: 'Send beneficiary_account or candidate_accounts, and not both.' },
+    { message: 'Envía beneficiary_account o candidate_accounts, pero no las dos.' },
   );
 
 const validateOcrShape = {
     image_base64: ocrImageBase64
       .optional()
       .describe(
-        'Receipt as base64: JPEG, PNG, WebP, or a PDF of 1 to 3 pages, up to 12 MB. Large for a model to emit; prefer `image_url`. If both are sent, only `image_url` is used.',
+        'Comprobante en base64: JPEG, PNG, WebP o un PDF de 1 a 3 páginas, hasta 12 MB. Es demasiado grande para que un modelo lo escriba; prefiere `image_url`. Si envías las dos, sólo se usa `image_url`.',
       ),
     image_url: httpsUrl
       .optional()
-      .describe('Public HTTPS URL of the receipt, same formats and 12 MB limit. `http` URLs are rejected.'),
+      .describe('URL HTTPS pública del comprobante, con los mismos formatos y el mismo límite de 12 MB. Las URL `http` se rechazan.'),
     beneficiary_account: account
       .optional()
       .describe(
-        `Receiving account, useful when the receipt omits it or shows it incomplete. Required for DiMo phones. ${accountPairRules.both}`,
+        `Cuenta receptora, útil cuando el comprobante no la trae o la muestra incompleta. Obligatoria con teléfonos DiMo. ${accountPairRules.both}`,
       ),
     candidate_accounts: candidateAccounts
       .optional()
       .describe(
-        'Two or more accounts, one of which received the transfer, when the receipt does not show it. Same rules as in `veriko_validate_direct`.',
+        'Dos o más cuentas, una de las cuales recibió la transferencia, cuando el comprobante no la muestra. Mismas reglas que en `veriko_validate_direct`.',
       ),
     sender_bank: speiBankCode
       .optional()
-      .describe('SPEI code of the sender bank, to correct the one read from the receipt, for example `40012`.'),
+      .describe('Código SPEI del banco emisor, para corregir el que se leyó del comprobante, por ejemplo `40012`.'),
     receiver_bank: speiBankCode
       .optional()
-      .describe('SPEI code of the receiver bank, to correct the one read from the receipt, for example `40002`.'),
+      .describe('Código SPEI del banco receptor, para corregir el que se leyó del comprobante, por ejemplo `40002`.'),
     recipient_is_bank: z
       .boolean()
       .optional()
       .describe(
-        '`true` when the payee is the receiving institution itself ("Pago a Banco" on the Banxico CEP), such as credit card or loan payments. Default `false`.',
+        '`true` cuando el destinatario es la propia institución receptora («Pago a Banco» en el CEP de Banxico), como los pagos de tarjeta de crédito o de préstamo. Por omisión `false`.',
       ),
     retry_policy: retryPolicySchema.optional(),
     client_ref: clientRef
       .optional()
-      .describe('Your own reference, 1 to 64 characters. It comes back on the validation and in webhooks.'),
+      .describe('Tu propia referencia, de 1 a 64 caracteres. Regresa en la validación y en los webhooks.'),
     retain_image: z
       .boolean()
       .optional()
       .describe(
-        'Default `true`: the API keeps the receipt (`veriko_get_validation_image`). With `false` it deletes the file once the validation reaches a final state.',
+        'Por omisión `true`: la API conserva el comprobante (`veriko_get_validation_image`). Con `false` borra el archivo cuando la validación llega a un estado final.',
       ),
     idempotency_key: idempotencyKeyField,
     async: asyncField,
 };
 
-const OCR_ACCOUNT_RULE = { message: 'Send beneficiary_account or candidate_accounts, not both.' };
+const OCR_ACCOUNT_RULE = { message: 'Envía beneficiary_account o candidate_accounts, pero no las dos.' };
 const noPairedAccounts = (value: { beneficiary_account?: unknown; candidate_accounts?: unknown }) =>
   value.beneficiary_account === undefined || value.candidate_accounts === undefined;
 
@@ -256,13 +256,14 @@ export const validateOcrSchema = z
   .object(validateOcrShape)
   .strict()
   .refine((value) => value.image_base64 || value.image_url, {
-    message: 'Send image_base64 or image_url.',
+    message: 'Envía image_base64 o image_url.',
   })
   .refine(noPairedAccounts, OCR_ACCOUNT_RULE);
 
 /**
- * The same tool when the server may read local files (stdio, `VERIKO_MCP_FILE_ROOTS`):
- * the receipt can also come from `image_path`. The HTTP server never advertises it.
+ * La misma herramienta cuando el servidor puede leer archivos locales (stdio,
+ * `VERIKO_MCP_FILE_ROOTS`): el comprobante también puede venir de `image_path`.
+ * El servidor HTTP nunca la anuncia.
  */
 export const validateOcrLocalSchema = z
   .object({
@@ -273,13 +274,13 @@ export const validateOcrLocalSchema = z
       .max(4096)
       .optional()
       .describe(
-        'Absolute path of a receipt on this computer: JPEG, PNG, WebP or a PDF of 1 to 3 pages, up to 12 MB, inside a directory the server allows. Prefer it to `image_base64`; send one of `image_path`, `image_url` or `image_base64`.',
+        'Ruta absoluta de un comprobante en esta computadora: JPEG, PNG, WebP o un PDF de 1 a 3 páginas, hasta 12 MB, dentro de un directorio que el servidor permite. Prefiérela a `image_base64`; envía una sola entre `image_path`, `image_url` o `image_base64`.',
       ),
   })
   .strict()
   .refine(
     (value) => [value.image_path, value.image_url, value.image_base64].filter(Boolean).length === 1,
-    { message: 'Send exactly one of image_path, image_url or image_base64.' },
+    { message: 'Envía exactamente una entre image_path, image_url o image_base64.' },
   )
   .refine(noPairedAccounts, OCR_ACCOUNT_RULE);
 
@@ -300,7 +301,7 @@ const withdrawnScope = z
   .union([z.literal(0), z.literal(1)])
   .optional()
   .describe(
-    'Withdrawn validations (`veriko_delete_validation`). Omit to include active and withdrawn; `0` returns only active ones; `1` returns only withdrawn ones. Note that `1` is not "include withdrawn".',
+    'Validaciones retiradas (`veriko_delete_validation`). Omítelo para incluir activas y retiradas; `0` devuelve sólo las activas; `1` devuelve sólo las retiradas. Ojo: `1` no significa «incluir las retiradas».',
   );
 
 export const validationFiltersShape = {
@@ -308,73 +309,73 @@ export const validationFiltersShape = {
     .union([validationStatus, z.array(validationStatus).min(1)])
     .optional()
     .describe(
-      'Lifecycle state, one value or a list: queued, processing, valid, not_found, cep_unavailable, invalid, returned, failed, error.',
+      'Estado del ciclo de vida, un valor o una lista: queued, processing, valid, not_found, cep_unavailable, invalid, returned, failed, error.',
     ),
-  type: z.enum(['direct', 'ocr']).optional().describe('`direct` for field validations, `ocr` for receipt images.'),
-  from: date.optional().describe('Start date (inclusive, `YYYY-MM-DD`), applied to the creation date.'),
-  to: date.optional().describe('End date (inclusive, `YYYY-MM-DD`), applied to the creation date.'),
+  type: z.enum(['direct', 'ocr']).optional().describe('`direct` para validaciones por campos, `ocr` para imágenes de comprobantes.'),
+  from: date.optional().describe('Fecha de inicio (inclusive, `AAAA-MM-DD`), aplicada a la fecha de creación.'),
+  to: date.optional().describe('Fecha de fin (inclusive, `AAAA-MM-DD`), aplicada a la fecha de creación.'),
   search: z
     .string()
     .max(100)
     .optional()
-    .describe('Case-insensitive text searched in the submitted, normalized and Banxico data. `%` and `_` are literal.'),
-  playground: z.literal(true).optional().describe('`true` shows only Playground (test bench) validations.'),
+    .describe('Texto buscado, sin distinguir mayúsculas, en los datos enviados, normalizados y de Banxico. `%` y `_` son literales.'),
+  playground: z.literal(true).optional().describe('`true` muestra sólo las validaciones del Playground (banco de pruebas).'),
   with_deleted: withdrawnScope,
   batch_id: z
     .number()
     .int()
     .positive()
     .optional()
-    .describe('Identifier of the import job that created the validations.'),
+    .describe('Identificador del trabajo de importación que creó las validaciones.'),
   bank: z
     .string()
     .regex(/^\d{1,5}$/)
     .optional()
-    .describe('SPEI code (1 to 5 digits) of the sender or receiver bank of the original request.'),
+    .describe('Código SPEI (1 a 5 dígitos) del banco emisor o receptor de la petición original.'),
   banks: z
     .union([
       z.string().regex(/^\d{1,5}(,\d{1,5}){0,49}$/),
       z.array(z.string().regex(/^\d{1,5}$/)).min(1).max(50),
     ])
     .optional()
-    .describe('Up to 50 SPEI codes, as a list or comma-separated; matches any of them as sender or receiver.'),
-  amount_min: z.number().nonnegative().optional().describe('Minimum amount, inclusive.'),
-  amount_max: z.number().nonnegative().optional().describe('Maximum amount, inclusive.'),
-  client_ref: clientRefFilter.optional().describe('Exact match with the `client_ref` sent when validating. Case and accent sensitive.'),
+    .describe('Hasta 50 códigos SPEI, como lista o separados por comas; coincide con cualquiera de ellos como emisor o receptor.'),
+  amount_min: z.number().nonnegative().optional().describe('Monto mínimo, inclusive.'),
+  amount_max: z.number().nonnegative().optional().describe('Monto máximo, inclusive.'),
+  client_ref: clientRefFilter.optional().describe('Coincidencia exacta con el `client_ref` enviado al validar. Distingue mayúsculas y acentos.'),
   retry_state: z
     .enum(['pending', 'resolved', 'exhausted', 'cancelled'])
     .optional()
-    .describe('State of the automatic retry cycle.'),
+    .describe('Estado del ciclo de reintentos automáticos.'),
 } as const;
 
 export const listValidationsSchema = z
   .object({
     ...validationFiltersShape,
-    page: z.number().int().positive().optional().describe('Page, starting at 1. Default 1.'),
-    per_page: z.number().int().min(1).max(50).optional().describe('Rows per page, 1 to 50. Default 10.'),
+    page: z.number().int().positive().optional().describe('Página, desde 1. Por omisión 1.'),
+    per_page: z.number().int().min(1).max(50).optional().describe('Filas por página, de 1 a 50. Por omisión 10.'),
   })
   .strict();
 export const validationFiltersSchema = z.object(validationFiltersShape).strict();
 export const exportValidationsSchema = z
   .object({
     ...validationFiltersShape,
-    format: format.optional().describe('`csv` (default) or `xlsx`.'),
+    format: format.optional().describe('`csv` (por omisión) o `xlsx`.'),
     limit: z
       .number()
       .int()
       .min(1)
       .max(100_000)
       .optional()
-      .describe('Maximum rows. It only lowers the general cap of 100000.'),
+      .describe('Máximo de filas. Sólo baja el tope general de 100000.'),
   })
   .strict();
 
-const validationIdField = uuid.describe('Validation identifier (UUID).');
+const validationIdField = uuid.describe('Identificador de la validación (UUID).');
 const ifNoneMatch = z
   .string()
   .optional()
   .describe(
-    '`ETag` from an earlier response, sent back as is. If nothing changed the result is `{ not_modified: true }`, which is a success, not an error.',
+    '`ETag` de una respuesta anterior, enviado tal cual. Si nada cambió, el resultado es `{ not_modified: true }`, que es un éxito, no un error.',
   );
 
 export const validationIdSchema = z.object({ validation_id: validationIdField }).strict();
@@ -384,7 +385,7 @@ export const getValidationSchema = z
 export const downloadCepSchema = z
   .object({
     validation_id: validationIdField,
-    format: z.enum(['xml', 'pdf']).default('xml').describe('`xml` (default, the Banxico original) or `pdf`.'),
+    format: z.enum(['xml', 'pdf']).default('xml').describe('`xml` (por omisión, el original de Banxico) o `pdf`.'),
   })
   .strict();
 export const validationRetryPolicySchema = z
@@ -401,19 +402,19 @@ export const validationIdempotentSchema = z
 const webhookEvents = z.enum(WEBHOOK_EVENTS);
 const deliveryEvent = z.union([webhookEvents, z.literal('test')]);
 const deliveryStatus = z.enum(['success', 'failed', 'retrying', 'pending']);
-const webhookIdField = uuid.describe('Webhook endpoint identifier (UUID).');
+const webhookIdField = uuid.describe('Identificador del webhook (UUID).');
 
 export const createWebhookSchema = z
   .object({
     url: httpsUrl
       .max(2048)
-      .describe('Receiving HTTPS URL, up to 2048 characters. Rejected if it resolves to a private address.'),
+      .describe('URL HTTPS receptora, de hasta 2048 caracteres. Se rechaza si resuelve a una dirección privada.'),
     events: z
       .array(webhookEvents)
       .min(1)
       .max(10)
-      .describe('Events to subscribe to, 1 to 10.'),
-    description: z.string().max(255).nullable().optional().describe('Free label, up to 255 characters. `null` clears it.'),
+      .describe('Eventos a los que se suscribe, de 1 a 10.'),
+    description: z.string().max(255).nullable().optional().describe('Etiqueta libre, de hasta 255 caracteres. `null` la borra.'),
   })
   .strict();
 export const webhookIdSchema = z.object({ webhook_id: webhookIdField }).strict();
@@ -424,23 +425,23 @@ export const regenerateWebhookSecretSchema = z
       .boolean()
       .optional()
       .describe(
-        '`true` revokes the previous secret at once. Default `false`: the previous secret keeps signing for 24 hours (`previous_secret_expires_at`). Use `true` when the old secret was exposed.',
+        '`true` revoca el secreto anterior de inmediato. Por omisión `false`: el secreto anterior sigue firmando 24 horas (`previous_secret_expires_at`). Usa `true` cuando el secreto anterior quedó expuesto.',
       ),
   })
   .strict();
 export const updateWebhookSchema = z
   .object({
     webhook_id: webhookIdField,
-    url: httpsUrl.max(2048).optional().describe('New receiving HTTPS URL, up to 2048 characters.'),
-    events: z.array(webhookEvents).min(1).max(10).optional().describe('New event list, 1 to 10. It replaces the current one.'),
-    description: z.string().max(255).nullable().optional().describe('New label. `null` removes it.'),
-    status: z.enum(['active', 'disabled']).optional().describe('`active` receives deliveries; `disabled` stops them.'),
+    url: httpsUrl.max(2048).optional().describe('Nueva URL HTTPS receptora, de hasta 2048 caracteres.'),
+    events: z.array(webhookEvents).min(1).max(10).optional().describe('Nueva lista de eventos, de 1 a 10. Reemplaza a la actual.'),
+    description: z.string().max(255).nullable().optional().describe('Etiqueta nueva. `null` la quita.'),
+    status: z.enum(['active', 'disabled']).optional().describe('`active` recibe entregas; `disabled` las detiene.'),
   })
   .strict()
   .refine(
     ({ webhook_id: _webhookId, ...changes }) =>
       Object.values(changes).some((value) => value !== undefined),
-    { message: 'Specify at least one change.' },
+    { message: 'Indica al menos un cambio.' },
   );
 const responseStatus = z.union([
   z.number().int().min(100).max(599),
@@ -450,40 +451,40 @@ const deliveryFiltersShape = {
   status: z
     .union([deliveryStatus, z.array(deliveryStatus).min(1)])
     .optional()
-    .describe('Delivery state: success, failed, retrying or pending.'),
+    .describe('Estado de la entrega: success, failed, retrying o pending.'),
   event_type: z
     .union([deliveryEvent, z.array(deliveryEvent).min(1)])
     .optional()
-    .describe('Event type, or `test` for synthetic deliveries.'),
+    .describe('Tipo de evento, o `test` para entregas sintéticas.'),
   response_status: z
     .union([responseStatus, z.array(responseStatus).min(1).max(20)])
     .optional()
-    .describe('HTTP status the receiver answered: an exact code (`404`), a family (`2xx`) or `none` for no response. Up to 20.'),
-  validation_id: uuid.optional().describe('Only deliveries of this validation.'),
-  q: z.string().max(100).optional().describe('Text searched in delivery id, endpoint URL and description, event type and validation id.'),
+    .describe('Estado HTTP con el que respondió el receptor: un código exacto (`404`), una familia (`2xx`) o `none` si no hubo respuesta. Hasta 20.'),
+  validation_id: uuid.optional().describe('Sólo las entregas de esta validación.'),
+  q: z.string().max(100).optional().describe('Texto buscado en el id de la entrega, la URL y la descripción del webhook, el tipo de evento y el id de la validación.'),
   from: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}(T.+)?$/)
     .optional()
-    .describe('Deliveries created from this moment: `YYYY-MM-DD` (midnight UTC) or ISO 8601 date-time with offset.'),
+    .describe('Entregas creadas desde este momento: `AAAA-MM-DD` (medianoche UTC) o fecha y hora ISO 8601 con desfase.'),
   to: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}(T.+)?$/)
     .optional()
-    .describe('Deliveries created until this moment: `YYYY-MM-DD` (end of that day, UTC) or ISO 8601 date-time.'),
-  min_attempt: z.number().int().min(1).max(255).optional().describe('Only deliveries at this attempt number or later. `2` keeps the retried ones.'),
-  min_response_time_ms: z.number().int().min(0).max(600_000).optional().describe('Only deliveries whose receiver took at least this many milliseconds.'),
+    .describe('Entregas creadas hasta este momento: `AAAA-MM-DD` (fin de ese día, UTC) o fecha y hora ISO 8601.'),
+  min_attempt: z.number().int().min(1).max(255).optional().describe('Sólo entregas con este número de intento o uno posterior. `2` deja las reintentadas.'),
+  min_response_time_ms: z.number().int().min(0).max(600_000).optional().describe('Sólo entregas en las que el receptor tardó al menos estos milisegundos.'),
 } as const;
 const deliveriesShape = {
-  page: z.number().int().positive().optional().describe('Page, starting at 1.'),
-  per_page: z.number().int().min(1).max(100).optional().describe('Deliveries per page, 1 to 100. Default 50.'),
+  page: z.number().int().positive().optional().describe('Página, desde 1.'),
+  per_page: z.number().int().min(1).max(100).optional().describe('Entregas por página, de 1 a 100. Por omisión 50.'),
   ...deliveryFiltersShape,
 } as const;
 const endpointIds = z
   .array(uuid)
   .min(1)
   .max(20)
-  .describe('Restrict to these webhook endpoints (UUIDs), up to 20. Omit for all endpoints.');
+  .describe('Limita a estos webhooks (UUID), hasta 20. Omítelo para todos los webhooks.');
 export const webhookDeliveriesSchema = z
   .object({ webhook_id: webhookIdField, ...deliveriesShape })
   .strict();
@@ -491,8 +492,8 @@ export const allDeliveriesSchema = z
   .object({ endpoint_id: endpointIds.optional(), ...deliveriesShape })
   .strict();
 const exportDeliveriesShape = {
-  format: format.optional().describe('`csv` (default) or `xlsx`.'),
-  limit: z.number().int().min(1).max(100_000).optional().describe('Maximum rows. It only lowers the general cap of 100000.'),
+  format: format.optional().describe('`csv` (por omisión) o `xlsx`.'),
+  limit: z.number().int().min(1).max(100_000).optional().describe('Máximo de filas. Sólo baja el tope general de 100000.'),
   ...deliveryFiltersShape,
 } as const;
 export const exportWebhookDeliveriesSchema = z
@@ -508,12 +509,12 @@ export const binSchema = z
     bin: z
       .string()
       .regex(/^\d{6,8}$/)
-      .describe('First 6 to 8 digits of the card. Never send the full card number.'),
+      .describe('Primeros 6 a 8 dígitos de la tarjeta. Nunca envíes el número completo.'),
   })
   .strict();
 export const speiCalendarSchema = z
   .object({
-    year: z.number().int().min(1000).max(9999).describe('Four-digit calendar year.'),
+    year: z.number().int().min(1000).max(9999).describe('Año calendario de cuatro dígitos.'),
     if_none_match: ifNoneMatch,
   })
   .strict();
@@ -522,63 +523,63 @@ export const banxicoTimeseriesSchema = z
     metric: z
       .enum(['probe_latency', 'verdict'])
       .optional()
-      .describe('`probe_latency` (default): average latency in milliseconds; `verdict`: Banxico verdicts over time.'),
+      .describe('`probe_latency` (por omisión): latencia promedio en milisegundos; `verdict`: veredictos de Banxico en el tiempo.'),
     window: z
       .enum(['1h', '8h', '12h', '24h', '7d'])
       .optional()
-      .describe('Window covered, default `24h`. `1h` groups by minute, the rest by hour.'),
+      .describe('Ventana cubierta, por omisión `24h`. `1h` agrupa por minuto y las demás por hora.'),
   })
   .strict();
 
-const beneficiaryIdField = entityId.describe('Numeric beneficiary identifier.');
+const beneficiaryIdField = entityId.describe('Identificador numérico del beneficiario.');
 export const digitsOf = (value: string): string => value.replace(/[ -]/g, '');
 const accountNumber = z
   .string()
-  .regex(/^[0-9 -]{10,40}$/, 'Use digits, with optional spaces or hyphens.')
-  .refine((value) => /^\d{10,19}$/.test(digitsOf(value)), 'Use 10 to 19 digits.');
-const bankCode = z.string().regex(/^\d{4,5}$/).describe('SPEI bank code (4 or 5 digits). Required for a 10-digit phone number; ignored for CLABE and cards.');
+  .regex(/^[0-9 -]{10,40}$/, 'Usa dígitos, con espacios o guiones opcionales.')
+  .refine((value) => /^\d{10,19}$/.test(digitsOf(value)), 'Usa de 10 a 19 dígitos.');
+const bankCode = z.string().regex(/^\d{4,5}$/).describe('Código SPEI del banco (4 o 5 dígitos). Obligatorio para un teléfono de 10 dígitos; se ignora con CLABE y tarjetas.');
 const withArchived = z
   .union([z.literal(0), z.literal(1)])
   .optional()
-  .describe('Archived accounts. Omit for all; `0` returns only active accounts; `1` returns only archived ones.');
+  .describe('Cuentas archivadas. Omítelo para todas; `0` devuelve sólo las activas; `1` devuelve sólo las archivadas.');
 
 export const beneficiaryIdSchema = z.object({ beneficiary_id: beneficiaryIdField }).strict();
 export const createBeneficiarySchema = z
   .object({
     account_number: accountNumber.describe(
-      'CLABE (18 digits), card (16) or DiMo phone (10). Spaces and hyphens are removed.',
+      'CLABE (18 dígitos), tarjeta (16) o teléfono DiMo (10). Se quitan espacios y guiones.',
     ),
     bank_code: bankCode.optional(),
-    label: z.string().max(100).optional().describe('Label that identifies the account in the list, up to 100 characters.'),
+    label: z.string().max(100).optional().describe('Etiqueta que identifica la cuenta en la lista, de hasta 100 caracteres.'),
   })
   .strict()
   .refine((value) => digitsOf(value.account_number).length !== 10 || value.bank_code !== undefined, {
-    message: 'A 10-digit phone number requires bank_code.',
+    message: 'Un teléfono de 10 dígitos requiere bank_code.',
     path: ['bank_code'],
   });
 export const updateBeneficiarySchema = z
   .object({
     beneficiary_id: beneficiaryIdField,
-    label: z.string().max(100).optional().describe('New label, up to 100 characters.'),
+    label: z.string().max(100).optional().describe('Etiqueta nueva, de hasta 100 caracteres.'),
     account_number: accountNumber
       .optional()
-      .describe('New account number. It replaces the current one and re-derives type and bank. For a phone, send `bank_code` too.'),
+      .describe('Número de cuenta nuevo. Reemplaza al actual y vuelve a derivar el tipo y el banco. Para un teléfono, envía también `bank_code`.'),
     bank_code: bankCode.optional(),
   })
   .strict()
   .refine(
     ({ beneficiary_id: _beneficiaryId, ...changes }) =>
       Object.values(changes).some((value) => value !== undefined),
-    { message: 'Specify at least one change.' },
+    { message: 'Indica al menos un cambio.' },
   )
   .refine((value) => (value.account_number === undefined || digitsOf(value.account_number).length !== 10) || value.bank_code !== undefined, {
-    message: 'A 10-digit phone number requires bank_code.',
+    message: 'Un teléfono de 10 dígitos requiere bank_code.',
     path: ['bank_code'],
   });
 export const listBeneficiariesSchema = z.object({ with_archived: withArchived }).strict();
 export const beneficiaryLookupSchema = z
   .object({
-    account: accountNumber.describe('Full account: 10 digits (phone), 16 (card) or 18 (CLABE).'),
+    account: accountNumber.describe('Cuenta completa: 10 dígitos (teléfono), 16 (tarjeta) o 18 (CLABE).'),
   })
   .strict();
 export const validateAccountSchema = z
@@ -586,49 +587,49 @@ export const validateAccountSchema = z
     account: z
       .string()
       .regex(/^\d{1,19}$/)
-      .describe('Account digits, complete or partial: CLABE, card or phone, 1 to 19 digits.'),
+      .describe('Dígitos de la cuenta, completa o parcial: CLABE, tarjeta o teléfono, de 1 a 19 dígitos.'),
     type: z
       .enum(['clabe', 'bin'])
       .optional()
       .describe(
-        'Forces the interpretation instead of detecting it by length. `clabe` resolves the bank by prefix even if the CLABE is incomplete; `bin` treats the input as a card BIN.',
+        'Fuerza la interpretación en lugar de detectarla por la longitud. `clabe` resuelve el banco por el prefijo aunque la CLABE esté incompleta; `bin` trata la entrada como el BIN de una tarjeta.',
       ),
   })
   .strict();
 export const exportBeneficiariesSchema = z
   .object({
-    format: format.optional().describe('`csv` (default) or `xlsx`.'),
+    format: format.optional().describe('`csv` (por omisión) o `xlsx`.'),
     with_archived: withArchived,
-    limit: z.number().int().min(1).max(100_000).optional().describe('Maximum rows. It only lowers the general cap of 100000.'),
+    limit: z.number().int().min(1).max(100_000).optional().describe('Máximo de filas. Sólo baja el tope general de 100000.'),
   })
   .strict();
 export const importTemplateSchema = z
   .object({
-    format: z.enum(['csv', 'xlsx', 'xls', 'txt', 'json']).describe('Template format. `json` has the same shape as the file the import reads.'),
+    format: z.enum(['csv', 'xlsx', 'xls', 'txt', 'json']).describe('Formato de la plantilla. `json` tiene la misma forma que el archivo que lee la importación.'),
   })
   .strict();
 export const createImportSchema = z
   .object({
-    file_base64: beneficiaryImportBase64.describe('File content as base64, up to 20 MB: CSV, XLS, XLSX, TXT, JSON or PDF.'),
+    file_base64: beneficiaryImportBase64.describe('Contenido del archivo en base64, hasta 20 MB: CSV, XLS, XLSX, TXT, JSON o PDF.'),
     filename: z
       .string()
       .min(1)
       .max(255)
-      .describe('File name with its extension (`.csv`, `.xlsx`...). The extension tells the API the format.'),
+      .describe('Nombre del archivo con su extensión (`.csv`, `.xlsx`...). La extensión le indica el formato a la API.'),
     parse_mode: z
       .enum(['template', 'free'])
       .default('template')
-      .describe('`template` expects the canonical headers; `free` lets the service infer the structure.'),
+      .describe('`template` espera los encabezados canónicos; `free` deja que el servicio infiera la estructura.'),
   })
   .strict();
 const importParseMode = z
   .enum(['template', 'free'])
   .default('template')
-  .describe('`template` expects the canonical headers; `free` lets the service infer the structure.');
+  .describe('`template` espera los encabezados canónicos; `free` deja que el servicio infiera la estructura.');
 
 /**
- * The same tool when the server may read local files (stdio, `VERIKO_MCP_FILE_ROOTS`):
- * the file can also come from `file_path`, and `filename` then defaults to its name.
+ * La misma herramienta cuando el servidor puede leer archivos locales (stdio, `VERIKO_MCP_FILE_ROOTS`):
+ * el archivo también puede venir de `file_path`, y entonces `filename` toma por omisión su nombre.
  */
 export const createImportLocalSchema = z
   .object({
@@ -638,111 +639,111 @@ export const createImportLocalSchema = z
       .max(4096)
       .optional()
       .describe(
-        'Absolute path of the file on this computer, up to 20 MB, inside a directory the server allows: CSV, XLS, XLSX, TXT, JSON or PDF. Prefer it to `file_base64`. `filename` defaults to the file name.',
+        'Ruta absoluta del archivo en esta computadora, de hasta 20 MB, dentro de un directorio que el servidor permite: CSV, XLS, XLSX, TXT, JSON o PDF. Prefiérela a `file_base64`. `filename` toma por omisión el nombre del archivo.',
       ),
     file_base64: beneficiaryImportBase64
       .optional()
-      .describe('File content as base64, up to 20 MB. Send it or `file_path`, not both.'),
+      .describe('Contenido del archivo en base64, hasta 20 MB. Envíalo o envía `file_path`, no los dos.'),
     filename: z
       .string()
       .min(1)
       .max(255)
       .optional()
-      .describe('File name with its extension (`.csv`, `.xlsx`...). Required with `file_base64`.'),
+      .describe('Nombre del archivo con su extensión (`.csv`, `.xlsx`...). Obligatorio con `file_base64`.'),
     parse_mode: importParseMode,
   })
   .strict()
   .refine((value) => (value.file_path === undefined) !== (value.file_base64 === undefined), {
-    message: 'Send exactly one of file_path or file_base64.',
+    message: 'Envía exactamente uno entre file_path o file_base64.',
   })
   .refine((value) => value.file_path !== undefined || value.filename !== undefined, {
-    message: 'Send filename with file_base64.',
+    message: 'Envía filename con file_base64.',
   });
 
-const importIdField = entityId.describe('Numeric import job identifier.');
+const importIdField = entityId.describe('Identificador numérico del trabajo de importación.');
 export const importIdSchema = z.object({ import_id: importIdField }).strict();
 export const importPreviewSchema = z
   .object({
     import_id: importIdField,
-    page: z.number().int().positive().optional().describe('Page, starting at 1.'),
-    per_page: z.number().int().min(1).max(100).optional().describe('Rows per page, 1 to 100. Default 25.'),
+    page: z.number().int().positive().optional().describe('Página, desde 1.'),
+    per_page: z.number().int().min(1).max(100).optional().describe('Filas por página, de 1 a 100. Por omisión 25.'),
     buckets: z
       .array(z.enum(['valid', 'correctable', 'fatal', 'duplicate_account', 'duplicate_alias']))
       .min(1)
       .optional()
-      .describe('Row classes to include: `valid` is saved as is, `correctable` needs a fix (`veriko_patch_beneficiary_import_row`), `fatal` cannot be saved, the duplicates collide with existing accounts or labels.'),
+      .describe('Clases de fila a incluir: `valid` se guarda tal cual, `correctable` necesita una corrección (`veriko_patch_beneficiary_import_row`), `fatal` no se puede guardar y los duplicados chocan con cuentas o etiquetas existentes.'),
   })
   .strict();
 export const editImportRowSchema = z
   .object({
     import_id: importIdField,
-    row_id: entityId.describe('Numeric row identifier within the import.'),
+    row_id: entityId.describe('Identificador numérico de la fila dentro de la importación.'),
     parsed_account: z
       .string()
       .max(32)
       .regex(/^[0-9 -]{0,32}$/)
       .optional()
-      .describe('Corrected account number, up to 32 characters of digits. It is normalized again on reprocessing.'),
-    parsed_label: z.string().max(100).optional().describe('Corrected label. A leading `=`, `+`, `-` or `@` is stored with an apostrophe so spreadsheets do not read it as a formula.'),
-    parsed_account_type: z.enum(['clabe', 'card', 'phone']).optional().describe('Corrected account type.'),
-    parsed_bank_code: z.string().regex(/^\d{4,5}$/).optional().describe('Corrected SPEI bank code, useful for phone accounts.'),
-    parsed_bank_name: z.string().max(50).optional().describe('Corrected bank name.'),
+      .describe('Número de cuenta corregido, de hasta 32 caracteres de dígitos. Se normaliza otra vez al reprocesar.'),
+    parsed_label: z.string().max(100).optional().describe('Etiqueta corregida. Un `=`, `+`, `-` o `@` al inicio se guarda con apóstrofo para que las hojas de cálculo no lo lean como fórmula.'),
+    parsed_account_type: z.enum(['clabe', 'card', 'phone']).optional().describe('Tipo de cuenta corregido.'),
+    parsed_bank_code: z.string().regex(/^\d{4,5}$/).optional().describe('Código SPEI del banco corregido, útil para cuentas de teléfono.'),
+    parsed_bank_name: z.string().max(50).optional().describe('Nombre del banco corregido.'),
   })
   .strict()
   .refine(
     ({ import_id: _importId, row_id: _rowId, ...changes }) =>
       Object.values(changes).some((value) => value !== undefined),
-    { message: 'Specify at least one correction.' },
+    { message: 'Indica al menos una corrección.' },
   );
 export const importRowSchema = z
-  .object({ import_id: importIdField, row_id: entityId.describe('Numeric row identifier within the import.') })
+  .object({ import_id: importIdField, row_id: entityId.describe('Identificador numérico de la fila dentro de la importación.') })
   .strict();
 
 export const usageHistorySchema = z
-  .object({ months: z.number().int().min(1).max(24).optional().describe('Months to include, backwards from now. Default 6.') })
+  .object({ months: z.number().int().min(1).max(24).optional().describe('Meses a incluir, hacia atrás desde hoy. Por omisión 6.') })
   .strict();
 export const usageBreakdownSchema = z
   .object({
     period: z
       .union([z.literal('current'), month])
       .optional()
-      .describe('`current` for the running month, or `YYYY-MM`.'),
+      .describe('`current` para el mes en curso, o `AAAA-MM`.'),
   })
   .strict();
 export const usageHeatmapSchema = z
-  .object({ days: z.number().int().min(1).max(90).optional().describe('Days to include. Default 30.') })
+  .object({ days: z.number().int().min(1).max(90).optional().describe('Días a incluir. Por omisión 30.') })
   .strict();
 export const exportUsageSchema = z
   .object({
-    format: format.optional().describe('`csv` (default) or `xlsx`.'),
-    from: date.optional().describe('Start date (inclusive, `YYYY-MM-DD`).'),
-    to: date.optional().describe('End date (inclusive, `YYYY-MM-DD`).'),
-    limit: z.number().int().min(1).optional().describe('Maximum rows. It only lowers the default cap of 100000.'),
+    format: format.optional().describe('`csv` (por omisión) o `xlsx`.'),
+    from: date.optional().describe('Fecha de inicio (inclusive, `AAAA-MM-DD`).'),
+    to: date.optional().describe('Fecha de fin (inclusive, `AAAA-MM-DD`).'),
+    limit: z.number().int().min(1).optional().describe('Máximo de filas. Sólo baja el tope por omisión de 100000.'),
   })
   .strict();
 export const updateMyRetryPolicySchema = z
   .object({ retry_policy: retryPolicySchema, idempotency_key: idempotencyKeyField })
   .strict();
 export const dashboardSchema = z
-  .object({ limit: z.number().int().min(1).max(10).optional().describe('Recent validations to return, 1 to 10. Default 5.') })
+  .object({ limit: z.number().int().min(1).max(10).optional().describe('Validaciones recientes a devolver, de 1 a 10. Por omisión 5.') })
   .strict();
 export const trendsSchema = z
   .object({
-    range: z.enum(['24h', '7d', '30d', '90d']).optional().describe('Window of the series. Default `7d`.'),
-    metric: z.enum(['volume', 'latency']).optional().describe('`volume` (default) counts validations; `latency` returns processing-time percentiles.'),
+    range: z.enum(['24h', '7d', '30d', '90d']).optional().describe('Ventana de la serie. Por omisión `7d`.'),
+    metric: z.enum(['volume', 'latency']).optional().describe('`volume` (por omisión) cuenta validaciones; `latency` devuelve percentiles del tiempo de procesamiento.'),
   })
   .strict();
 export const topBanksSchema = z
   .object({
-    metric: z.enum(['volume', 'errors']).optional().describe('Sort by `volume` (default) or by error rate (`errors`).'),
-    limit: z.number().int().positive().max(50).optional().describe('Maximum banks, up to 50. Default 10.'),
+    metric: z.enum(['volume', 'errors']).optional().describe('Ordena por `volume` (por omisión) o por tasa de error (`errors`).'),
+    limit: z.number().int().positive().max(50).optional().describe('Máximo de bancos, hasta 50. Por omisión 10.'),
   })
   .strict();
 export const topBeneficiariesSchema = z
-  .object({ limit: z.number().int().positive().max(50).optional().describe('Maximum beneficiaries, up to 50. Default 10.') })
+  .object({ limit: z.number().int().positive().max(50).optional().describe('Máximo de beneficiarios, hasta 50. Por omisión 10.') })
   .strict();
 
-const financeMonth = month.describe('Month to report, `YYYY-MM`.');
+const financeMonth = month.describe('Mes a reportar, `AAAA-MM`.');
 const financeBase = { month: financeMonth } as const;
 const financeLimit = z
   .number()
@@ -750,12 +751,12 @@ const financeLimit = z
   .min(1)
   .max(100_000)
   .optional()
-  .describe('Row cap for `csv` and `xlsx`. It does not apply to the PDF, which has its own cap of 1000 rows.');
+  .describe('Tope de filas para `csv` y `xlsx`. No aplica al PDF, que tiene su propio tope de 1000 filas.');
 export const financeSummarySchema = z.object(financeBase).strict();
 export const financeStatementSchema = z
   .object({
     ...financeBase,
-    format: z.enum(['pdf', 'xlsx', 'csv', 'html']).default('pdf').describe('File format. Default `pdf`.'),
+    format: z.enum(['pdf', 'xlsx', 'csv', 'html']).default('pdf').describe('Formato del archivo. Por omisión `pdf`.'),
   })
   .strict();
 export const financePreviewSchema = z
@@ -764,7 +765,7 @@ export const financePreviewSchema = z
     format: z
       .enum(['csv', 'xlsx', 'pdf', 'preview'])
       .default('preview')
-      .describe('`preview` (default here) returns the first 20 rows as structured data; `csv`, `xlsx` and `pdf` return a file.'),
+      .describe('`preview` (por omisión aquí) devuelve las primeras 20 filas como datos estructurados; `csv`, `xlsx` y `pdf` devuelven un archivo.'),
     limit: financeLimit,
   })
   .strict();
@@ -774,22 +775,22 @@ export const financeAccountingSchema = z
     format: z
       .enum(['csv', 'xlsx', 'pdf', 'preview'])
       .default('preview')
-      .describe('`preview` (default here) returns the first 20 rows as structured data; `csv`, `xlsx` and `pdf` return a file.'),
+      .describe('`preview` (por omisión aquí) devuelve las primeras 20 filas como datos estructurados; `csv`, `xlsx` y `pdf` devuelven un archivo.'),
     limit: financeLimit,
     decimal: z
       .enum(['comma', 'dot'])
       .optional()
-      .describe('Decimal separator: `comma` (default, `1.234,56`) or `dot` (`1,234.56`).'),
+      .describe('Separador decimal: `comma` (por omisión, `1.234,56`) o `dot` (`1,234.56`).'),
   })
   .strict();
-const rangeFrom = date.describe('Start date (inclusive, `YYYY-MM-DD`).');
-const rangeTo = date.describe('End date (inclusive, `YYYY-MM-DD`). Must not be before `from`.');
+const rangeFrom = date.describe('Fecha de inicio (inclusive, `AAAA-MM-DD`).');
+const rangeTo = date.describe('Fecha de fin (inclusive, `AAAA-MM-DD`). No puede ser anterior a `from`.');
 export const financeCepsSchema = z.object({ from: rangeFrom, to: rangeTo }).strict();
 export const financeCepExportCreateSchema = z
   .object({ from: rangeFrom, to: rangeTo, idempotency_key: idempotencyKeyField })
   .strict();
 export const financeCepExportIdSchema = z
-  .object({ export_id: uuid.describe('CEP export identifier (UUID).') })
+  .object({ export_id: uuid.describe('Identificador de la exportación de CEP (UUID).') })
   .strict();
 
 const timeoutSeconds = z
@@ -799,19 +800,19 @@ const timeoutSeconds = z
   .max(40)
   .optional()
   .describe(
-    'Longest wait of this call, in seconds, 1 to 40. Default 25. If the resource is not final by then, the result says `waiting: true`; call the tool again.',
+    'Espera máxima de esta llamada, en segundos, de 1 a 40. Por omisión 25. Si el recurso no está en un estado final para entonces, el resultado dice `waiting: true`; vuelve a llamar a la herramienta.',
   );
 export const waitForValidationSchema = z
   .object({ validation_id: validationIdField, timeout_seconds: timeoutSeconds })
   .strict();
 export const waitForCepExportSchema = z
-  .object({ export_id: z.string().uuid().describe('CEP export identifier (UUID).'), timeout_seconds: timeoutSeconds })
+  .object({ export_id: z.string().uuid().describe('Identificador de la exportación de CEP (UUID).'), timeout_seconds: timeoutSeconds })
   .strict();
 export const waitForImportSchema = z
   .object({ import_id: importIdField, timeout_seconds: timeoutSeconds })
   .strict();
 
-/** The states after which a validation stops being polled (the spec's `x-terminal-values`). */
+/** Los estados tras los cuales una validación deja de consultarse (el `x-terminal-values` del spec). */
 export const VALIDATION_TERMINAL_STATUSES: readonly string[] = TERMINAL_STATUSES;
-/** The export states after which polling stops (the spec's `x-terminal-values`). */
+/** Los estados de exportación tras los cuales se deja de consultar (el `x-terminal-values` del spec). */
 export const CEP_EXPORT_TERMINAL_STATUSES = ['ready', 'failed', 'expired'] as const;

@@ -9,7 +9,7 @@ export type Overrides =
   | { ok: true; config: ServerConfig; acceptLanguage?: Language }
   | { ok: false; status: 400 | 403; error: string };
 
-/** The language the caller prefers among the two the API answers in, or none. */
+/** El idioma que prefiere quien llama entre los dos en los que responde la API, o ninguno. */
 export function languageFrom(header: string | null): Language | undefined {
   const ranked = (header ?? '')
     .split(',')
@@ -24,11 +24,11 @@ export function languageFrom(header: string | null): Language | undefined {
 }
 
 /**
- * The configuration one HTTP request runs with.
+ * La configuración con la que corre una petición HTTP.
  *
- * `X-Veriko-Profile` and `X-Veriko-Max-Risk` can only narrow what the server
- * allows: a profile the server does not announce, or a higher risk, answers 403.
- * `Accept-Language` picks the language of API error details.
+ * `X-Veriko-Profile` y `X-Veriko-Max-Risk` sólo pueden acotar lo que el servidor
+ * permite: un perfil que el servidor no anuncia, o un riesgo mayor, responde 403.
+ * `Accept-Language` elige el idioma del detalle de los errores de la API.
  */
 export function resolveOverrides(headers: Headers, base: ServerConfig): Overrides {
   let config = base;

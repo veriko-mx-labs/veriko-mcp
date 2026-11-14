@@ -20,7 +20,7 @@ afterEach(async () => {
 
 const ID = 'f47ac10b-58cc-4372-a567-0e02b2c3d479';
 
-/** A virtual clock: sleeping advances time, so the tests do not wait. */
+/** Un reloj virtual: dormir adelanta el tiempo, así que las pruebas no esperan. */
 function clock(): ToolRuntime & { slept: number[] } {
   let now = 0;
   const slept: number[] = [];
@@ -44,8 +44,8 @@ function validation(status: string, extra: Record<string, unknown> = {}) {
   return { data: { type: 'validation', id: ID, attributes: { status, ...extra } } };
 }
 
-describe('wait tools', () => {
-  it('polls until the validation is settled, honoring Retry-After and sending the ETag', async () => {
+describe('herramientas de espera', () => {
+  it('consulta hasta que la validación se resuelve, respetando Retry-After y enviando el ETag', async () => {
     const states = ['queued', 'processing', 'valid'];
     api.reply = (request, response) => {
       const status = states.shift() ?? 'valid';
@@ -71,7 +71,7 @@ describe('wait tools', () => {
     assert.equal(api.seen[1]?.headers['if-none-match'], 'W/"1-queued"');
   });
 
-  it('paces the polls with the next_poll_after_seconds the API reports in the body', async () => {
+  it('marca el ritmo de las consultas con el next_poll_after_seconds que la API informa en el cuerpo', async () => {
     const states = ['processing', 'valid'];
     api.reply = (_request, response) =>
       json(response, 200, {
@@ -86,7 +86,7 @@ describe('wait tools', () => {
     assert.deepEqual(runtime.slept, [4000]);
   });
 
-  it('keeps waiting through a not_found while a retry cycle is alive', async () => {
+  it('sigue esperando un not_found mientras un ciclo de reintentos está vivo', async () => {
     api.reply = (_request, response) =>
       json(response, 200, validation('not_found', { retry_state: { enabled: true, terminal_state: null } }));
     const runtime = clock();
@@ -98,7 +98,7 @@ describe('wait tools', () => {
     assert.equal(result.status, 'not_found');
   });
 
-  it('stops at the time limit with waiting true and the next poll hint', async () => {
+  it('se detiene en el tiempo límite con waiting true y la pista de la siguiente consulta', async () => {
     api.reply = (_request, response) => json(response, 200, validation('processing'), { 'Retry-After': '2' });
     const runtime = clock();
 
@@ -111,7 +111,7 @@ describe('wait tools', () => {
     assert.ok(runtime.slept.every((milliseconds) => milliseconds === 2000));
   });
 
-  it('bounds the pause between polls', async () => {
+  it('acota la pausa entre consultas', async () => {
     api.reply = (_request, response) => json(response, 200, validation('processing'), { 'Retry-After': '600' });
     const runtime = clock();
 
@@ -120,7 +120,7 @@ describe('wait tools', () => {
     assert.ok(runtime.slept.every((milliseconds) => milliseconds <= 10_000));
   });
 
-  it('waits for a CEP export until ready, failed or expired', async () => {
+  it('espera una exportación de CEP hasta ready, failed o expired', async () => {
     const states = ['queued', 'building', 'ready'];
     api.reply = (_request, response) =>
       json(response, 200, { data: { type: 'cep_export', id: ID, attributes: { status: states.shift() ?? 'ready' } } });
@@ -133,7 +133,7 @@ describe('wait tools', () => {
     assert.equal(result.polls, 3);
   });
 
-  it('waits for a beneficiary import until preview_ready', async () => {
+  it('espera una importación de beneficiarios hasta preview_ready', async () => {
     const states = ['pending', 'parsing', 'preview_ready'];
     api.reply = (_request, response) =>
       json(response, 200, { data: { type: 'beneficiary_import', id: '7', attributes: { status: states.shift() ?? 'preview_ready' } } });
@@ -145,14 +145,14 @@ describe('wait tools', () => {
     assert.equal(result.terminal, true);
   });
 
-  it('terminal states match the API x-terminal-values', () => {
+  it('los estados terminales coinciden con los x-terminal-values de la API', () => {
     assert.deepEqual(
       [...VALIDATION_TERMINAL_STATUSES].sort(),
       ['cep_unavailable', 'error', 'failed', 'invalid', 'not_found', 'returned', 'valid'],
     );
   });
 
-  it('every x-terminal-values list in the spec is one the server polls to', () => {
+  it('toda lista x-terminal-values del spec es una a la que el servidor consulta hasta llegar', () => {
     const document = parse(readFileSync(new URL('../spec/openapi.yaml', import.meta.url), 'utf8')) as unknown;
     const lists: string[][] = [];
     const walk = (node: unknown): void => {

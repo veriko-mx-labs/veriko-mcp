@@ -1,13 +1,13 @@
 /**
- * Measures what it costs to announce each profile.
+ * Mide lo que cuesta anunciar cada perfil.
  *
- * The figure comes from the real server over stdio, not from a reconstruction
- * of the catalog: `tools/list` is exactly what the client injects into the
- * model context, with the JSON Schema the SDK derives from Zod.
+ * La cifra sale del servidor real por stdio, no de una reconstrucción
+ * del catálogo: `tools/list` es exactamente lo que el cliente inyecta en el
+ * contexto del modelo, con el JSON Schema que el SDK deriva de Zod.
  *
- * Tokens are a declared estimate, not a measurement: no provider tokenizer is
- * used. The bytes-per-token ratio is fixed at 3.6; it serves to compare
- * profiles with one another, not to budget a specific client.
+ * Los tokens son una estimación declarada, no una medición: no se usa
+ * ningún tokenizador de un proveedor. La razón de bytes por token es fija en 3.6;
+ * sirve para comparar perfiles entre sí, no para presupuestar un cliente concreto.
  */
 import { fileURLToPath } from 'node:url';
 
@@ -55,15 +55,15 @@ for (const profile of profiles) {
   rows.push(
     `| \`${profile}\` | ${tools} | ${bytes.toLocaleString('en-US')} | ~${tokens.toLocaleString('en-US')} |`,
   );
-  process.stderr.write(`measured ${profile}\n`);
+  process.stderr.write(`medido ${profile}\n`);
 }
 
 process.stdout.write(
   [
-    `Measured with ${process.version}, risk \`destructive\` so that no tool is hidden.`,
-    `Tokens estimated at ${BYTES_PER_TOKEN} bytes per token; this is not a real tokenization.`,
+    `Medido con ${process.version}, con riesgo \`destructive\` para que no se oculte ninguna herramienta.`,
+    `Tokens estimados a ${BYTES_PER_TOKEN} bytes por token; no es una tokenización real.`,
     '',
-    '| Profile | Tools | Bytes of `tools/list` | Estimated tokens |',
+    '| Perfil | Herramientas | Bytes de `tools/list` | Tokens estimados |',
     '|---|---:|---:|---:|',
     ...rows,
     '',

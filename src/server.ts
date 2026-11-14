@@ -34,12 +34,12 @@ function readPackageVersion(): string {
     readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
   ) as { version?: unknown };
   if (typeof manifest.version !== 'string') {
-    throw new Error('package.json does not declare a version.');
+    throw new Error('package.json no declara una versión.');
   }
   return manifest.version;
 }
 
-// One source of truth: the version the server announces is the package version.
+// Una sola fuente de verdad: la versión que anuncia el servidor es la del paquete.
 export const MCP_VERSION = readPackageVersion();
 
 export interface CreateServerOptions {
@@ -47,22 +47,22 @@ export interface CreateServerOptions {
   client?: Veriko;
   artifacts?: ArtifactStore;
   /**
-   * How downloads are delivered.
+   * Cómo se entregan las descargas.
    *
-   * `store` (stdio) keeps the file in process memory and returns a
-   * `veriko://artifact/...` link, or embeds it when it is small.
+   * `store` (stdio) guarda el archivo en la memoria del proceso y devuelve un
+   * enlace `veriko://artifact/...`, o lo incrusta cuando es pequeño.
    *
-   * `inline` (stateless HTTP) embeds it in the response, because the next
-   * request can land on another process and the link would no longer exist.
+   * `inline` (HTTP sin estado) lo incrusta en la respuesta, porque la siguiente
+   * petición puede caer en otro proceso y el enlace ya no existiría.
    */
   artifactMode?: 'store' | 'inline';
-  /** Cap, in bytes, of an embedded file (`inline` only). */
+  /** Tope, en bytes, de un archivo incrustado (sólo `inline`). */
   maxInlineArtifactBytes?: number;
-  /** Cap, in bytes, of a file embedded in `store` mode. Larger files return a link. */
+  /** Tope, en bytes, de un archivo incrustado en modo `store`. Un archivo mayor devuelve un enlace. */
   maxEmbeddedArtifactBytes?: number;
-  /** Language of the API error details for this server; the environment sets it otherwise. */
+  /** Idioma del detalle de los errores de la API para este servidor; si no se indica, lo fija el entorno. */
   acceptLanguage?: 'en' | 'es';
-  /** Cap, in characters, of the JSON text block. `structuredContent` is never cut. */
+  /** Tope, en caracteres, del bloque de texto JSON. `structuredContent` nunca se recorta. */
   maxTextChars?: number;
 }
 
@@ -71,13 +71,13 @@ export const DEFAULT_MAX_EMBEDDED_ARTIFACT_BYTES = 256 * 1024;
 export const DEFAULT_MAX_TEXT_CHARS = 64 * 1024;
 
 export const SERVER_INSTRUCTIONS = [
-  'Veriko verifies Mexican SPEI transfers against the Banxico CEP. Use the veriko_* tools to operate the public M2M API.',
-  'Validating: veriko_validate_direct and veriko_validate_ocr consume quota and answer with a verdict in `attributes.status`. `valid` is a snapshot: use veriko_recheck_validation within 72 hours to detect a return. A `not_found` right away can be a CEP that is not published yet. Check the allowance with veriko_get_usage_limits and fix an account with veriko_validate_account first.',
-  'Async: a validation can answer `queued` or `processing` (for example after 45 seconds). Call veriko_wait_for_validation until `terminal` is true; do not loop on veriko_get_validation. The same applies to CEP exports and beneficiary imports.',
-  'Idempotency: every write gets a fresh key by default, so repeating a call is a new attempt. To retry safely after a lost response, repeat the call with the same `idempotency_key`; `idempotent_replayed: true` in the result means the stored response was returned.',
-  'Errors: a failed call returns `isError` with `code`, `status`, `retryable`, `retry_after_seconds` and the full `errors` list (`detail`, `hint`, `docs_url`, field `pointer`). Branch on `code`. A `429` with `kind: quota` does not clear by waiting seconds.',
-  'Downloads come back as embedded resources when small, or as veriko://artifact/* links readable with resources/read. Reference data (banks, SPEI calendar, plans, Banxico status, documentation links) is available as veriko://* resources.',
-  'Secrets: webhook signing secrets appear once in the result; do not repeat them. Never ask for or invent an API key; the server reads it from the environment.',
+  'Veriko verifica transferencias SPEI de México contra el CEP de Banxico. Usa las herramientas veriko_* para operar la API pública de máquina a máquina.',
+  'Validar: veriko_validate_direct y veriko_validate_ocr consumen cuota y responden con un veredicto en `attributes.status`. `valid` es una fotografía: usa veriko_recheck_validation dentro de las 72 horas para detectar una devolución. Un `not_found` inmediato puede ser un CEP que aún no se publica. Antes, consulta el saldo con veriko_get_usage_limits y corrige la cuenta con veriko_validate_account.',
+  'Asíncrono: una validación puede responder `queued` o `processing` (por ejemplo, después de 45 segundos). Llama a veriko_wait_for_validation hasta que `terminal` sea true; no consultes en bucle veriko_get_validation. Lo mismo aplica a las exportaciones de CEP y a las importaciones de beneficiarios.',
+  'Idempotencia: cada escritura recibe una clave nueva por omisión, así que repetir una llamada es un intento nuevo. Para reintentar sin riesgo tras una respuesta perdida, repite la llamada con la misma `idempotency_key`; `idempotent_replayed: true` en el resultado significa que se devolvió la respuesta guardada.',
+  'Errores: una llamada fallida devuelve `isError` con `code`, `status`, `retryable`, `retry_after_seconds` y la lista completa `errors` (`detail`, `hint`, `docs_url`, `pointer` del campo). Decide según `code`. Un `429` con `kind: quota` no se resuelve esperando unos segundos.',
+  'Las descargas llegan como recursos incrustados cuando son pequeñas, o como enlaces veriko://artifact/* que se leen con resources/read. Los datos de referencia (bancos, calendario SPEI, planes, estado de Banxico, enlaces a la documentación) están disponibles como recursos veriko://*.',
+  'Secretos: los secretos de firma de los webhooks aparecen una sola vez en el resultado; no los repitas. Nunca pidas ni inventes una clave de API; el servidor la lee del entorno.',
 ].join('\n\n');
 
 function annotations(tool: ToolDefinition): ToolAnnotations {
@@ -100,7 +100,7 @@ function objectResult(value: unknown): Record<string, unknown> {
 function jsonText(value: unknown, maxChars: number): string {
   const text = JSON.stringify(value);
   if (text.length <= maxChars) return text;
-  return `${text.slice(0, maxChars)}\n[truncated at ${maxChars} characters; the full result is in structuredContent. Narrow the filters or lower per_page/limit.]`;
+  return `${text.slice(0, maxChars)}\n[recortado a ${maxChars} caracteres; el resultado completo está en structuredContent. Acota los filtros o baja per_page/limit.]`;
 }
 
 interface Delivery {
@@ -112,15 +112,15 @@ interface Delivery {
   notifyListChanged(): void;
 }
 
-/** The ways to get a smaller file from this tool, from the arguments it accepts. */
+/** Las formas de obtener un archivo más pequeño con esta herramienta, según los argumentos que acepta. */
 function smallerFileHint(tool: ToolDefinition): string {
   const fields = new Set(Object.keys((tool.inputSchema as unknown as { shape?: object }).shape ?? {}));
   const options: string[] = [];
-  if (fields.has('limit')) options.push('lower `limit` to export fewer rows');
-  if (fields.has('from') || fields.has('to')) options.push('narrow `from` and `to`');
-  if (fields.has('status') || fields.has('bank') || fields.has('banks')) options.push('add a `status` or `bank` filter');
-  const narrowing = options.length > 0 ? `${options.join(', ')}; or ` : '';
-  const hint = `${narrowing}download it with the local stdio package, or directly from the API with your key.`;
+  if (fields.has('limit')) options.push('baja `limit` para exportar menos filas');
+  if (fields.has('from') || fields.has('to')) options.push('acota `from` y `to`');
+  if (fields.has('status') || fields.has('bank') || fields.has('banks')) options.push('agrega un filtro `status` o `bank`');
+  const narrowing = options.length > 0 ? `${options.join(', ')}; o ` : '';
+  const hint = `${narrowing}descárgalo con el paquete local por stdio, o directo desde la API con tu clave.`;
   return hint.charAt(0).toUpperCase() + hint.slice(1);
 }
 
@@ -134,7 +134,7 @@ function fileResult(
   if (delivery.mode === 'inline' && size > delivery.inlineLimit) {
     const error = {
       code: 'artifact_too_large',
-      message: `The ${size}-byte file exceeds the ${delivery.inlineLimit}-byte limit of HTTP mode.`,
+      message: `El archivo de ${size} bytes supera el límite de ${delivery.inlineLimit} bytes del modo HTTP.`,
       hint: smallerFileHint(tool),
       size,
       limit: delivery.inlineLimit,
@@ -165,7 +165,7 @@ function fileResult(
           mimeType,
           description: `${size} bytes; sha256 ${reference.sha256}`,
         },
-        { type: 'text', text: `Downloaded ${summary}. Read it at ${reference.uri} with resources/read.` },
+        { type: 'text', text: `Se descargó ${summary}. Léelo en ${reference.uri} con resources/read.` },
       ],
       structuredContent,
     };
@@ -173,7 +173,7 @@ function fileResult(
   return {
     content: [
       { type: 'resource', resource: resourceContents(reference.uri, mimeType, file.content) },
-      { type: 'text', text: `Downloaded ${summary}.` },
+      { type: 'text', text: `Se descargó ${summary}.` },
     ],
     structuredContent,
   };
@@ -207,8 +207,8 @@ function errorResult(error: unknown, runtime: ToolRuntime, captured: CallCapture
 }
 
 /**
- * Sends `notifications/progress` for the running request, when the client asked
- * for them with a `progressToken`. A failed notification never fails the call.
+ * Envía `notifications/progress` de la petición en curso, cuando el cliente las
+ * pidió con un `progressToken`. Una notificación fallida nunca hace fallar la llamada.
  */
 function progressReporter(ctx: ServerContext): ToolRuntime['progress'] {
   const progressToken = ctx.mcpReq._meta?.progressToken;
@@ -225,7 +225,7 @@ function progressReporter(ctx: ServerContext): ToolRuntime['progress'] {
         },
       });
     } catch {
-      // The client went away or does not take notifications: the call goes on.
+      // El cliente se fue o no recibe notificaciones: la llamada sigue.
     }
   };
 }
@@ -244,7 +244,7 @@ export function createVerikoServer(options: CreateServerOptions = {}): McpServer
       ...(options.acceptLanguage ? { acceptLanguage: options.acceptLanguage } : {}),
     });
   const artifacts = options.artifacts ?? new ArtifactStore();
-  // Local files are read only in stdio mode and only inside the configured roots.
+  // Los archivos locales se leen sólo en modo stdio y sólo dentro de las raíces configuradas.
   const files: FileAccess | undefined =
     !inline && config.fileRoots && config.fileRoots.length > 0 ? { roots: config.fileRoots } : undefined;
   const server = new McpServer(
@@ -252,8 +252,8 @@ export function createVerikoServer(options: CreateServerOptions = {}): McpServer
       name: 'veriko-mcp-server',
       title: 'Veriko',
       version: MCP_VERSION,
-      description: 'Verifies Mexican SPEI transfers against the Banxico CEP.',
-      websiteUrl: 'https://docs.veriko.mx/en/mcp',
+      description: 'Verifica transferencias SPEI de México contra el CEP de Banxico.',
+      websiteUrl: 'https://docs.veriko.mx/es/mcp',
     },
     { instructions: SERVER_INSTRUCTIONS },
   );
@@ -265,11 +265,11 @@ export function createVerikoServer(options: CreateServerOptions = {}): McpServer
     embedLimit: options.maxEmbeddedArtifactBytes ?? DEFAULT_MAX_EMBEDDED_ARTIFACT_BYTES,
     maxTextChars: options.maxTextChars ?? DEFAULT_MAX_TEXT_CHARS,
     notifyListChanged() {
-      // Best effort: there is no session to notify before the transport connects.
+      // Mejor esfuerzo: no hay sesión a la que avisar antes de que conecte el transporte.
       try {
         server.sendResourceListChanged();
       } catch {
-        // Not connected yet.
+        // Aún no hay conexión.
       }
     },
   };
@@ -307,14 +307,14 @@ export function createVerikoServer(options: CreateServerOptions = {}): McpServer
             if (!confirmation.proceed) return confirmation.result;
           }
           if (isFileOperation(tool.operationId)) {
-            await runtime.progress?.({ progress: 0, total: 2, message: 'Requesting the file from Veriko' });
+            await runtime.progress?.({ progress: 0, total: 2, message: 'Pidiendo el archivo a Veriko' });
           }
           const value = await withCapture(captured, () => tool.invoke(client, args, runtime));
           if (isDownloadedFile(value)) {
             await runtime.progress?.({
               progress: 1,
               total: 2,
-              message: `Received ${value.content.byteLength} bytes; preparing the result`,
+              message: `Se recibieron ${value.content.byteLength} bytes; preparando el resultado`,
             });
           }
           return successResult(

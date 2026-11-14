@@ -25,16 +25,16 @@ function documentWith(operations: Record<string, Json>): Json {
   };
 }
 
-describe('sha256 and the EXPECTED_PUBLIC_SPEC_SHA256', () => {
-  it('produces the same SHA-256 the rest of the organization computes over the same text', () => {
-    // Known vector: sha256("") = e3b0c4...
+describe('sha256 y EXPECTED_PUBLIC_SPEC_SHA256', () => {
+  it('produce el mismo SHA-256 que calcula el resto de la organización sobre el mismo texto', () => {
+    // Vector conocido: sha256("") = e3b0c4...
     assert.equal(
       sha256(''),
       'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
     );
   });
 
-  it('replaces only the hexadecimal value, keeping the rest of the file', () => {
+  it('reemplaza sólo el valor hexadecimal y conserva el resto del archivo', () => {
     const source = [
       "const EXPECTED_PUBLIC_SPEC_SHA256 =",
       "  'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';",
@@ -46,25 +46,25 @@ describe('sha256 and the EXPECTED_PUBLIC_SPEC_SHA256', () => {
     assert.match(updated, /otherLine\(\);/);
   });
 
-  it('fails with a clear message when it cannot find the declaration', () => {
-    assert.throws(() => replaceExpectedSha('without the constant', 'a'.repeat(64)), /EXPECTED_PUBLIC_SPEC_SHA256/);
+  it('falla con un mensaje claro cuando no encuentra la declaración', () => {
+    assert.throws(() => replaceExpectedSha('sin la constante', 'a'.repeat(64)), /EXPECTED_PUBLIC_SPEC_SHA256/);
   });
 });
 
 describe('diffField', () => {
-  it('reports a new field', () => {
+  it('informa un campo nuevo', () => {
     const lines = diffField('foo', undefined, { type: 'string', nullable: false, required: true, isUnion: false, isContainer: false });
     assert.equal(lines.length, 1);
-    assert.match(lines[0]!, /new field `foo`/);
+    assert.match(lines[0]!, /campo nuevo `foo`/);
   });
 
-  it('reports a removed field', () => {
+  it('informa un campo eliminado', () => {
     const lines = diffField('foo', { type: 'string', nullable: false, required: true, isUnion: false, isContainer: false }, undefined);
     assert.equal(lines.length, 1);
-    assert.match(lines[0]!, /field removed `foo`/);
+    assert.match(lines[0]!, /campo eliminado `foo`/);
   });
 
-  it('reports a maxLength that changed and stays silent about what did not', () => {
+  it('informa un maxLength que cambió y calla sobre lo que no cambió', () => {
     const before = { type: 'string', nullable: false, required: true, isUnion: false, isContainer: false, maxLength: 100 } as const;
     const after = { ...before, maxLength: 255 };
     const lines = diffField('description', before, after);
@@ -76,20 +76,20 @@ describe('diffField', () => {
 });
 
 describe('buildSummary', () => {
-  it('with no previous version, says so and does not try to diff', () => {
+  it('sin versión anterior, lo dice y no intenta comparar', () => {
     const summary = buildSummary(undefined, documentWith({ foo: {} }));
-    assert.match(summary, /There is no previous version/);
+    assert.match(summary, /No hay una versión anterior/);
   });
 
-  it('lists new and removed operations by location', () => {
+  it('lista las operaciones nuevas y eliminadas por ubicación', () => {
     const previous = documentWith({ getFoo: {}, getBar: {} });
     const next = documentWith({ getFoo: {}, getBaz: {} });
     const summary = buildSummary(previous, next);
-    assert.match(summary, /### New operations\n- `getBaz`/);
-    assert.match(summary, /### Removed operations\n- `getBar`/);
+    assert.match(summary, /### Operaciones nuevas\n- `getBaz`/);
+    assert.match(summary, /### Operaciones eliminadas\n- `getBar`/);
   });
 
-  it('describes a limit change in an operation that still exists', () => {
+  it('describe un cambio de límite en una operación que sigue existiendo', () => {
     const previous = documentWith({
       updateThing: {
         requestBody: {
@@ -118,7 +118,7 @@ describe('buildSummary', () => {
 });
 
 describe('diffOperation', () => {
-  it('detects new responses and security', () => {
+  it('detecta respuestas y seguridad nuevas', () => {
     const previous = documentWith({
       op: { responses: { '200': {} }, security: [{ ApiKeyAuth: [] }] },
     });
@@ -126,18 +126,18 @@ describe('diffOperation', () => {
       op: { responses: { '200': {}, '429': {} }, security: [] },
     });
     const lines = diffOperation(previous, next, 'op');
-    assert.ok(lines.some((line) => line.includes('new responses: 429')));
-    assert.ok(lines.some((line) => line.includes('security:')));
+    assert.ok(lines.some((line) => line.includes('respuestas nuevas: 429')));
+    assert.ok(lines.some((line) => line.includes('seguridad:')));
   });
 
-  it('with no changes, reports nothing', () => {
+  it('sin cambios, no informa nada', () => {
     const document = documentWith({ op: { responses: { '200': {} } } });
     assert.deepEqual(diffOperation(document, document, 'op'), []);
   });
 });
 
-describe('operationResponseCodes and operationSecurity', () => {
-  it('read the responses and security declared by the operation', () => {
+describe('operationResponseCodes y operationSecurity', () => {
+  it('leen las respuestas y la seguridad que declara la operación', () => {
     const document = documentWith({
       op: { responses: { '200': {}, '404': {} }, security: [{ ApiKeyAuth: [] }] },
     });
@@ -145,7 +145,7 @@ describe('operationResponseCodes and operationSecurity', () => {
     assert.deepEqual(operationSecurity(document, 'op'), [{ ApiKeyAuth: [] }]);
   });
 
-  it('an operation with no security of its own inherits the global one', () => {
+  it('una operación sin seguridad propia hereda la global', () => {
     const document = documentWith({ op: { responses: {} } });
     assert.deepEqual(operationSecurity(document, 'op'), [{ ApiKeyAuth: [] }]);
   });

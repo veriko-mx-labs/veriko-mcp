@@ -17,7 +17,7 @@ function findTests(directory) {
 
 const tests = findTests('test').sort();
 if (tests.length === 0) {
-  process.stderr.write('No tests found.\n');
+  process.stderr.write('No se encontraron pruebas.\n');
   process.exit(1);
 }
 

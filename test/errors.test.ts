@@ -14,8 +14,8 @@ import {
 import { ArtifactLimitError } from '../src/artifacts.js';
 import { safeError } from '../src/errors.js';
 
-describe('safe errors', () => {
-  it('does not forward internal SDK messages', () => {
+describe('errores seguros', () => {
+  it('no reenvía los mensajes internos del SDK', () => {
     const secret = 'veriko_secret_that_must_not_leave';
     for (const error of [
       new ConfigurationError(secret),
@@ -26,24 +26,24 @@ describe('safe errors', () => {
     }
   });
 
-  it('reports a cancelled request as final, not as a connection failure', () => {
+  it('informa una petición cancelada como final, no como una falla de conexión', () => {
     const safe = safeError(new RequestAbortedError('aborted'));
     assert.equal(safe.code, 'cancelled');
     assert.equal(safe.retryable, false);
   });
 
-  it('explains an artifact that is too large', () => {
+  it('explica un archivo demasiado grande', () => {
     assert.deepEqual(safeError(new ArtifactLimitError(11, 10)), {
       type: 'ArtifactLimitError',
       code: 'artifact_too_large',
-      message: 'The file exceeds the ephemeral resource limit of the MCP server.',
+      message: 'El archivo supera el límite de recursos efímeros del servidor MCP.',
       retryable: false,
       size: 11,
       limit: 10,
     });
   });
 
-  it('keeps every entry of a 422 with detail, hint, docs_url, pointer and meta', () => {
+  it('conserva cada entrada de un 422 con detail, hint, docs_url, pointer y meta', () => {
     const error = new ApiError('HTTP 422', {
       status: 422,
       code: 'validation_error',
@@ -80,7 +80,7 @@ describe('safe errors', () => {
     assert.equal(safe.docs_url, 'https://docs.veriko.mx/en/concepts/errors-taxonomy');
   });
 
-  it('separates a quota 429 from a rate-limit 429 and reports retry_after_seconds', () => {
+  it('separa un 429 de cuota de un 429 de límite de frecuencia e informa retry_after_seconds', () => {
     const quota = safeError(
       new RateLimitError('x', { status: 429, code: 'quota_exceeded', retryAfter: 86_400, headers: {} }),
     );
@@ -96,7 +96,7 @@ describe('safe errors', () => {
     assert.equal(rate.retry_after_seconds, 7);
   });
 
-  it('marks 5xx, timeouts and in-progress idempotency keys as retryable', () => {
+  it('marca como reintentables los 5xx, los tiempos agotados y las claves de idempotencia en curso', () => {
     assert.equal(safeError(new ApiError('x', { status: 503, code: 'upstream_unavailable' })).retryable, true);
     assert.equal(
       safeError(new ApiError('x', { status: 409, code: 'idempotency_key_in_progress' })).retryable,
@@ -107,7 +107,7 @@ describe('safe errors', () => {
     assert.equal(safeError(new ConnectionError('x', 3)).code, 'connection_error');
   });
 
-  it('falls back to an English sentence when the API sends no detail', () => {
-    assert.match(safeError(new ApiError('x', { status: 500 })).message, /^Veriko rejected the operation with http_500/);
+  it('recurre a una frase en español cuando la API no envía detail', () => {
+    assert.match(safeError(new ApiError('x', { status: 500 })).message, /^Veriko rechazó la operación con http_500/);
   });
 });

@@ -31,8 +31,8 @@ const direct = {
   beneficiary_account: '012180004412345678',
 };
 
-describe('MCP catalog', () => {
-  it('announces 73 operation tools and 3 wait tools, with no duplicate names', () => {
+describe('catálogo MCP', () => {
+  it('anuncia 73 herramientas de operación y 3 de espera, sin nombres repetidos', () => {
     assert.equal(OPERATION_TOOLS.length, 73);
     assert.equal(TOOL_CATALOG.length, 76);
     assert.equal(new Set(TOOL_CATALOG.map((item) => item.operationId)).size, 76);
@@ -43,7 +43,7 @@ describe('MCP catalog', () => {
     );
   });
 
-  it('exposes validateAccount and no purge tool at any profile or risk level', () => {
+  it('expone validateAccount y ninguna herramienta de purga en ningún perfil ni nivel de riesgo', () => {
     assert.deepEqual([...NOT_EXPOSED_OPERATIONS], ['prepareValidationPurge', 'executeValidationPurge']);
     const announced = selectTools(new Set(['all']), 'destructive').map((item) => item.operationId);
     for (const operationId of NOT_EXPOSED_OPERATIONS) assert.equal(announced.includes(operationId), false);
@@ -51,12 +51,12 @@ describe('MCP catalog', () => {
     assert.equal(TOOL_CATALOG.some((item) => /purge/i.test(item.name)), false);
   });
 
-  it('declares the quota consumption in the description, not only in the metadata', () => {
+  it('declara el consumo de cuota en la descripción, no sólo en los metadatos', () => {
     for (const item of TOOL_CATALOG) {
       assert.equal(
         item.description.includes(QUOTA_WARNING),
         item.cost === 'quota',
-        `${item.name} announces the quota inconsistently with its cost`,
+        `${item.name} anuncia la cuota de forma incoherente con su costo`,
       );
     }
     assert.deepEqual(
@@ -65,14 +65,14 @@ describe('MCP catalog', () => {
     );
   });
 
-  it('puts every tool title and description in English', () => {
+  it('pone en español el título y la descripción de cada herramienta', () => {
     for (const item of TOOL_CATALOG) {
-      assert.doesNotMatch(`${item.title} ${item.description}`, /[áéíóúñ¿¡]/, item.name);
+      assert.match(`${item.title} ${item.description}`, /\b(de|la|el|los|las|una|un|con|que|del|y)\b/, item.name);
       assert.ok(item.description.length > 20, item.name);
     }
   });
 
-  it('the core profile has the validation flow, the allowance check and account validation', () => {
+  it('el perfil core trae el flujo de validación, la consulta del saldo y la validación de cuentas', () => {
     const core = selectTools(new Set(['core']), 'write').map((item) => item.name).sort();
     assert.deepEqual(core, [
       'veriko_download_cep',
@@ -86,13 +86,13 @@ describe('MCP catalog', () => {
     ]);
   });
 
-  it('all exposes 76 and the risk limit applies separately', () => {
+  it('all expone 76 y el límite de riesgo se aplica por separado', () => {
     assert.equal(selectTools(new Set(['all']), 'destructive').length, 76);
     assert.ok(selectTools(new Set(['all']), 'read').every((item) => item.risk === 'read'));
     assert.ok(selectTools(new Set(['core']), 'write').every((item) => item.core));
   });
 
-  it('annotations are consistent with each operation', () => {
+  it('las anotaciones son coherentes con cada operación', () => {
     for (const item of TOOL_CATALOG) {
       if (item.risk === 'read') {
         assert.equal(item.idempotent, true, `${item.name} reads, so it is idempotent`);
@@ -117,15 +117,15 @@ describe('MCP catalog', () => {
   });
 });
 
-describe('adapters', () => {
-  it('toSdk maps snake_case to camelCase and drops undefined and omitted keys', () => {
+describe('adaptadores', () => {
+  it('toSdk pasa snake_case a camelCase y descarta las claves undefined y las omitidas', () => {
     assert.deepEqual(toSdk({ per_page: 5, client_ref: 'a', skipped: 1, none: undefined }, ['skipped']), {
       perPage: 5,
       clientRef: 'a',
     });
   });
 
-  it('uses a fresh random idempotency key on each validation call', async () => {
+  it('usa una clave de idempotencia aleatoria nueva en cada llamada de validación', async () => {
     const keys: string[] = [];
     const invoke = invoker({
       validations: {
@@ -144,7 +144,7 @@ describe('adapters', () => {
     assert.match(keys[0] ?? '', /^veriko_mcp_/);
   });
 
-  it('sends the key the caller provides and reports it in the runtime', async () => {
+  it('envía la clave que da quien llama y la informa en el runtime', async () => {
     const keys: string[] = [];
     const invoke = invoker({
       validations: {
@@ -163,7 +163,7 @@ describe('adapters', () => {
     assert.equal(runtime.idempotencyKey, 'order-4812');
   });
 
-  it('applies a retry policy set back to an earlier value: no stale replay', async () => {
+  it('aplica una política de reintentos que vuelve a un valor anterior: sin repetir una respuesta vieja', async () => {
     const keys: string[] = [];
     const invoke = invoker({
       account: {
@@ -177,7 +177,7 @@ describe('adapters', () => {
     assert.equal(new Set(keys).size, 3);
   });
 
-  it('forwards client_ref to the SDK in the validation and in the filters', async () => {
+  it('reenvía client_ref al SDK en la validación y en los filtros', async () => {
     const received: Record<string, unknown> = {};
     const record = (name: string) => async (args: unknown) => {
       received[name] = args;
@@ -208,7 +208,7 @@ describe('adapters', () => {
     assert.equal(Object.keys(received).length, 6);
   });
 
-  it('maps with_deleted 0 and 1 to the SDK scope and omits it when absent', async () => {
+  it('pasa with_deleted 0 y 1 al alcance del SDK y lo omite cuando falta', async () => {
     const received: unknown[] = [];
     const invoke = invoker({
       validations: {
@@ -224,7 +224,7 @@ describe('adapters', () => {
     assert.deepEqual(received, [{ withDeleted: true }, { withDeleted: false }, {}]);
   });
 
-  it('forwards candidate_accounts and recipient_is_bank in the four validation paths', async () => {
+  it('reenvía candidate_accounts y recipient_is_bank en los cuatro caminos de validación', async () => {
     const received: Record<string, Record<string, unknown>> = {};
     const record = (name: string) => async (args: Record<string, unknown>) => {
       received[name] = args;
@@ -254,7 +254,7 @@ describe('adapters', () => {
     assert.equal(received['validate']?.['recipientIsBank'], true);
   });
 
-  it('forwards retain_image to the SDK, also when false', async () => {
+  it('reenvía retain_image al SDK, también cuando es false', async () => {
     const received: Record<string, unknown>[] = [];
     const invoke = invoker({
       validations: {
@@ -272,7 +272,7 @@ describe('adapters', () => {
     assert.equal('retainImage' in (received[1] ?? {}), false);
   });
 
-  it('rechecking a payment calls recheck with the identifier and consumes no quota', async () => {
+  it('revisar un pago llama a recheck con el identificador y no consume cuota', async () => {
     const received: string[] = [];
     const invoke = invoker({
       validations: {
@@ -294,7 +294,7 @@ describe('adapters', () => {
     assert.equal(recheck.core, false);
   });
 
-  it('forwards a null description when creating a webhook', async () => {
+  it('reenvía una descripción null al crear un webhook', async () => {
     const received: unknown[] = [];
     const invoke = invoker({
       webhooks: {
@@ -310,7 +310,7 @@ describe('adapters', () => {
     assert.deepEqual(received, [{ url: 'https://example.com/hook', events: ['validation.completed'], description: null }]);
   });
 
-  it('creating a beneficiary strips separators and returns what the SDK returns', async () => {
+  it('crear un beneficiario quita los separadores y devuelve lo que devuelve el SDK', async () => {
     const invoke = invoker({
       beneficiaries: {
         create: async (args: Record<string, unknown>) => ({
@@ -331,7 +331,7 @@ describe('adapters', () => {
     assert.equal(tool('createBeneficiary').description.includes('reactivated'), true);
   });
 
-  it('a conditional read answers not_modified on a 304', async () => {
+  it('una lectura condicional responde not_modified con un 304', async () => {
     const { ApiError } = await import('@veriko-mx/sdk-runtime');
     const invoke = invoker({
       catalog: {
@@ -347,7 +347,7 @@ describe('adapters', () => {
     });
   });
 
-  it('the SPEI calendar calls speiCalendar with the year', async () => {
+  it('el calendario SPEI llama a speiCalendar con el año', async () => {
     const received: unknown[] = [];
     const invoke = invoker({
       catalog: {
@@ -364,13 +364,13 @@ describe('adapters', () => {
     assert.deepEqual(result, { attributes: { year: 2026 } });
   });
 
-  it('forces preview in the four structured reports', () => {
+  it('obliga a preview en los cuatro reportes estructurados', () => {
     for (const operationId of ['getFinanceMonthly', 'getFinanceCounterparties', 'getFinanceByBank', 'getFinanceAccounting']) {
       assert.equal(tool(operationId).inputSchema.parse({ month: '2026-09' }).format, 'preview');
     }
   });
 
-  it('validateAccount forwards the account and type', async () => {
+  it('validateAccount reenvía la cuenta y el tipo', async () => {
     const received: unknown[] = [];
     const invoke = invoker({
       beneficiaries: {

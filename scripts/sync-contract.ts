@@ -1,25 +1,25 @@
 /**
- * Regeneration command that `sync-public-spec.yml` runs after the
- * organization's reusable workflow writes the new spec to `spec/openapi.yaml`,
- * before the PR is opened or updated.
+ * Comando de regeneración que `sync-public-spec.yml` ejecuta después de que el
+ * workflow reutilizable de la organización escribe el spec nuevo en `spec/openapi.yaml`,
+ * antes de abrir o actualizar el PR.
  *
- * It does three things:
+ * Hace tres cosas:
  *
- * 1. Recomputes the SHA-256 of the contract and pins it in
- *    `EXPECTED_PUBLIC_SPEC_SHA256` (`scripts/check-public-surface.ts`), so that
- *    lock validates the new contract instead of stopping the run before there
- *    is a PR to review.
- * 2. Compares the previous contract (the one on `main`, through
- *    `git show HEAD:spec/openapi.yaml`) with the new one and writes a Markdown
- *    summary, operation by operation, to `VERIKO_SYNC_SUMMARY_FILE` if the
- *    variable is set (otherwise to stdout).
- * 3. Regenerates the cost-per-profile table of the README (`npm run
+ * 1. Recalcula el SHA-256 del contrato y lo fija en
+ *    `EXPECTED_PUBLIC_SPEC_SHA256` (`scripts/check-public-surface.ts`), para que
+ *    ese candado valide el contrato nuevo en lugar de detener la corrida antes de
+ *    que haya un PR que revisar.
+ * 2. Compara el contrato anterior (el de `main`, con
+ *    `git show HEAD:spec/openapi.yaml`) con el nuevo y escribe un resumen en
+ *    Markdown, operación por operación, en `VERIKO_SYNC_SUMMARY_FILE` si la
+ *    variable está definida (si no, en stdout).
+ * 3. Regenera la tabla de costo por perfil del README (`npm run
  *    measure:catalog`).
  *
- * It validates nothing: `npm test` (including the limits lock) and
- * `npm run check:surface` already do that as part of the PR CI. If this
- * regeneration failed under `set -e`, the PR would never open, which is the
- * original problem this script fixes.
+ * No valida nada: `npm test` (con el candado de límites) y
+ * `npm run check:surface` ya lo hacen en el CI del PR. Si esta
+ * regeneración fallara con `set -e`, el PR nunca se abriría, que es el
+ * problema original que corrige este script.
  */
 import { execSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -52,7 +52,7 @@ const EXPECTED_SHA_PATTERN = /(const EXPECTED_PUBLIC_SPEC_SHA256 =\s*\n\s*')[0-9
 
 export function replaceExpectedSha(source: string, newSha: string): string {
   if (!EXPECTED_SHA_PATTERN.test(source)) {
-    throw new Error('Could not find the EXPECTED_PUBLIC_SPEC_SHA256 declaration.');
+    throw new Error('No se encontró la declaración de EXPECTED_PUBLIC_SPEC_SHA256.');
   }
   return source.replace(EXPECTED_SHA_PATTERN, `$1${newSha}$2`);
 }
@@ -113,7 +113,7 @@ export function operationSecurity(document: Json, operationId: string): unknown 
 }
 
 function describeFieldConstraint(constraint: FieldConstraint): string {
-  const bits: string[] = [constraint.required ? 'required' : 'optional'];
+  const bits: string[] = [constraint.required ? 'obligatorio' : 'opcional'];
   if (constraint.type) bits.push(constraint.type);
   if (constraint.enum) bits.push(`enum ${JSON.stringify(constraint.enum)}`);
   if (constraint.maxLength !== undefined) bits.push(`maxLength ${constraint.maxLength}`);
@@ -123,34 +123,34 @@ function describeFieldConstraint(constraint: FieldConstraint): string {
   return bits.join(', ');
 }
 
-/** Diffs two versions of the same field (previous spec against new spec), not spec against Zod. */
+/** Compara dos versiones del mismo campo (spec anterior contra spec nuevo), no spec contra Zod. */
 export function diffField(name: string, before: FieldConstraint | undefined, after: FieldConstraint | undefined): string[] {
-  if (!before && after) return [`  - new field \`${name}\`: ${describeFieldConstraint(after)}`];
-  if (before && !after) return [`  - field removed \`${name}\``];
+  if (!before && after) return [`  - campo nuevo \`${name}\`: ${describeFieldConstraint(after)}`];
+  if (before && !after) return [`  - campo eliminado \`${name}\``];
   if (!before || !after) return [];
 
   const changes: string[] = [];
   if (before.required !== after.required) {
-    changes.push(after.required ? 'now required' : 'now optional');
+    changes.push(after.required ? 'ahora obligatorio' : 'ahora opcional');
   }
   if (before.type !== after.type) changes.push(`tipo ${before.type ?? '?'} → ${after.type ?? '?'}`);
   if (before.maxLength !== after.maxLength) {
-    changes.push(`maxLength ${before.maxLength ?? 'no limit'} → ${after.maxLength ?? 'no limit'}`);
+    changes.push(`maxLength ${before.maxLength ?? 'sin límite'} → ${after.maxLength ?? 'sin límite'}`);
   }
   if (before.minLength !== after.minLength) {
-    changes.push(`minLength ${before.minLength ?? 'no minimum'} → ${after.minLength ?? 'no minimum'}`);
+    changes.push(`minLength ${before.minLength ?? 'sin mínimo'} → ${after.minLength ?? 'sin mínimo'}`);
   }
   if (before.maximum !== after.maximum) {
-    changes.push(`maximum ${before.maximum ?? 'no limit'} → ${after.maximum ?? 'no limit'}`);
+    changes.push(`maximum ${before.maximum ?? 'sin límite'} → ${after.maximum ?? 'sin límite'}`);
   }
   if (before.minimum !== after.minimum) {
-    changes.push(`minimum ${before.minimum ?? 'no minimum'} → ${after.minimum ?? 'no minimum'}`);
+    changes.push(`minimum ${before.minimum ?? 'sin mínimo'} → ${after.minimum ?? 'sin mínimo'}`);
   }
   if (JSON.stringify(before.enum) !== JSON.stringify(after.enum)) {
     changes.push(`enum ${JSON.stringify(before.enum ?? [])} → ${JSON.stringify(after.enum ?? [])}`);
   }
   if ((before.pattern ?? null) !== (after.pattern ?? null)) {
-    changes.push('validation pattern changed');
+    changes.push('cambió el patrón de validación');
   }
 
   return changes.length ? [`  - \`${name}\`: ${changes.join('; ')}`] : [];
@@ -176,13 +176,13 @@ export function diffOperation(previous: Json, next: Json, operationId: string): 
   const afterCodes = operationResponseCodes(next, operationId);
   const newCodes = [...afterCodes].filter((code) => !beforeCodes.has(code)).sort();
   const goneCodes = [...beforeCodes].filter((code) => !afterCodes.has(code)).sort();
-  if (newCodes.length) lines.push(`  - new responses: ${newCodes.join(', ')}`);
-  if (goneCodes.length) lines.push(`  - removed responses: ${goneCodes.join(', ')}`);
+  if (newCodes.length) lines.push(`  - respuestas nuevas: ${newCodes.join(', ')}`);
+  if (goneCodes.length) lines.push(`  - respuestas eliminadas: ${goneCodes.join(', ')}`);
 
   const beforeSecurity = JSON.stringify(operationSecurity(previous, operationId));
   const afterSecurity = JSON.stringify(operationSecurity(next, operationId));
   if (beforeSecurity !== afterSecurity) {
-    lines.push(`  - security: ${beforeSecurity} → ${afterSecurity}`);
+    lines.push(`  - seguridad: ${beforeSecurity} → ${afterSecurity}`);
   }
 
   return lines;
@@ -190,7 +190,7 @@ export function diffOperation(previous: Json, next: Json, operationId: string): 
 
 export function buildSummary(previous: Json | undefined, next: Json): string {
   if (!previous) {
-    return '## Contract summary\n\nThere is no previous version to compare with (first sync).\n';
+    return '## Resumen del contrato\n\nNo hay una versión anterior con la cual comparar (primera sincronización).\n';
   }
 
   const beforeIds = allOperationIds(previous);
@@ -199,25 +199,25 @@ export function buildSummary(previous: Json | undefined, next: Json): string {
   const removed = [...beforeIds].filter((id) => !afterIds.has(id)).sort();
   const shared = [...afterIds].filter((id) => beforeIds.has(id)).sort();
 
-  const sections: string[] = ['## Contract summary', ''];
+  const sections: string[] = ['## Resumen del contrato', ''];
 
   const beforeVersion = (previous.info as Json | undefined)?.version;
   const afterVersion = (next.info as Json | undefined)?.version;
   if (beforeVersion || afterVersion) {
-    sections.push(`From version \`${beforeVersion ?? '?'}\` to \`${afterVersion ?? '?'}\`.`, '');
+    sections.push(`De la versión \`${beforeVersion ?? '?'}\` a la \`${afterVersion ?? '?'}\`.`, '');
   }
 
-  sections.push('### New operations');
+  sections.push('### Operaciones nuevas');
   sections.push(
     added.length
       ? added.map((id) => `- \`${id}\` (${operationLocation(next, id) ?? '?'})`).join('\n')
-      : '- None.',
+      : '- Ninguna.',
   );
-  sections.push('', '### Removed operations');
+  sections.push('', '### Operaciones eliminadas');
   sections.push(
     removed.length
       ? removed.map((id) => `- \`${id}\` (${operationLocation(previous, id) ?? '?'})`).join('\n')
-      : '- None.',
+      : '- Ninguna.',
   );
 
   const changedBlocks: string[] = [];
@@ -227,15 +227,15 @@ export function buildSummary(previous: Json | undefined, next: Json): string {
       changedBlocks.push(`- \`${operationId}\` (${operationLocation(next, operationId) ?? '?'})`, ...lines);
     }
   }
-  sections.push('', '### Changes to existing operations');
-  sections.push(changedBlocks.length ? changedBlocks.join('\n') : '- None.');
+  sections.push('', '### Cambios en operaciones existentes');
+  sections.push(changedBlocks.length ? changedBlocks.join('\n') : '- Ninguna.');
 
   sections.push(
     '',
-    '### MCP catalog coverage',
-    'New operations need an adapter in `src/catalog.ts`, and removed ones need theirs deleted.' +
-      ' `npm run check:surface` fails explicitly when the catalog and the contract do not' +
-      ' match operation by operation.',
+    '### Cobertura del catálogo MCP',
+    'Las operaciones nuevas necesitan un adaptador en `src/catalog.ts`, y a las eliminadas hay que borrarles el suyo.' +
+      ' `npm run check:surface` falla de forma explícita cuando el catálogo y el contrato no' +
+      ' coinciden operación por operación.',
   );
 
   return `${sections.join('\n')}\n`;
@@ -246,7 +246,7 @@ export function regenerateReadmeTable(): boolean {
   try {
     output = execSync('npm run --silent measure:catalog', { cwd: root, encoding: 'utf8' });
   } catch (error) {
-    process.stderr.write(`Could not regenerate the cost-per-profile table of the README: ${error}\n`);
+    process.stderr.write(`No se pudo regenerar la tabla de costo por perfil del README: ${error}\n`);
     return false;
   }
 
@@ -255,7 +255,7 @@ export function regenerateReadmeTable(): boolean {
 
   const readme = readFileSync(readmePath, 'utf8');
   const tableBlock =
-    /(\| Profile \| Tools \| Bytes of `tools\/list` \| Estimated tokens \|\n\|---\|---:\|---:\|---:\|\n)([\s\S]*?)(\n\n)/;
+    /(\| Perfil \| Herramientas \| Bytes de `tools\/list` \| Tokens estimados \|\n\|---\|---:\|---:\|---:\|\n)([\s\S]*?)(\n\n)/;
   if (!tableBlock.test(readme)) return false;
 
   const updated = readme.replace(tableBlock, (_match, header: string, _rows: string, tail: string) =>
@@ -277,17 +277,17 @@ function main(): void {
 
   const readmeChanged = regenerateReadmeTable();
   const summaryWithNote = readmeChanged
-    ? `${summary}\n### Documentation\nThe cost-per-profile table of the README was regenerated (\`npm run measure:catalog\`).\n`
+    ? `${summary}\n### Documentación\nSe regeneró la tabla de costo por perfil del README (\`npm run measure:catalog\`).\n`
     : summary;
 
   const summaryFile = process.env.VERIKO_SYNC_SUMMARY_FILE;
   if (summaryFile) {
     writeFileSync(summaryFile, summaryWithNote);
-    process.stdout.write(`Summary written to ${summaryFile}.\n`);
+    process.stdout.write(`Resumen escrito en ${summaryFile}.\n`);
   } else {
     process.stdout.write(summaryWithNote);
   }
-  process.stdout.write(`Contract SHA-256: ${newSha}\n`);
+  process.stdout.write(`SHA-256 del contrato: ${newSha}\n`);
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

@@ -26,8 +26,8 @@ export interface ServerConfig {
   profiles: ReadonlySet<Profile>;
   maxRisk: Risk;
   /**
-   * Directories a tool may read receipts and import files from (`image_path`,
-   * `file_path`). Stdio only: the HTTP server never reads the local disk.
+   * Directorios de los que una herramienta puede leer comprobantes y archivos de
+   * importación (`image_path`, `file_path`). Sólo stdio: el servidor HTTP nunca lee el disco local.
    */
   fileRoots?: readonly string[];
 }
@@ -40,7 +40,7 @@ function parseProfiles(raw: string | undefined): ReadonlySet<Profile> {
   const allowed = new Set<string>(['core', 'all', ...FAMILIES]);
   const invalid = values.filter((value) => !allowed.has(value));
   if (invalid.length > 0) {
-    throw new Error(`VERIKO_MCP_PROFILE contains unknown profiles: ${invalid.join(', ')}`);
+    throw new Error(`VERIKO_MCP_PROFILE contiene perfiles desconocidos: ${invalid.join(', ')}`);
   }
   return new Set(values as Profile[]);
 }
@@ -48,7 +48,7 @@ function parseProfiles(raw: string | undefined): ReadonlySet<Profile> {
 function parseRisk(raw: string | undefined): Risk {
   const value = raw?.trim() || 'write';
   if (!RISKS.includes(value as Risk)) {
-    throw new Error(`VERIKO_MCP_MAX_RISK must be read, write or destructive; received ${value}.`);
+    throw new Error(`VERIKO_MCP_MAX_RISK debe ser read, write o destructive; se recibió ${value}.`);
   }
   return value as Risk;
 }
@@ -61,15 +61,15 @@ function parseBaseUrl(raw: string | undefined): string | undefined {
   try {
     url = new URL(value);
   } catch {
-    throw new Error('VERIKO_BASE_URL must be an absolute URL.');
+    throw new Error('VERIKO_BASE_URL debe ser una URL absoluta.');
   }
   if (url.username || url.password) {
-    throw new Error('VERIKO_BASE_URL does not accept embedded credentials.');
+    throw new Error('VERIKO_BASE_URL no acepta credenciales incrustadas.');
   }
 
   const local = ['localhost', '127.0.0.1', '::1'].includes(url.hostname);
   if (url.protocol !== 'https:' && !(url.protocol === 'http:' && local)) {
-    throw new Error('VERIKO_BASE_URL must use HTTPS; HTTP is accepted only for localhost.');
+    throw new Error('VERIKO_BASE_URL debe usar HTTPS; HTTP sólo se acepta para localhost.');
   }
   return value;
 }
