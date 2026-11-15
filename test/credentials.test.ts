@@ -7,9 +7,13 @@ const BASE = 'https://api.example.com/v1';
 
 /** Un fetch que sólo anota la URL y el Authorization con que se llamó. */
 function recorder() {
-  const seen: Array<{ url: string; authorization: string | null }> = [];
+  const seen: Array<{ url: string; authorization: string | null; redirect?: RequestRedirect }> = [];
   const fetchImpl: typeof fetch = async (input, init) => {
-    seen.push({ url: String(input instanceof Request ? input.url : input), authorization: new Headers(init?.headers).get('authorization') });
+    seen.push({
+      url: String(input instanceof Request ? input.url : input),
+      authorization: new Headers(init?.headers).get('authorization'),
+      ...(init?.redirect ? { redirect: init.redirect } : {}),
+    });
     return new Response('{}');
   };
   return { seen, fetchImpl };
@@ -25,6 +29,10 @@ describe('isUnderBaseUrl', () => {
     assert.equal(isUnderBaseUrl('http://api.example.com/v1/validations', BASE), false);
     assert.equal(isUnderBaseUrl('https://descargas.example.com/v1/cep.pdf', BASE), false);
     assert.equal(isUnderBaseUrl('https://api.example.com/cualquiera', 'https://api.example.com'), true);
+    assert.equal(isUnderBaseUrl('https://api.example.com/v1/../otra', BASE), false);
+    assert.equal(isUnderBaseUrl('https://api.example.com/v1/%2e%2e/otra', BASE), false);
+    assert.equal(isUnderBaseUrl('https://api.example.com:8443/v1/validations', BASE), false);
+    assert.equal(isUnderBaseUrl('https://api.example.com:443/v1/validations', BASE), true);
   });
 });
 
@@ -35,7 +43,7 @@ describe('credentialsOnlyTo', () => {
     await guarded(`${BASE}/validations`, { headers: { authorization: 'Bearer relleno' } });
     await guarded('https://descargas.example.com/cep.pdf', { headers: { authorization: 'Bearer relleno' } });
     assert.deepEqual(seen, [
-      { url: `${BASE}/validations`, authorization: 'Bearer token-oauth' },
+      { url: `${BASE}/validations`, authorization: 'Bearer token-oauth', redirect: 'error' },
       { url: 'https://descargas.example.com/cep.pdf', authorization: null },
     ]);
   });
@@ -47,7 +55,7 @@ describe('credentialsOnlyTo', () => {
     await guarded(new URL(`${BASE}/usage/limits`), { headers: { authorization: key } });
     await guarded(new Request('https://otro.example/x', { headers: { authorization: key } }));
     assert.deepEqual(seen, [
-      { url: `${BASE}/usage/limits`, authorization: key },
+      { url: `${BASE}/usage/limits`, authorization: key, redirect: 'error' },
       { url: 'https://otro.example/x', authorization: null },
     ]);
   });

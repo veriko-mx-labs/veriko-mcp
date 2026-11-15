@@ -148,4 +148,67 @@ describe('createAccessTokenVerifier', () => {
     const result = await verifier(server).verify(token());
     assert.equal(!result.ok && result.kind, 'unavailable');
   });
+
+  it('comparte la consulta en curso entre peticiones en paralelo', async () => {
+    const server = fakeServer();
+    let now = NOW;
+    const check = verifier(server, () => now);
+    await Promise.all(Array.from({ length: 20 }, () => check.verify(token())));
+    assert.equal(server.calls.length, 3);
+
+    now += 61_000;
+    await Promise.all(Array.from({ length: 20 }, (_, i) => check.verify(token({}, { kid: `azar-${i}` }))));
+    assert.equal(server.calls.filter((url) => url === JWKS).length, 2);
+  });
+
+  it('sigue con las claves que tenía si falla la renovación, y no reintenta enseguida', async () => {
+    const server = fakeServer();
+    let now = NOW;
+    const check = verifier(server, () => now);
+    await check.verify(token());
+    server.down = true;
+    now += 2 * 60 * 60 * 1000;
+    const callsBefore = server.calls.length;
+    assert.deepEqual(await check.verify(token({ iat: Math.floor(now / 1000), nbf: Math.floor(now / 1000), exp: Math.floor(now / 1000) + 600 })), { ok: true });
+    // Un intento a los metadatos y otro al JWKS; los dos fallan y se usa lo que había.
+    assert.equal(server.calls.length - callsBefore, 2);
+    await check.verify(token({}, { kid: 'otro' }));
+    assert.equal(server.calls.length - callsBefore, 2);
+  });
+
+  it('sin claves previas, una caída da 503 y no se repite la consulta antes de 10 segundos', async () => {
+    const server = fakeServer();
+    server.down = true;
+    const check = verifier(server);
+    assert.equal(!(await check.verify(token())).ok, true);
+    const result = await check.verify(token());
+    assert.equal(!result.ok && result.kind, 'unavailable');
+    assert.equal(server.calls.length, 1);
+  });
+
+  it('rechaza metadatos cuyo resource no es el de su URL', async () => {
+    const server = fakeServer();
+    const inner = server.fetchImpl;
+    server.fetchImpl = async (input, init) =>
+      String(input) === METADATA ? Response.json({ resource: 'https://api.example.com/v1', authorization_servers: [ISSUER] }) : inner(input, init);
+    const result = await verifier(server).verify(token({ aud: 'https://api.example.com/v1' }));
+    assert.equal(!result.ok && result.kind, 'unavailable');
+  });
+
+  it('descarta claves que no son EC P-256 públicas y firmas mal formadas', async () => {
+    const server = fakeServer();
+    server.keys = [{ ...K1.jwk, kid: 'k1', crv: 'P-384' }];
+    assert.deepEqual(await verifier(server).verify(token()), { ok: false, kind: 'invalid', reason: 'unknown_key' });
+    const good = token();
+    const [head, body] = good.split('.');
+    const check = verifier(fakeServer());
+    assert.deepEqual(await check.verify(`${head}.${body}.`), { ok: false, kind: 'invalid', reason: 'signature' });
+    assert.deepEqual(await check.verify(`${head}.${body}.${Buffer.alloc(63).toString('base64url')}`), { ok: false, kind: 'invalid', reason: 'signature' });
+  });
+
+  it('rechaza exp o nbf que no son números', async () => {
+    const check = verifier(fakeServer());
+    assert.equal((await check.verify(token({ exp: String(Math.floor(NOW / 1000) + 600) }))).ok, false);
+    assert.equal((await check.verify(token({ nbf: null }))).ok, false);
+  });
 });

@@ -102,18 +102,20 @@ export function isUnderBaseUrl(url: string, baseUrl: string): boolean {
 
 /**
  * La credencial (clave de API o token OAuth) sólo viaja a la API. Una petición a cualquier otra URL (una descarga
- * firmada en otro dominio, una redirección) sale sin `Authorization`.
+ * firmada en otro dominio) sale sin `Authorization`. Una petición con credencial no sigue redirecciones
+ * (`redirect: 'error'`): la API no responde 3xx, y seguir una en el mismo origen llevaría el encabezado fuera de la ruta
+ * de la API.
  */
 export function credentialsOnlyTo(baseUrl: string, token: string | undefined, inner: typeof fetch): typeof fetch {
   return (input, init) => {
     const headers = new Headers(input instanceof Request ? input.headers : undefined);
     new Headers(init?.headers).forEach((value, name) => headers.set(name, value));
-    if (isUnderBaseUrl(requestUrl(input), baseUrl)) {
-      if (token !== undefined) headers.set('authorization', `Bearer ${token}`);
-    } else {
+    if (!isUnderBaseUrl(requestUrl(input), baseUrl)) {
       headers.delete('authorization');
+      return inner(input, { ...init, headers });
     }
-    return inner(input, { ...init, headers });
+    if (token !== undefined) headers.set('authorization', `Bearer ${token}`);
+    return inner(input, { ...init, headers, redirect: 'error' });
   };
 }
 

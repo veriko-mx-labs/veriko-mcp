@@ -15,7 +15,9 @@ import { createPublicKey, verify as verifySignature, type JsonWebKey, type KeyOb
  * Todo sale por descubrimiento a partir de la URL de los metadatos del recurso (RFC 9728 → RFC 8414 → JWKS), así que
  * no hace falta ninguna variable nueva. Los documentos se guardan en memoria: los metadatos una hora y las claves cinco
  * minutos. Un `kid` desconocido vuelve a pedir el JWKS (a lo más una vez por minuto), para aceptar una clave recién
- * rotada sin abrir la puerta a forzar una consulta por petición.
+ * rotada sin abrir la puerta a forzar una consulta por petición. Las peticiones en paralelo comparten la consulta en
+ * curso. Si una renovación falla, se siguen usando los documentos que ya había y no se reintenta antes de 10 segundos.
+ * El `resource` de los metadatos debe ser el recurso del que sale su URL (RFC 9728 §3.3).
  */
 
 /** Diferencia de relojes que se tolera en `exp` y `nbf`, en segundos. */
@@ -24,6 +26,8 @@ const METADATA_TTL_MS = 60 * 60 * 1000;
 const JWKS_TTL_MS = 5 * 60 * 1000;
 const JWKS_MIN_REFRESH_MS = 60 * 1000;
 const DISCOVERY_TIMEOUT_MS = 5_000;
+/** Tras una consulta fallida, cuánto se espera antes de volver a intentarla. */
+const FAILURE_BACKOFF_MS = 10_000;
 
 export type AccessTokenCheck =
   | { ok: true }
@@ -99,13 +103,27 @@ export function createAccessTokenVerifier(options: VerifierOptions): AccessToken
     return body;
   }
 
-  async function discover(): Promise<Discovery> {
-    if (discovery && discovery.expiresAt > now()) return discovery;
+  let discoveryInFlight: Promise<Discovery> | undefined;
+  let discoveryFailedAt: number | undefined;
+  let keysInFlight: Promise<KeySet> | undefined;
+  let keysFailedAt: number | undefined;
+
+  /** RFC 9728 §3.1: la URL de los metadatos es la del recurso con `/.well-known/oauth-protected-resource` insertado. */
+  function expectedResource(): string | undefined {
+    if (!URL.canParse(options.resourceMetadataUrl)) return undefined;
+    const url = new URL(options.resourceMetadataUrl);
+    const marker = '/.well-known/oauth-protected-resource';
+    if (!url.pathname.startsWith(marker)) return undefined;
+    return `${url.origin}${url.pathname.slice(marker.length)}`;
+  }
+
+  async function fetchDiscovery(): Promise<Discovery> {
     const resourceDoc = await getJson(options.resourceMetadataUrl);
     const resource = httpsUrl(resourceDoc.resource);
     const servers = resourceDoc.authorization_servers;
     const issuer = Array.isArray(servers) ? httpsUrl(servers[0]) : undefined;
     if (!resource || !issuer) throw new UnavailableError('metadatos del recurso sin resource o authorization_servers');
+    if (resource !== expectedResource()) throw new UnavailableError('el resource de los metadatos no es el de su URL');
 
     // RFC 8414 §3: el documento vive en /.well-known/oauth-authorization-server más la ruta del emisor, si tiene.
     const issuerUrl = new URL(issuer);
@@ -114,11 +132,33 @@ export function createAccessTokenVerifier(options: VerifierOptions): AccessToken
     const jwksUri = httpsUrl(asDoc.jwks_uri);
     if (asDoc.issuer !== issuer || !jwksUri) throw new UnavailableError('metadatos del servidor de autorización no coinciden');
 
-    discovery = { issuer, resource, jwksUri, expiresAt: now() + METADATA_TTL_MS };
-    return discovery;
+    return { issuer, resource, jwksUri, expiresAt: now() + METADATA_TTL_MS };
   }
 
-  async function loadKeys(jwksUri: string): Promise<KeySet> {
+  async function discover(): Promise<Discovery> {
+    if (discovery && discovery.expiresAt > now()) return discovery;
+    if (discoveryFailedAt !== undefined && now() - discoveryFailedAt < FAILURE_BACKOFF_MS) {
+      if (discovery) return discovery;
+      throw new UnavailableError('descubrimiento fallido hace poco');
+    }
+    discoveryInFlight ??= fetchDiscovery()
+      .then((found) => {
+        discovery = found;
+        discoveryFailedAt = undefined;
+        return found;
+      })
+      .catch((error: unknown) => {
+        discoveryFailedAt = now();
+        if (discovery) return discovery;
+        throw error;
+      })
+      .finally(() => {
+        discoveryInFlight = undefined;
+      });
+    return discoveryInFlight;
+  }
+
+  async function fetchKeys(jwksUri: string): Promise<KeySet> {
     const doc = await getJson(jwksUri);
     const keys = new Map<string, KeyObject>();
     for (const jwk of Array.isArray(doc.keys) ? doc.keys : []) {
@@ -132,15 +172,37 @@ export function createAccessTokenVerifier(options: VerifierOptions): AccessToken
         // Una clave rota no tumba a las demás.
       }
     }
-    keySet = { keys, fetchedAt: now() };
-    return keySet;
+    return { keys, fetchedAt: now() };
+  }
+
+  /** Renueva el JWKS. Si falla y ya había claves, las conserva; sin claves, el fallo sube como `unavailable`. */
+  async function loadKeys(jwksUri: string): Promise<KeySet | undefined> {
+    if (keysFailedAt !== undefined && now() - keysFailedAt < FAILURE_BACKOFF_MS) {
+      if (keySet) return keySet;
+      throw new UnavailableError('JWKS fallido hace poco');
+    }
+    keysInFlight ??= fetchKeys(jwksUri)
+      .then((loaded) => {
+        keySet = loaded;
+        keysFailedAt = undefined;
+        return loaded;
+      })
+      .catch((error: unknown) => {
+        keysFailedAt = now();
+        if (keySet) return keySet;
+        throw error;
+      })
+      .finally(() => {
+        keysInFlight = undefined;
+      });
+    return keysInFlight;
   }
 
   async function keyFor(jwksUri: string, kid: string): Promise<KeyObject | undefined> {
     if (!keySet || now() - keySet.fetchedAt > JWKS_TTL_MS) await loadKeys(jwksUri);
     let key = keySet?.keys.get(kid);
     if (!key && keySet && now() - keySet.fetchedAt > JWKS_MIN_REFRESH_MS) {
-      key = (await loadKeys(jwksUri)).keys.get(kid);
+      key = (await loadKeys(jwksUri))?.keys.get(kid);
     }
     return key;
   }
