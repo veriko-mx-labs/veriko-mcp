@@ -246,12 +246,21 @@ async function conditional<T>(
   }
 }
 
+/** Los `attributes` de un recurso de la API, o el valor tal cual si no los trae. */
+function attributesOf(value: unknown): Record<string, unknown> {
+  if (typeof value !== 'object' || value === null) return {};
+  const attributes = (value as { attributes?: unknown }).attributes;
+  return typeof attributes === 'object' && attributes !== null
+    ? (attributes as Record<string, unknown>)
+    : (value as Record<string, unknown>);
+}
+
 function accountDigits(value: string): string {
   return digitsOf(value);
 }
 
 const GUIDE_VERDICT =
-  'El veredicto está en `attributes.status`: `valid` (el CEP existe y coincide), `not_found`, `cep_unavailable`, `returned`, `invalid`, `failed` o `error`. Un `not_found` inmediato no prueba que la transferencia no exista: Banxico puede no haber publicado aún el CEP, así que activa `retry_policy` o vuelve a consultar más tarde. `valid` es una fotografía: llama a `veriko_recheck_validation` dentro de las 72 horas para detectar una devolución. Cuando `attributes.account_cross_checked` es `false`, `valid` confirma que la transferencia existe, pero no que se pagó a la cuenta esperada.';
+  'El veredicto está en `attributes.status`: `valid` (el CEP existe y coincide), `not_found`, `cep_unavailable`, `returned`, `invalid`, `failed` o `error`. Un `not_found` inmediato no prueba que la transferencia no exista: Banxico puede no haber publicado aún el CEP, así que activa `retry_policy` o vuelve a consultar más tarde. `valid` es una fotografía del momento de la consulta. Para detectar una devolución, llama a `veriko_recheck_validation` dentro de las 72 horas. Cuando `attributes.account_cross_checked` es `false`, `valid` confirma que la transferencia existe, pero no que se pagó a la cuenta esperada.';
 
 export const TOOL_CATALOG: readonly ToolDefinition[] = [
   define({
@@ -841,12 +850,16 @@ export const TOOL_CATALOG: readonly ToolDefinition[] = [
   }),
   define({
     operationId: 'getUsageLimits',
-    title: 'Consultar los límites',
-    description: 'Devuelve la cuota, los límites y el saldo disponible de la cuenta. Consúltalo antes de validar en lote.',
+    title: 'Consultar la cuota y los límites',
+    description:
+      'Devuelve en `quota` la cuota de validaciones del plan (límite, consumidas, restantes y reinicio) y en `rate_limits` los límites de peticiones por minuto. Consúltalo antes de validar en lote.',
     family: 'usage',
     core: true,
     inputSchema: emptySchema,
-    invoke: (client) => client.usage.limits(),
+    async invoke(client) {
+      const [summary, limits] = await Promise.all([client.usage.summary(), client.usage.limits()]);
+      return { quota: attributesOf(summary), rate_limits: attributesOf(limits).rate_limits ?? null };
+    },
   }),
   define({
     operationId: 'getUsageHeatmap',

@@ -71,8 +71,17 @@ function parseBaseUrl(raw: string | undefined): string | undefined {
   if (url.protocol !== 'https:' && !(url.protocol === 'http:' && local)) {
     throw new Error('VERIKO_BASE_URL debe usar HTTPS; HTTP sólo se acepta para localhost.');
   }
+  // Las rutas de la API viven bajo /v1. Una URL remota sin ruta (`https://api.veriko.mx`) armaba `/validations` y la
+  // API respondía 404 a todo; se completa con la versión, como el valor por omisión del SDK. Un servidor local se
+  // respeta tal cual.
+  if (!local && (url.pathname === '' || url.pathname === '/')) {
+    return `${url.origin}/${API_VERSION_PATH}`;
+  }
   return value;
 }
+
+/** La versión de la API que se agrega a una `VERIKO_BASE_URL` sin ruta. */
+export const API_VERSION_PATH = 'v1';
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
   const baseUrl = parseBaseUrl(env.VERIKO_BASE_URL);

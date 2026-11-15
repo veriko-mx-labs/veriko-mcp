@@ -15,7 +15,7 @@ const entityId = z.union([z.string().min(1), z.number().int().positive()]);
 const httpsUrl = z
   .string()
   .url()
-  .refine((value) => new URL(value).protocol === 'https:', 'The URL must use HTTPS.');
+  .refine((value) => new URL(value).protocol === 'https:', 'La URL debe usar HTTPS.');
 /** Los formatos de las exportaciones de validaciones y de entregas de webhook. */
 export const EXPORT_FORMAT_VALUES = ['csv', 'xlsx'] as const;
 const format = z.enum(EXPORT_FORMAT_VALUES);
@@ -93,7 +93,7 @@ export const retryPolicySchema = z
       .min(1)
       .optional()
       .describe(
-        'Máximo de reintentos, al menos 1. El plan lo limita (free 1, personal 3, business 5, enterprise 10, volume 20); por encima del tope la API responde 422 `retry_policy_invalid`. `veriko_get_my_retry_policy` devuelve el tope en `meta.caps`.',
+        'Máximo de reintentos, al menos 1. El plan lo limita (Gratis 1, Personal 3, Negocio 5, Empresa 10, Volumen 20); por encima del tope la API responde 422 `retry_policy_invalid`.',
       ),
     interval_seconds: z
       .number()
@@ -113,7 +113,7 @@ export const retryPolicySchema = z
   })
   .strict()
   .describe(
-    'Política de reintentos automáticos. Omítela para usar la de la cuenta (`veriko_get_my_retry_policy`).',
+    'Política de reintentos automáticos. Omítela para usar la que la cuenta tiene configurada.',
   );
 
 const asyncField = z
@@ -124,7 +124,7 @@ const asyncField = z
   );
 
 const accountPairRules = {
-  both: 'Send `beneficiary_account` or `candidate_accounts`, not both.',
+  both: 'Envía `beneficiary_account` o `candidate_accounts`, no las dos.',
 } as const;
 
 export const validateDirectSchema = z
@@ -198,10 +198,12 @@ export const validateDirectSchema = z
   .refine((value) => value.tracking_key || value.numeric_reference, {
     message: 'Envía tracking_key o numeric_reference.',
   })
-  .refine(
-    (value) => (value.beneficiary_account === undefined) !== (value.candidate_accounts === undefined),
-    { message: 'Envía beneficiary_account o candidate_accounts, pero no las dos.' },
-  );
+  .refine((value) => value.beneficiary_account !== undefined || value.candidate_accounts !== undefined, {
+    message: 'Falta la cuenta: envía beneficiary_account o candidate_accounts.',
+  })
+  .refine((value) => value.beneficiary_account === undefined || value.candidate_accounts === undefined, {
+    message: 'Envía beneficiary_account o candidate_accounts, no las dos.',
+  });
 
 const validateOcrShape = {
     image_base64: ocrImageBase64
@@ -242,13 +244,13 @@ const validateOcrShape = {
       .boolean()
       .optional()
       .describe(
-        'Por omisión `true`: la API conserva el comprobante (`veriko_get_validation_image`). Con `false` borra el archivo cuando la validación llega a un estado final.',
+        'Por omisión `true`: la API conserva el comprobante. Con `false` borra el archivo cuando la validación llega a un estado final.',
       ),
     idempotency_key: idempotencyKeyField,
     async: asyncField,
 };
 
-const OCR_ACCOUNT_RULE = { message: 'Envía beneficiary_account o candidate_accounts, pero no las dos.' };
+const OCR_ACCOUNT_RULE = { message: 'Envía beneficiary_account o candidate_accounts, no las dos.' };
 const noPairedAccounts = (value: { beneficiary_account?: unknown; candidate_accounts?: unknown }) =>
   value.beneficiary_account === undefined || value.candidate_accounts === undefined;
 
@@ -301,7 +303,7 @@ const withdrawnScope = z
   .union([z.literal(0), z.literal(1)])
   .optional()
   .describe(
-    'Validaciones retiradas (`veriko_delete_validation`). Omítelo para incluir activas y retiradas; `0` devuelve sólo las activas; `1` devuelve sólo las retiradas. Ojo: `1` no significa «incluir las retiradas».',
+    'Validaciones retiradas por su dueño. Omítelo para incluir activas y retiradas; `0` devuelve sólo las activas; `1` devuelve sólo las retiradas. Ojo: `1` no significa «incluir las retiradas».',
   );
 
 export const validationFiltersShape = {

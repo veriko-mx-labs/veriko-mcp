@@ -80,6 +80,41 @@ export const SERVER_INSTRUCTIONS = [
   'Secretos: los secretos de firma de los webhooks aparecen una sola vez en el resultado; no los repitas. Nunca pidas ni inventes una clave de API; el servidor la lee del entorno.',
 ].join('\n\n');
 
+/** En HTTP sin estado no hay enlaces que leer después: cada descarga llega completa dentro del resultado. */
+const INLINE_DOWNLOADS =
+  'Las descargas llegan completas, incrustadas en el resultado de la herramienta; no se pueden volver a leer después, así que guarda lo que necesites. Los datos de referencia (bancos, calendario SPEI, planes, estado de Banxico, enlaces a la documentación) están disponibles como recursos veriko://*.';
+
+const TOOL_MENTION = /veriko_[a-z_]+/g;
+
+/**
+ * Quita de un texto las oraciones que nombran una herramienta que este servidor no ofrece, para que el modelo no
+ * intente llamarla (con el perfil `core` no hay, por ejemplo, `veriko_recheck_validation`). Un párrafo que se queda
+ * sin oraciones desaparece.
+ */
+export function withoutMissingTools(text: string, available: ReadonlySet<string>): string {
+  return text
+    .split('\n\n')
+    .map((paragraph) =>
+      paragraph
+        .split(/(?<=[.!?])\s+/)
+        .filter((sentence) => (sentence.match(TOOL_MENTION) ?? []).every((name) => available.has(name)))
+        .join(' '),
+    )
+    .filter((paragraph) => paragraph.trim() !== '')
+    .join('\n\n');
+}
+
+/** Las instrucciones del servidor según cómo entrega las descargas y qué herramientas ofrece. */
+export function serverInstructions(inline: boolean, available: ReadonlySet<string>): string {
+  const text = inline
+    ? SERVER_INSTRUCTIONS.split('\n\n')
+        .map((paragraph) => (paragraph.startsWith('Las descargas llegan') ? INLINE_DOWNLOADS : paragraph))
+        .join('\n\n')
+    : SERVER_INSTRUCTIONS;
+
+  return withoutMissingTools(text, available);
+}
+
 function annotations(tool: ToolDefinition): ToolAnnotations {
   return {
     readOnlyHint: tool.risk === 'read',
@@ -89,11 +124,47 @@ function annotations(tool: ToolDefinition): ToolAnnotations {
   };
 }
 
+function snakeCase(key: string): string {
+  return key.replace(/([a-z0-9])([A-Z])/g, '$1_$2').toLowerCase();
+}
+
+/**
+ * Campos del CEP que no se repiten en el resultado: la cadena original y el sello digital traen otra vez los nombres,
+ * RFC y cuentas de los dos lados, y son la prueba criptográfica que ya viene completa en `veriko_download_cep`.
+ */
+const CEP_PROOF_FIELDS = ['cadenaCda', 'digitalSignature'];
+
+function withoutCepProof(value: unknown, depth = 0): unknown {
+  if (depth > 6 || typeof value !== 'object' || value === null) return value;
+  if (Array.isArray(value)) return value.map((item) => withoutCepProof(item, depth + 1));
+  const out: Record<string, unknown> = {};
+  for (const [key, item] of Object.entries(value as Record<string, unknown>)) {
+    if (key === 'banxico_result' && typeof item === 'object' && item !== null && !Array.isArray(item)) {
+      const result = { ...(item as Record<string, unknown>) };
+      for (const field of CEP_PROOF_FIELDS) delete result[field];
+      out[key] = result;
+      continue;
+    }
+    out[key] = withoutCepProof(item, depth + 1);
+  }
+  return out;
+}
+
+/**
+ * El resultado de una herramienta como objeto. Las claves de primer nivel que arma el SDK en camelCase (la página de
+ * una lista, la respuesta de una validación asíncrona) salen en snake_case, como el resto de la API.
+ */
 function objectResult(value: unknown): Record<string, unknown> {
   if (value === undefined) return { ok: true };
   if (value === null) return { result: null };
-  if (Array.isArray(value)) return { data: value };
-  if (typeof value === 'object') return { ...(value as Record<string, unknown>) };
+  if (Array.isArray(value)) return { data: withoutCepProof(value) };
+  if (typeof value === 'object') {
+    const out: Record<string, unknown> = {};
+    for (const [key, item] of Object.entries(value as Record<string, unknown>)) {
+      out[key.startsWith('_') ? key : snakeCase(key)] = withoutCepProof(item);
+    }
+    return out;
+  }
   return { result: value };
 }
 
@@ -247,6 +318,8 @@ export function createVerikoServer(options: CreateServerOptions = {}): McpServer
   // Los archivos locales se leen sólo en modo stdio y sólo dentro de las raíces configuradas.
   const files: FileAccess | undefined =
     !inline && config.fileRoots && config.fileRoots.length > 0 ? { roots: config.fileRoots } : undefined;
+  const tools = selectTools(config.profiles, config.maxRisk);
+  const available = new Set(tools.map((tool) => tool.name));
   const server = new McpServer(
     {
       name: 'veriko-mcp-server',
@@ -255,7 +328,7 @@ export function createVerikoServer(options: CreateServerOptions = {}): McpServer
       description: 'Verifica transferencias SPEI de México contra el CEP de Banxico.',
       websiteUrl: 'https://docs.veriko.mx/es/mcp',
     },
-    { instructions: SERVER_INSTRUCTIONS },
+    { instructions: serverInstructions(inline, available) },
   );
 
   const delivery: Delivery = {
@@ -278,12 +351,12 @@ export function createVerikoServer(options: CreateServerOptions = {}): McpServer
   registerReferenceResources(server, client);
   registerPrompts(server, client);
 
-  for (const tool of selectTools(config.profiles, config.maxRisk)) {
+  for (const tool of tools) {
     server.registerTool(
       tool.name,
       {
         title: tool.title,
-        description: tool.description,
+        description: withoutMissingTools(tool.description, available),
         inputSchema: acceptingFormerNames(files && tool.localInputSchema ? tool.localInputSchema : tool.inputSchema),
         outputSchema: outputSchemaFor(tool.operationId, tool.helper),
         annotations: annotations(tool),

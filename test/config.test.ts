@@ -35,6 +35,8 @@ describe('configuración del servidor', () => {
       loadConfig({ VERIKO_BASE_URL: 'http://127.0.0.1:8080' }).baseUrl,
       'http://127.0.0.1:8080',
     );
+    assert.equal(loadConfig({ VERIKO_BASE_URL: 'https://api.veriko.mx' }).baseUrl, 'https://api.veriko.mx/v1');
+    assert.equal(loadConfig({ VERIKO_BASE_URL: 'https://api.veriko.mx/' }).baseUrl, 'https://api.veriko.mx/v1');
     assert.throws(
       () => loadConfig({ VERIKO_BASE_URL: 'http://example.test/v1' }),
       /debe usar HTTPS/,

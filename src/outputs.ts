@@ -37,10 +37,10 @@ const page = z.looseObject({
   ...base,
   items: z.array(z.unknown()).optional(),
   page: z.number().optional(),
-  perPage: z.number().optional(),
+  per_page: z.number().optional(),
   total: z.number().optional(),
-  totalPages: z.number().optional(),
-  hasNext: z.boolean().optional(),
+  total_pages: z.number().optional(),
+  has_next: z.boolean().optional(),
 });
 
 const file = z.looseObject({

@@ -1,5 +1,19 @@
 # Changelog
 
+## [Sin publicar]
+
+### Cambiado
+
+- Si `VERIKO_BASE_URL` trae sólo el dominio (`https://api.veriko.mx`), el servidor le añade `/v1`.
+  Antes toda llamada respondía `404`.
+- `veriko_get_usage_limits` devuelve también la cuota del plan en `quota` (límite, consumidas,
+  restantes y reinicio), además de `rate_limits`.
+- Las instrucciones y las descripciones sólo nombran herramientas que el perfil ofrece. En el servidor
+  remoto, las descargas se explican como recursos incrustados, sin enlaces `veriko://artifact/*`.
+- Los resultados usan llaves en `snake_case` (`idempotent_replayed`, `per_page`, `has_next`) y
+  ya no repiten la cadena original ni la firma del CEP dentro de `banxico_result`.
+- Textos de error de los esquemas en español y sin mezclar idiomas.
+
 ## [0.2.3] - 2026-11-15
 
 ### Cambiado
