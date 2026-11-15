@@ -9,7 +9,7 @@
   audiencia sea exactamente el recurso del MCP. Un token falso, vencido o emitido para otro recurso
   recibe `401` con `error="invalid_token"` sin llegar a la API.
 - La clave de API o el token sólo se envían a la URL de la API (`VERIKO_BASE_URL`). Una petición a
-  cualquier otra dirección sale sin el encabezado `Authorization`.
+  cualquier otra dirección sale sin el encabezado `Authorization`, y sin seguir redirecciones.
 
 ### Cambiado
 
