@@ -83,7 +83,7 @@ export const SERVER_INSTRUCTIONS = [
 function annotations(tool: ToolDefinition): ToolAnnotations {
   return {
     readOnlyHint: tool.risk === 'read',
-    destructiveHint: tool.risk === 'read' ? false : tool.destructive,
+    destructiveHint: tool.destructive,
     idempotentHint: tool.idempotent,
     openWorldHint: tool.openWorld,
   };

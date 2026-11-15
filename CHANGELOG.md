@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.3] - 2026-11-15
+
+### Cambiado
+
+- Toda herramienta que crea, modifica o borra datos se anuncia con `destructiveHint: true`, como
+  pide el directorio de conectores de Claude. Antes sólo la llevaban las que borran o sobrescriben.
+  Las lecturas siguen con `readOnlyHint: true` y `destructiveHint: false`.
+
 ## [0.2.2] - 2026-11-15
 
 ### Agregado

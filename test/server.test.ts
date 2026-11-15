@@ -73,7 +73,9 @@ describe('servidor MCP', () => {
     }
     const validate = tools.find((tool) => tool.name === 'veriko_validate_direct');
     assert.equal(validate?.annotations?.readOnlyHint, false);
-    assert.equal(validate?.annotations?.destructiveHint, false);
+    assert.equal(validate?.annotations?.destructiveHint, true);
+    const listing = tools.find((tool) => tool.name === 'veriko_list_webhooks');
+    assert.equal(listing?.annotations?.destructiveHint, false);
     assert.equal(validate?.annotations?.openWorldHint, true);
     const info = client.getServerVersion();
     assert.equal(info?.name, 'veriko-mcp-server');

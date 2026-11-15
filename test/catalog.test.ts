@@ -99,6 +99,11 @@ describe('catálogo MCP', () => {
         assert.equal(item.destructive, false, item.name);
       }
     }
+    for (const item of TOOL_CATALOG) {
+      if (item.risk !== 'read') {
+        assert.equal(item.destructive, true, `${item.name} writes, so destructiveHint is true`);
+      }
+    }
     for (const id of ['deleteWebhook', 'deleteBeneficiary', 'deleteValidation', 'cancelBeneficiaryImport']) {
       assert.equal(tool(id).destructive, true, id);
       assert.equal(tool(id).idempotent, true, id);
@@ -108,10 +113,10 @@ describe('catálogo MCP', () => {
       assert.equal(tool(id).destructive, true, id);
     }
     assert.equal(tool('validateDirect').idempotent, false);
-    assert.equal(tool('validateDirect').destructive, false);
+    assert.equal(tool('validateDirect').destructive, true);
     assert.equal(tool('commitBeneficiaryImport').risk, 'destructive');
-    assert.equal(tool('commitBeneficiaryImport').destructive, false);
-    assert.equal(tool('createFinanceCepExport').destructive, false);
+    assert.equal(tool('commitBeneficiaryImport').destructive, true);
+    assert.equal(tool('createFinanceCepExport').destructive, true);
     assert.equal(tool('banxicoPublicStatus').openWorld, true);
     assert.equal(tool('listWebhooks').openWorld, false);
   });

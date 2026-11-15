@@ -115,7 +115,10 @@ export interface ToolDefinition {
   core: boolean;
   /** Repetir la llamada con los mismos argumentos deja el mismo estado. */
   idempotent: boolean;
-  /** La llamada puede borrar o sobrescribir datos. */
+  /**
+   * Pista `destructiveHint`: la llamada crea, modifica o borra datos. El directorio de Claude la pide en `true` en toda
+   * herramienta que «modify or delete data», así que vale en cada escritura, no sólo en las que borran.
+   */
   destructive: boolean;
   /** La llamada llega más allá de la API de Veriko (Banxico, o una URL que envía quien llama). */
   openWorld: boolean;
@@ -182,7 +185,7 @@ function define<T extends InputSchema>(options: DefinitionOptions<T>): ToolDefin
     cost,
     core: options.core ?? false,
     idempotent: options.idempotent ?? risk === 'read',
-    destructive: options.destructive ?? risk === 'destructive',
+    destructive: options.destructive ?? risk !== 'read',
     openWorld: options.openWorld ?? false,
     inputSchema: options.inputSchema,
     ...(options.localInputSchema ? { localInputSchema: options.localInputSchema } : {}),
@@ -804,10 +807,8 @@ export const TOOL_CATALOG: readonly ToolDefinition[] = [
     description:
       'Crea o actualiza beneficiarios a partir de las filas válidas de la vista previa. No se puede deshacer por lote: revisa antes la vista previa.',
     family: 'beneficiaries',
-    // Se trata como destructiva porque escribe muchos registros de una vez; la
-    // anotación MCP sigue en `destructiveHint: false` porque no borra nada.
+    // Se trata como destructiva porque escribe muchos registros de una vez.
     risk: 'destructive',
-    destructive: false,
     inputSchema: importIdSchema,
     confirmation: (args) =>
       `¿Confirmar la importación ${args.import_id}? Crea o actualiza beneficiarios con cada fila válida de la vista previa y no se puede deshacer por lote.`,
