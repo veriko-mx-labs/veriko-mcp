@@ -14,6 +14,7 @@ import {
   startHttpServer,
   type HttpOptions,
 } from '../src/http.js';
+import { isAccessTokenShape } from '../src/client.js';
 import { languageFrom } from '../src/request-overrides.js';
 import { MCP_VERSION } from '../src/server.js';
 import { json, startFakeApi } from './support.js';
@@ -24,6 +25,13 @@ const cleanups: Array<() => Promise<void>> = [];
 const KEY_A = `veriko_${'a'.repeat(64)}`;
 const KEY_B = `veriko_${'b'.repeat(64)}`;
 const KEY_C = `veriko_${'c'.repeat(64)}`;
+
+/** Un token de acceso con la forma real: JWT de tres partes con `typ: at+jwt` (RFC 9068). La firma no se revisa aquí. */
+function accessToken(typ = 'at+jwt', scopes = 'validations.records.read'): string {
+  const part = (value: unknown) => Buffer.from(JSON.stringify(value)).toString('base64url');
+  return `${part({ alg: 'ES256', typ, kid: 'k1' })}.${part({ sub: '42', aud: 'https://api.example.com/mcp', scope: scopes })}.${'s'.repeat(86)}`;
+}
+const TOKEN = accessToken();
 
 const INITIALIZE = JSON.stringify({
   jsonrpc: '2.0',
@@ -94,7 +102,7 @@ describe('bearerToken', () => {
     assert.equal(bearerToken(null), undefined);
     assert.equal(bearerToken('Basic abc'), undefined);
     assert.equal(bearerToken('Bearer a b'), undefined);
-    assert.equal(bearerToken(`Bearer ${'x'.repeat(513)}`), undefined);
+    assert.equal(bearerToken(`Bearer ${'x'.repeat(8193)}`), undefined);
   });
 
   it('reconoce sólo la forma de una clave de Veriko', () => {
@@ -103,6 +111,19 @@ describe('bearerToken', () => {
     assert.equal(isApiKeyShape(`veriko_${'A'.repeat(64)}`), false);
     assert.equal(isApiKeyShape(`otro_${'a'.repeat(64)}`), false);
     assert.equal(isApiKeyShape(`${KEY_A}0`), false);
+  });
+
+  it('reconoce un token de acceso OAuth por su cabecera at+jwt', () => {
+    assert.equal(isAccessTokenShape(TOKEN), true);
+    assert.equal(isAccessTokenShape(accessToken('JWT')), false);
+    assert.equal(isAccessTokenShape('a.b'), false);
+    assert.equal(isAccessTokenShape('no.es.json'), false);
+    assert.equal(isAccessTokenShape(`${TOKEN}.extra`), false);
+    // Con el nivel Completo la lista de permisos pasa de 1 KB y el token sigue valiendo.
+    const full = accessToken('at+jwt', 'validations.records.read '.repeat(60));
+    assert.ok(full.length > 1024);
+    assert.equal(isAccessTokenShape(full), true);
+    assert.equal(bearerToken(`Bearer ${full}`), full);
   });
 });
 
@@ -116,6 +137,32 @@ describe('modo HTTP sin estado', () => {
     });
     assert.equal(response.status, 401);
     assert.match(response.headers.get('www-authenticate') ?? '', /^Bearer/);
+  });
+
+  it('anuncia los metadatos del recurso en el 401 cuando están configurados', async () => {
+    const metadata = 'https://api.example.com/.well-known/oauth-protected-resource/mcp';
+    const base = await listen({ resourceMetadataUrl: metadata });
+    const response = await fetch(`${base}/mcp`, { method: 'POST', headers: MCP_HEADERS, body: INITIALIZE });
+    assert.equal(response.status, 401);
+    assert.equal(
+      response.headers.get('www-authenticate'),
+      `Bearer realm="veriko-mcp", resource_metadata="${metadata}"`,
+    );
+  });
+
+  it('rechaza una URL de metadatos que no es https', () => {
+    assert.throws(() => createHttpApp({ resourceMetadataUrl: 'http://api.example.com/x' }), /no válida/);
+    assert.throws(() => createHttpApp({ resourceMetadataUrl: 'https://api.example.com/"x' }), /no válida/);
+  });
+
+  it('acepta initialize con un token de acceso OAuth', async () => {
+    const base = await listen();
+    const response = await fetch(`${base}/mcp`, {
+      method: 'POST',
+      headers: { ...MCP_HEADERS, authorization: `Bearer ${TOKEN}` },
+      body: INITIALIZE,
+    });
+    assert.equal(response.status, 200);
   });
 
   it('sirve /healthz sin autenticación y 404 en las demás rutas', async () => {
@@ -471,6 +518,23 @@ describe('ajustes por petición sobre HTTP', () => {
     assert.deepEqual(
       api.seen.map((request) => request.headers['accept-language']),
       ['es', 'en', 'en'],
+    );
+  });
+
+  it('manda a la API el token OAuth tal cual y nunca la clave de relleno del SDK', async () => {
+    const api = await startFakeApi();
+    cleanups.push(() => api.close());
+    api.reply = (_request, response) => json(response, 200, { data: [] });
+    const app = createHttpApp({ config: { ...ALL_CONFIG, baseUrl: api.baseUrl } });
+    cleanups.push(() => app.close());
+    const params = { name: 'veriko_list_webhooks', arguments: {} };
+
+    await call(app, 'tools/call', params, { authorization: `Bearer ${TOKEN}` });
+    await call(app, 'tools/call', params);
+
+    assert.deepEqual(
+      api.seen.map((request) => request.headers.authorization),
+      [`Bearer ${TOKEN}`, `Bearer ${KEY_A}`],
     );
   });
 

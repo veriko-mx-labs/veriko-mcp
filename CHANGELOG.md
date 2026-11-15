@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.2.2] - 2026-11-15
+
+### Agregado
+
+- El servidor remoto acepta un token de acceso OAuth en `Authorization: Bearer`, además de la
+  clave de API. Así Claude, ChatGPT y otros clientes MCP se conectan con OAuth: la persona elige
+  los permisos en Veriko y no tiene que copiar su clave.
+- `VERIKO_MCP_RESOURCE_METADATA_URL`: si se indica, el `401` la anuncia en `WWW-Authenticate`
+  (`resource_metadata`, RFC 9728) para que el cliente encuentre el servidor de autorización.
+
 ## [0.2.1] - 2026-11-14
 
 ### Agregado

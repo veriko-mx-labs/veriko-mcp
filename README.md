@@ -68,7 +68,9 @@ guardarla en el archivo:
 
 ### Remota
 
-El servidor remoto usa Streamable HTTP en `https://api.veriko.mx/mcp`. Cada
+El servidor remoto usa Streamable HTTP en `https://api.veriko.mx/mcp`. En Claude,
+ChatGPT y otros clientes que conectan con OAuth basta con la URL: el cliente te
+lleva a Veriko para iniciar sesión y elegir los permisos. En los demás, cada
 petición lleva tu clave de API en el encabezado `Authorization: Bearer`. Es el
 mismo servidor del paquete, con las mismas herramientas, pero no lee archivos de
 tu computadora: para `image_path` y `file_path` usa la instalación local.
@@ -375,9 +377,11 @@ VERIKO_MCP_HTTP_PORT=3000 node dist/http-index.js
 
 Escucha en `127.0.0.1:3000/mcp`; `GET /healthz` responde sin autenticación.
 
-- **Autenticación.** Cada petición lleva la clave de API del integrador como
-  `Authorization: Bearer <clave>`. Sin ella, o si no tiene la forma de una clave
-  de Veriko, la respuesta es 401. El servidor crea un cliente nuevo por petición,
+- **Autenticación.** Cada petición lleva la clave de API del integrador o un token
+  de acceso OAuth (un JWT con `typ: at+jwt`) como `Authorization: Bearer <token>`.
+  Sin él, o si no tiene ninguna de las dos formas, la respuesta es 401; con
+  `VERIKO_MCP_RESOURCE_METADATA_URL`, el 401 anuncia los metadatos del recurso en
+  `WWW-Authenticate`. El servidor crea un cliente nuevo por petición,
   no guarda ni registra la clave e ignora `VERIKO_API_KEY` del entorno, para que
   nunca se use una clave del servidor en nombre de otra persona.
 - **Descargas.** Como la siguiente petición puede caer en otro proceso, el

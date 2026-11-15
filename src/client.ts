@@ -56,6 +56,38 @@ const recordingFetch: typeof fetch = async (input, init) => {
   return response;
 };
 
+/** Tope de un token de acceso OAuth: el JWT lleva la lista de permisos y pasa de 1 KB con el nivel Completo. */
+export const MAX_ACCESS_TOKEN_LENGTH = 8192;
+const JWT_PATTERN = /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
+
+/**
+ * Si el valor tiene la forma de un token de acceso OAuth de Veriko: un JWT con `typ: at+jwt` (RFC 9068).
+ * Sólo mira la cabecera; la firma, la audiencia y la vigencia las revisa la API.
+ */
+export function isAccessTokenShape(token: string): boolean {
+  if (token.length > MAX_ACCESS_TOKEN_LENGTH || !JWT_PATTERN.test(token)) return false;
+  try {
+    const header: unknown = JSON.parse(Buffer.from(token.split('.')[0] ?? '', 'base64url').toString('utf8'));
+    return typeof header === 'object' && header !== null && (header as { typ?: unknown }).typ === 'at+jwt';
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * El SDK sólo acepta claves con la forma `veriko_` y 64 caracteres hexadecimales. Con un token OAuth se le pasa esta
+ * clave de relleno y el encabezado se reemplaza por el token en cada petición; la clave de relleno nunca sale.
+ */
+const OAUTH_PLACEHOLDER_KEY = `veriko_${'0'.repeat(64)}`;
+
+function withAccessToken(token: string, inner: typeof fetch): typeof fetch {
+  return (input, init) => {
+    const headers = new Headers(init?.headers);
+    headers.set('authorization', `Bearer ${token}`);
+    return inner(input, { ...init, headers });
+  };
+}
+
 export type TransportName = 'stdio' | 'http';
 
 export interface ClientSettings {
@@ -112,9 +144,11 @@ export function userAgentPrefix(version: string, transportName: TransportName): 
  * `Retry-After` para que el modelo actúe. El SDK nunca reintenta `quota_exceeded`.
  */
 export function createClient(settings: ClientSettings): Veriko {
+  const oauth = isAccessTokenShape(settings.apiKey);
+  const apiKey = oauth ? OAUTH_PLACEHOLDER_KEY : settings.apiKey;
   const transport = new Transport({
     baseUrl: settings.baseUrl ?? process.env.VERIKO_BASE_URL ?? DEFAULT_BASE_URL,
-    apiKey: settings.apiKey,
+    apiKey,
     timeoutMs: settings.timeoutMs ?? DEFAULT_TIMEOUT_MS,
     retry: {
       ...DEFAULT_RETRY,
@@ -124,14 +158,14 @@ export function createClient(settings: ClientSettings): Veriko {
     },
     userAgent: buildUserAgent(userAgentPrefix(settings.version, settings.transportName)),
     acceptLanguage: settings.acceptLanguage ?? 'en',
-    fetchImpl: recordingFetch,
+    fetchImpl: oauth ? withAccessToken(settings.apiKey, recordingFetch) : recordingFetch,
     onResponse(meta) {
       const store = capture.getStore();
       if (store) store.meta = meta;
     },
   });
   bindCancellation(transport);
-  return new Veriko({ apiKey: settings.apiKey, transport });
+  return new Veriko({ apiKey, transport });
 }
 
 /**

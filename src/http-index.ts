@@ -35,6 +35,9 @@ if (allowedHosts.length === 0 && !LOOPBACK.has(host)) {
 const app = createHttpApp({
   path: process.env.VERIKO_MCP_HTTP_PATH?.trim() || '/mcp',
   allowedOrigins,
+  ...(process.env.VERIKO_MCP_RESOURCE_METADATA_URL?.trim()
+    ? { resourceMetadataUrl: process.env.VERIKO_MCP_RESOURCE_METADATA_URL.trim() }
+    : {}),
   ...(allowedHosts.length > 0 ? { allowedHosts } : {}),
   ...(process.env.VERIKO_MCP_HTTP_MAX_BODY_BYTES
     ? { maxBodyBytes: integerFromEnv('VERIKO_MCP_HTTP_MAX_BODY_BYTES', 0, 1024, 256 * 1024 * 1024) }

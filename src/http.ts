@@ -4,13 +4,13 @@ import { createMcpHandler, localhostAllowedHostnames, validateHostHeader } from 
 
 import type { Veriko } from '@veriko-mx/sdk-runtime';
 
+import { isAccessTokenShape, MAX_ACCESS_TOKEN_LENGTH } from './client.js';
 import { loadConfig, type ServerConfig } from './config.js';
 import { resolveOverrides } from './request-overrides.js';
 import { createVerikoServer, DEFAULT_MAX_INLINE_ARTIFACT_BYTES } from './server.js';
 
 /** Igual que el búfer de stdio: una importación de 20 MB como máximo cabe en base64. */
 const DEFAULT_MAX_BODY_BYTES = 32 * 1024 * 1024;
-const MAX_TOKEN_LENGTH = 512;
 /** La misma forma que exige el SDK: `veriko_` y 64 caracteres hexadecimales en minúscula. */
 const API_KEY_PATTERN = /^veriko_[0-9a-f]{64}$/;
 
@@ -32,6 +32,12 @@ export interface HttpOptions {
    * `[::1]`). Por omisión, sólo `localhost`, `127.0.0.1` y `[::1]`.
    */
   allowedHosts?: readonly string[];
+  /**
+   * URL pública de los metadatos del recurso protegido (RFC 9728), por ejemplo
+   * `https://api.example.com/.well-known/oauth-protected-resource/mcp`. Si se indica, el `401` la anuncia en
+   * `WWW-Authenticate` para que un cliente MCP descubra el servidor de autorización y conecte con OAuth.
+   */
+  resourceMetadataUrl?: string;
   /** Reemplaza al SDK de Veriko; sólo para pruebas. */
   clientFactory?: (apiKey: string) => Veriko;
   onerror?: (error: Error) => void;
@@ -56,7 +62,7 @@ function json(status: number, body: unknown, headers: Record<string, string> = {
 export function bearerToken(header: string | null): string | undefined {
   const match = /^Bearer[ \t]+(\S+)[ \t]*$/i.exec(header ?? '');
   const token = match?.[1];
-  return token && token.length <= MAX_TOKEN_LENGTH ? token : undefined;
+  return token && token.length <= MAX_ACCESS_TOKEN_LENGTH ? token : undefined;
 }
 
 /** Si el valor tiene la forma de una clave de API de Veriko. No comprueba que la clave exista. */
@@ -91,7 +97,7 @@ function declaredLength(request: Request): number | undefined {
 /**
  * Aplicación HTTP sin estado.
  *
- * Cada petición se autentica con la clave de API del integrador como token Bearer
+ * Cada petición se autentica con la clave de API del integrador o con un token de acceso OAuth como token Bearer
  * y construye su propio servidor MCP y su propio cliente del SDK.
  *
  * Después no queda nada en memoria: la clave no se guarda ni se registra.
@@ -110,6 +116,16 @@ export function createHttpApp(options: HttpOptions = {}): HttpApp {
     if (!origin) throw new Error(`Origen no válido en la lista de permitidos: ${value}`);
     allowedOrigins.add(origin);
   }
+  const resourceMetadataUrl = options.resourceMetadataUrl?.trim();
+  if (resourceMetadataUrl !== undefined && resourceMetadataUrl !== '') {
+    const parsed = URL.canParse(resourceMetadataUrl) ? new URL(resourceMetadataUrl) : undefined;
+    if (!parsed || parsed.protocol !== 'https:' || /["\\]/.test(resourceMetadataUrl)) {
+      throw new Error(`URL de metadatos del recurso no válida: ${resourceMetadataUrl}`);
+    }
+  }
+  const challenge = resourceMetadataUrl
+    ? `Bearer realm="veriko-mcp", resource_metadata="${resourceMetadataUrl}"`
+    : 'Bearer realm="veriko-mcp"';
   const allowedHosts = (options.allowedHosts ?? localhostAllowedHostnames()).map(normalizeHostname);
   if (allowedHosts.length === 0) throw new Error('La lista de hosts permitidos no puede estar vacía.');
 
@@ -151,14 +167,18 @@ export function createHttpApp(options: HttpOptions = {}): HttpApp {
         }
       }
 
-      // La forma de la clave se revisa antes de leer el cuerpo y antes de
+      // La forma de la clave o del token se revisa antes de leer el cuerpo y antes de
       // initialize o tools/list, que nunca llegan a la API.
       const token = bearerToken(request.headers.get('authorization'));
-      if (!token || !isApiKeyShape(token)) {
+      const oauth = token !== undefined && isAccessTokenShape(token);
+      if (!token || !(oauth || isApiKeyShape(token))) {
         return json(
           401,
-          { error: 'unauthorized', message: 'Envía tu clave de API como Authorization: Bearer <clave>.' },
-          { 'www-authenticate': 'Bearer realm="veriko-mcp"' },
+          {
+            error: 'unauthorized',
+            message: 'Envía tu clave de API o un token de acceso OAuth como Authorization: Bearer <token>.',
+          },
+          { 'www-authenticate': challenge },
         );
       }
 
@@ -176,7 +196,7 @@ export function createHttpApp(options: HttpOptions = {}): HttpApp {
       }
 
       return handler.fetch(request, {
-        authInfo: { token, clientId: 'veriko-api-key', scopes: [] },
+        authInfo: { token, clientId: oauth ? 'veriko-oauth' : 'veriko-api-key', scopes: [] },
       });
     },
     close: () => handler.close(),
