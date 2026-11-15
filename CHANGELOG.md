@@ -1,6 +1,15 @@
 # Changelog
 
-## [Sin publicar]
+## [0.2.4] - 2026-11-15
+
+### Seguridad
+
+- El servidor remoto verifica cada token de acceso OAuth antes de leer el cuerpo de la petición: la
+  firma con la clave publicada por el servidor de autorización, el emisor, la vigencia y que la
+  audiencia sea exactamente el recurso del MCP. Un token falso, vencido o emitido para otro recurso
+  recibe `401` con `error="invalid_token"` sin llegar a la API.
+- La clave de API o el token sólo se envían a la URL de la API (`VERIKO_BASE_URL`). Una petición a
+  cualquier otra dirección sale sin el encabezado `Authorization`.
 
 ### Cambiado
 

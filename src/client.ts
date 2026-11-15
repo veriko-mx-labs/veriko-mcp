@@ -62,7 +62,8 @@ const JWT_PATTERN = /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
 
 /**
  * Si el valor tiene la forma de un token de acceso OAuth de Veriko: un JWT con `typ: at+jwt` (RFC 9068).
- * Sólo mira la cabecera; la firma, la audiencia y la vigencia las revisa la API.
+ * Sólo mira la cabecera. El servidor HTTP verifica firma, emisor, vigencia y audiencia (access-token.ts) y la API los
+ * vuelve a verificar.
  */
 export function isAccessTokenShape(token: string): boolean {
   if (token.length > MAX_ACCESS_TOKEN_LENGTH || !JWT_PATTERN.test(token)) return false;
@@ -80,10 +81,38 @@ export function isAccessTokenShape(token: string): boolean {
  */
 const OAUTH_PLACEHOLDER_KEY = `veriko_${'0'.repeat(64)}`;
 
-function withAccessToken(token: string, inner: typeof fetch): typeof fetch {
+function requestUrl(input: Parameters<typeof fetch>[0]): string {
+  if (typeof input === 'string') return input;
+  if (input instanceof URL) return input.href;
+  return input.url;
+}
+
+/**
+ * Si `url` es de la API: el mismo origen que `baseUrl` y su ruta debajo de la de `baseUrl` (`https://api.veriko.mx/v1`
+ * cubre `/v1/validations`, no `/v1x` ni `/otra`).
+ */
+export function isUnderBaseUrl(url: string, baseUrl: string): boolean {
+  if (!URL.canParse(url) || !URL.canParse(baseUrl)) return false;
+  const target = new URL(url);
+  const base = new URL(baseUrl);
+  if (target.origin !== base.origin) return false;
+  const prefix = base.pathname.replace(/\/+$/, '');
+  return prefix === '' || target.pathname === prefix || target.pathname.startsWith(`${prefix}/`);
+}
+
+/**
+ * La credencial (clave de API o token OAuth) sólo viaja a la API. Una petición a cualquier otra URL (una descarga
+ * firmada en otro dominio, una redirección) sale sin `Authorization`.
+ */
+export function credentialsOnlyTo(baseUrl: string, token: string | undefined, inner: typeof fetch): typeof fetch {
   return (input, init) => {
-    const headers = new Headers(init?.headers);
-    headers.set('authorization', `Bearer ${token}`);
+    const headers = new Headers(input instanceof Request ? input.headers : undefined);
+    new Headers(init?.headers).forEach((value, name) => headers.set(name, value));
+    if (isUnderBaseUrl(requestUrl(input), baseUrl)) {
+      if (token !== undefined) headers.set('authorization', `Bearer ${token}`);
+    } else {
+      headers.delete('authorization');
+    }
     return inner(input, { ...init, headers });
   };
 }
@@ -146,8 +175,9 @@ export function userAgentPrefix(version: string, transportName: TransportName): 
 export function createClient(settings: ClientSettings): Veriko {
   const oauth = isAccessTokenShape(settings.apiKey);
   const apiKey = oauth ? OAUTH_PLACEHOLDER_KEY : settings.apiKey;
+  const baseUrl = settings.baseUrl ?? process.env.VERIKO_BASE_URL ?? DEFAULT_BASE_URL;
   const transport = new Transport({
-    baseUrl: settings.baseUrl ?? process.env.VERIKO_BASE_URL ?? DEFAULT_BASE_URL,
+    baseUrl,
     apiKey,
     timeoutMs: settings.timeoutMs ?? DEFAULT_TIMEOUT_MS,
     retry: {
@@ -158,7 +188,7 @@ export function createClient(settings: ClientSettings): Veriko {
     },
     userAgent: buildUserAgent(userAgentPrefix(settings.version, settings.transportName)),
     acceptLanguage: settings.acceptLanguage ?? 'en',
-    fetchImpl: oauth ? withAccessToken(settings.apiKey, recordingFetch) : recordingFetch,
+    fetchImpl: credentialsOnlyTo(baseUrl, oauth ? settings.apiKey : undefined, recordingFetch),
     onResponse(meta) {
       const store = capture.getStore();
       if (store) store.meta = meta;

@@ -32,7 +32,7 @@ body:
     id: v0
     attributes:
       label: 'Versión de `@veriko-mx/mcp`'
-      placeholder: '0.2.3'
+      placeholder: '0.2.4'
     validations:
       required: true
   - type: input

@@ -4,6 +4,7 @@ import { createMcpHandler, localhostAllowedHostnames, validateHostHeader } from 
 
 import type { Veriko } from '@veriko-mx/sdk-runtime';
 
+import { createAccessTokenVerifier, type AccessTokenVerifier } from './access-token.js';
 import { isAccessTokenShape, MAX_ACCESS_TOKEN_LENGTH } from './client.js';
 import { loadConfig, type ServerConfig } from './config.js';
 import { resolveOverrides } from './request-overrides.js';
@@ -38,6 +39,12 @@ export interface HttpOptions {
    * `WWW-Authenticate` para que un cliente MCP descubra el servidor de autorización y conecte con OAuth.
    */
   resourceMetadataUrl?: string;
+  /**
+   * Verifica los tokens de acceso OAuth antes de leer el cuerpo (firma por JWKS, `iss`, `exp` y `aud` exacto). Por
+   * omisión se arma por descubrimiento desde `resourceMetadataUrl`; sin esa URL no hay con qué verificar y los tokens
+   * OAuth se rechazan (las claves de API siguen igual).
+   */
+  accessTokenVerifier?: AccessTokenVerifier;
   /** Reemplaza al SDK de Veriko; sólo para pruebas. */
   clientFactory?: (apiKey: string) => Veriko;
   onerror?: (error: Error) => void;
@@ -126,6 +133,9 @@ export function createHttpApp(options: HttpOptions = {}): HttpApp {
   const challenge = resourceMetadataUrl
     ? `Bearer realm="veriko-mcp", resource_metadata="${resourceMetadataUrl}"`
     : 'Bearer realm="veriko-mcp"';
+  const verifier =
+    options.accessTokenVerifier ??
+    (resourceMetadataUrl ? createAccessTokenVerifier({ resourceMetadataUrl }) : undefined);
   const allowedHosts = (options.allowedHosts ?? localhostAllowedHostnames()).map(normalizeHostname);
   if (allowedHosts.length === 0) throw new Error('La lista de hosts permitidos no puede estar vacía.');
 
@@ -180,6 +190,24 @@ export function createHttpApp(options: HttpOptions = {}): HttpApp {
           },
           { 'www-authenticate': challenge },
         );
+      }
+
+      // Un token OAuth se verifica aquí, todavía sin leer el cuerpo: firma, emisor, vigencia y audiencia exacta.
+      // La API lo vuelve a verificar (y mira la revocación), pero uno falso, vencido o de otro recurso no pasa de aquí.
+      if (oauth) {
+        const check = verifier
+          ? await verifier.verify(token)
+          : ({ ok: false, kind: 'invalid', reason: 'no_verifier' } as const);
+        if (!check.ok && check.kind === 'unavailable') {
+          return json(503, { error: 'auth_unavailable', message: 'No se pudo verificar el token. Intenta de nuevo.' }, { 'retry-after': '5' });
+        }
+        if (!check.ok) {
+          return json(
+            401,
+            { error: 'invalid_token', message: 'El token de acceso no es válido, venció o es para otro recurso.' },
+            { 'www-authenticate': `${challenge}, error="invalid_token"` },
+          );
+        }
       }
 
       // Perfil, riesgo e idioma por petición; un encabezado sólo puede acotar lo que el servidor ya permite.

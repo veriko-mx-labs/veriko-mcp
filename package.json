@@ -1,6 +1,6 @@
 {
   "name": "@veriko-mx/mcp",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Servidor MCP oficial de Veriko para verificar y consultar transferencias SPEI contra el CEP de Banxico",
   "keywords": [
     "mcp",

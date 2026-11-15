@@ -32,6 +32,8 @@ function accessToken(typ = 'at+jwt', scopes = 'validations.records.read'): strin
   return `${part({ alg: 'ES256', typ, kid: 'k1' })}.${part({ sub: '42', aud: 'https://api.example.com/mcp', scope: scopes })}.${'s'.repeat(86)}`;
 }
 const TOKEN = accessToken();
+/** Acepta cualquier token: la verificación real se prueba en access-token.test.ts. */
+const ACCEPT_ALL = { verify: async () => ({ ok: true }) as const };
 
 const INITIALIZE = JSON.stringify({
   jsonrpc: '2.0',
@@ -156,13 +158,66 @@ describe('modo HTTP sin estado', () => {
   });
 
   it('acepta initialize con un token de acceso OAuth', async () => {
-    const base = await listen();
+    const base = await listen({ accessTokenVerifier: ACCEPT_ALL });
     const response = await fetch(`${base}/mcp`, {
       method: 'POST',
       headers: { ...MCP_HEADERS, authorization: `Bearer ${TOKEN}` },
       body: INITIALIZE,
     });
     assert.equal(response.status, 200);
+  });
+
+  it('rechaza un token OAuth que no pasa la verificación, sin leer el cuerpo', async () => {
+    let checked = 0;
+    const base = await listen({
+      accessTokenVerifier: {
+        verify: async () => {
+          checked += 1;
+          return { ok: false, kind: 'invalid', reason: 'audience' } as const;
+        },
+      },
+      resourceMetadataUrl: 'https://api.example.com/.well-known/oauth-protected-resource/mcp',
+      maxBodyBytes: 1024,
+    });
+    // Un cuerpo mayor que el tope: si se revisara después del tamaño, respondería 413.
+    const response = await rawRequest(
+      base,
+      { ...MCP_HEADERS, authorization: `Bearer ${TOKEN}`, 'content-length': String(2048) },
+      'x'.repeat(2048),
+    );
+    assert.equal(response.status, 401);
+    assert.match(response.body, /invalid_token/);
+    assert.equal(checked, 1);
+  });
+
+  it('responde 503 si no puede obtener con qué verificar el token', async () => {
+    const base = await listen({
+      accessTokenVerifier: { verify: async () => ({ ok: false, kind: 'unavailable', reason: 'jwks' }) as const },
+    });
+    const response = await fetch(`${base}/mcp`, {
+      method: 'POST',
+      headers: { ...MCP_HEADERS, authorization: `Bearer ${TOKEN}` },
+      body: INITIALIZE,
+    });
+    assert.equal(response.status, 503);
+    assert.equal(response.headers.get('retry-after'), '5');
+  });
+
+  it('sin metadatos del recurso no acepta tokens OAuth, pero sí claves de API', async () => {
+    const base = await listen();
+    const oauth = await fetch(`${base}/mcp`, {
+      method: 'POST',
+      headers: { ...MCP_HEADERS, authorization: `Bearer ${TOKEN}` },
+      body: INITIALIZE,
+    });
+    assert.equal(oauth.status, 401);
+    assert.match(oauth.headers.get('www-authenticate') ?? '', /error="invalid_token"/);
+    const key = await fetch(`${base}/mcp`, {
+      method: 'POST',
+      headers: { ...MCP_HEADERS, authorization: `Bearer ${KEY_A}` },
+      body: INITIALIZE,
+    });
+    assert.equal(key.status, 200);
   });
 
   it('sirve /healthz sin autenticación y 404 en las demás rutas', async () => {
@@ -525,7 +580,7 @@ describe('ajustes por petición sobre HTTP', () => {
     const api = await startFakeApi();
     cleanups.push(() => api.close());
     api.reply = (_request, response) => json(response, 200, { data: [] });
-    const app = createHttpApp({ config: { ...ALL_CONFIG, baseUrl: api.baseUrl } });
+    const app = createHttpApp({ config: { ...ALL_CONFIG, baseUrl: api.baseUrl }, accessTokenVerifier: ACCEPT_ALL });
     cleanups.push(() => app.close());
     const params = { name: 'veriko_list_webhooks', arguments: {} };
 

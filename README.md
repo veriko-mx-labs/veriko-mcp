@@ -381,7 +381,13 @@ Escucha en `127.0.0.1:3000/mcp`; `GET /healthz` responde sin autenticación.
   de acceso OAuth (un JWT con `typ: at+jwt`) como `Authorization: Bearer <token>`.
   Sin él, o si no tiene ninguna de las dos formas, la respuesta es 401; con
   `VERIKO_MCP_RESOURCE_METADATA_URL`, el 401 anuncia los metadatos del recurso en
-  `WWW-Authenticate`. El servidor crea un cliente nuevo por petición,
+  `WWW-Authenticate`. Un token OAuth se verifica antes de leer el cuerpo: firma
+  con la clave de su `kid` en el JWKS del servidor de autorización, `iss`, `exp`
+  y `aud` igual al `resource` de esos metadatos. Todo sale por descubrimiento desde
+  esa URL; sin ella no se aceptan tokens OAuth. Un token que no pasa recibe 401 con
+  `error="invalid_token"`, y si no se pudo leer el JWKS la respuesta es 503. La
+  credencial sólo viaja a `VERIKO_BASE_URL`: una petición a otra URL sale sin
+  `Authorization`. El servidor crea un cliente nuevo por petición,
   no guarda ni registra la clave e ignora `VERIKO_API_KEY` del entorno, para que
   nunca se use una clave del servidor en nombre de otra persona.
 - **Descargas.** Como la siguiente petición puede caer en otro proceso, el
@@ -414,8 +420,7 @@ Escucha en `127.0.0.1:3000/mcp`; `GET /healthz` responde sin autenticación.
 | `VERIKO_MCP_HTTP_MAX_BODY_BYTES` | Tamaño máximo del cuerpo | 32 MiB |
 | `VERIKO_MCP_HTTP_MAX_INLINE_BYTES` | Tope de un archivo incrustado | 8 MiB |
 
-El servidor no termina TLS: se despliega detrás de un proxy HTTPS. Hasta que
-exista OAuth para cuentas de cliente, la clave de API es la única credencial.
+El servidor no termina TLS: se despliega detrás de un proxy HTTPS.
 
 ## Seguridad
 
