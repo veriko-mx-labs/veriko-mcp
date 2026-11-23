@@ -88,8 +88,9 @@ const TOOL_MENTION = /veriko_[a-z_]+/g;
 
 /**
  * Quita de un texto las oraciones que nombran una herramienta que este servidor no ofrece, para que el modelo no
- * intente llamarla (con el perfil `core` no hay, por ejemplo, `veriko_recheck_validation`). Un párrafo que se queda
- * sin oraciones desaparece.
+ * intente llamarla (con el perfil `core` no hay, por ejemplo, `veriko_recheck_validation`).
+ *
+ * Un párrafo que se queda sin oraciones desaparece.
  */
 export function withoutMissingTools(text: string, available: ReadonlySet<string>): string {
   return text

@@ -45,8 +45,10 @@ function entriesOf(banks: unknown): BankEntry[] {
 /**
  * Completa códigos de banco SPEI desde el catálogo público de bancos. Un prefijo
  * de código o una parte del nombre o del alias encuentra el banco; la respuesta
- * siempre es el código. El catálogo se lee como máximo una vez cada diez minutos,
- * y una lectura fallida no da sugerencias en lugar de un error.
+ * siempre es el código.
+ *
+ * El catálogo se lee como máximo una vez cada diez minutos, y una lectura fallida
+ * no da sugerencias en lugar de un error.
  */
 export function bankCompleter(client: Veriko, now: () => number = () => Date.now()) {
   let cached: { at: number; entries: BankEntry[] } | undefined;

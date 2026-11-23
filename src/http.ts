@@ -35,13 +35,16 @@ export interface HttpOptions {
   allowedHosts?: readonly string[];
   /**
    * URL pública de los metadatos del recurso protegido (RFC 9728), por ejemplo
-   * `https://api.example.com/.well-known/oauth-protected-resource/mcp`. Si se indica, el `401` la anuncia en
-   * `WWW-Authenticate` para que un cliente MCP descubra el servidor de autorización y conecte con OAuth.
+   * `https://api.example.com/.well-known/oauth-protected-resource/mcp`.
+   *
+   * Si se indica, el `401` la anuncia en `WWW-Authenticate` para que un cliente MCP descubra el servidor de
+   * autorización y conecte con OAuth.
    */
   resourceMetadataUrl?: string;
   /**
-   * Verifica los tokens de acceso OAuth antes de leer el cuerpo (firma por JWKS, `iss`, `exp` y `aud` exacto). Por
-   * omisión se arma por descubrimiento desde `resourceMetadataUrl`; sin esa URL no hay con qué verificar y los tokens
+   * Verifica los tokens de acceso OAuth antes de leer el cuerpo (firma por JWKS, `iss`, `exp` y `aud` exacto).
+   *
+   * Por omisión se arma por descubrimiento desde `resourceMetadataUrl`; sin esa URL no hay con qué verificar y los tokens
    * OAuth se rechazan (las claves de API siguen igual).
    */
   accessTokenVerifier?: AccessTokenVerifier;

@@ -8,7 +8,9 @@ import { FAMILIES, type Profile } from '../src/config.js';
  * Techos, en bytes, de `tools/list` de cada perfil con riesgo `destructive`:
  * lo que un cliente inyecta en el contexto del modelo. Un cambio que sube uno
  * pasa por este archivo, así que el crecimiento es una decisión y no un efecto
- * colateral. Mide con `npm run measure:catalog`; los tokens son cerca de bytes / 3.6.
+ * colateral.
+ *
+ * Mide con `npm run measure:catalog`; los tokens son cerca de bytes / 3.6.
  */
 const BUDGET_BYTES: Readonly<Record<string, { tools: number; bytes: number }>> = {
   core: { tools: 8, bytes: 27_300 },
