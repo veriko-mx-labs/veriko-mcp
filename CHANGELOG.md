@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.2.5] - 2026-11-25
+
+### Cambiado
+
+- El contrato público del repositorio pasa a la versión 1.263.1 de la API. Los nombres de las
+  herramientas, sus parámetros, sus esquemas y los códigos de error no cambian.
+- Los textos de `detail` y `hint` de los errores son más cortos y claros, por ejemplo cuando el
+  cuerpo no es JSON válido o cuando no existe lo que pediste. Los envía la API en cada respuesta,
+  así que también los recibes con versiones anteriores del servidor. Decide siempre según `code`.
+- La tabla de costo de `tools/list` por perfil del README se midió de nuevo.
+
 ## [0.2.4] - 2026-11-15
 
 ### Seguridad
