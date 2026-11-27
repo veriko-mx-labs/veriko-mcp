@@ -1,6 +1,6 @@
 {
   "name": "@veriko-mx/mcp",
-  "version": "0.2.6",
+  "version": "0.2.7",
   "description": "Servidor MCP oficial de Veriko para verificar y consultar transferencias SPEI contra el CEP de Banxico",
   "keywords": [
     "mcp",
@@ -60,7 +60,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/server": "^2.0.0",
-    "@veriko-mx/sdk-runtime": "npm:@veriko-mx/sdk@0.6.1",
+    "@veriko-mx/sdk-runtime": "npm:@veriko-mx/sdk@0.6.3",
     "zod": "^4.6.5"
   },
   "bundleDependencies": [

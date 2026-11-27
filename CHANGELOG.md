@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.7] - 2026-11-26
+
+### Cambiado
+
+- El servidor incluye la versión 0.6.3 del SDK de JavaScript (antes la 0.6.1), que sigue el contrato
+  1.272.0 de la API. Las herramientas, sus parámetros y su comportamiento no cambian.
+
 ## [0.2.6] - 2026-11-26
 
 ### Cambiado
