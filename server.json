@@ -3,7 +3,7 @@
   "name": "mx.veriko/veriko",
   "title": "Veriko",
   "description": "Verifica transferencias SPEI contra el CEP de Banxico y opera la API pública de Veriko.",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "websiteUrl": "https://docs.veriko.mx/es/mcp",
   "icons": [
     {
@@ -30,7 +30,7 @@
     {
       "registryType": "npm",
       "identifier": "@veriko-mx/mcp",
-      "version": "0.2.5",
+      "version": "0.2.6",
       "runtimeHint": "npx",
       "transport": {
         "type": "stdio"

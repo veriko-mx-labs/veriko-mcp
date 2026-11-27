@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.2.6] - 2026-11-26
+
+### Cambiado
+
+- El contrato público del repositorio pasa a la versión 1.272.0 de la API. Los nombres de las
+  herramientas, sus parámetros y sus esquemas no cambian.
+- Una validación por imagen puede traer `attributes.truncated_fields`, con los campos que el
+  comprobante muestra cortados con puntos suspensivos, y `error_code` suma `tracking_key_truncated`
+  y `other_account_exists`. Las instrucciones del servidor y los prompts `check_transfer` y
+  `triage_failed_validations` explican qué hacer con cada uno, y el README los describe.
+
 ## [0.2.5] - 2026-11-25
 
 ### Cambiado
