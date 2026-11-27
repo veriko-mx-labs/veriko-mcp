@@ -32,7 +32,7 @@ export function registerPrompts(server: McpServer, client: Veriko): void {
           '2. Llama a veriko_get_usage_limits y detente a preguntar si la cuota restante es poca: cada validación consume cuota.',
           '3. Llama a veriko_validate_direct (o a veriko_validate_ocr si es un comprobante). No repitas la llamada con los mismos argumentos, salvo que reutilices su `idempotency_key`.',
           '4. Si el estado es `queued` o `processing`, llama a veriko_wait_for_validation hasta que `terminal` sea true.',
-          '5. Explica el veredicto. Un `not_found` puede significar que Banxico aún no publica el CEP; ofrece una política de reintentos. Si `account_cross_checked` es false, aclara que `valid` confirma que la transferencia existe, pero no que se pagó a la cuenta esperada.',
+          '5. Explica el veredicto. Un `not_found` puede significar que Banxico aún no publica el CEP; ofrece una política de reintentos. Con `error_code` `tracking_key_truncated`, el comprobante muestra la clave de rastreo cortada: pide la clave completa en lugar de reintentar. Con `other_account_exists`, el pago existe, pero a otra cuenta que muestra el comprobante. Si `account_cross_checked` es false, aclara que `valid` confirma que la transferencia existe, pero no que se pagó a la cuenta esperada.',
           '6. Ofrece veriko_download_cep y, dentro de las 72 horas, veriko_recheck_validation para detectar una devolución.',
         ].join('\n'),
       ),
@@ -73,7 +73,7 @@ export function registerPrompts(server: McpServer, client: Veriko): void {
             ? `1. veriko_list_validations con el estado \`${status}\` primero y luego con los demás estados fallidos (\`failed\`, \`error\`, \`cep_unavailable\`, \`not_found\`).`
             : '1. veriko_list_validations con los estados `failed`, `error` y `cep_unavailable`, y luego `not_found`.',
           '2. Agrupa por `error_code`. Para `cep_unavailable`, revisa veriko_banxico_public_status.',
-          '3. Para `not_found`, lee veriko_list_validation_retry_attempts y propón veriko_update_validation_retry_policy cuando no haya un reintento en curso.',
+          '3. Para `not_found`, lee veriko_list_validation_retry_attempts y propón veriko_update_validation_retry_policy cuando no haya un reintento en curso. No propongas reintentos con `error_code` `tracking_key_truncated` (falta la clave de rastreo completa) ni con `other_account_exists` (el pago fue a otra cuenta del comprobante).',
           '4. Resume cada grupo y pregunta antes de cambiar cualquier política.',
         ].join('\n'),
       ),

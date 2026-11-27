@@ -254,6 +254,15 @@ un perfil rebasa su presupuesto.
   llamada. Para reintentar sin riesgo tras una respuesta perdida, repite la
   llamada con la misma `idempotency_key`; `idempotent_replayed: true` significa
   que la API devolvió la respuesta guardada.
+- **Campos cortados del comprobante.** Una validación por imagen lista en
+  `attributes.truncated_fields` los campos que el comprobante muestra cortados
+  con puntos suspensivos (`field`, `position`, `head` y `tail`). Un `not_found`
+  con `error_code` `tracking_key_truncated` significa que la clave de rastreo
+  está cortada y no hay referencia: la API no consulta a Banxico ni reintenta,
+  así que valida de nuevo con la clave completa. Con `other_account_exists` no
+  hay pago a la cuenta enviada, pero sí a otra cuenta que muestra el
+  comprobante. Las instrucciones del servidor y los prompts ya lo explican al
+  asistente.
 - **Resultados asíncronos.** Una validación puede responder `queued` o
   `processing`. `veriko_wait_for_validation`, `veriko_wait_for_cep_export` y
   `veriko_wait_for_beneficiary_import` consultan hasta que el recurso llega a un
