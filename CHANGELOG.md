@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.8] - 2026-11-28
+
+### Cambiado
+
+- El contrato público del repositorio pasa a la versión 1.277.0 de la API. Los nombres de las
+  herramientas, sus parámetros, sus esquemas y los códigos de error no cambian.
+
 ## [0.2.7] - 2026-11-26
 
 ### Cambiado
